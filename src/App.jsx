@@ -691,6 +691,8 @@ export default function App() {
       } : m));
       setBetModal(null);
       showToast(`✅ Prédiction placée ! Gain potentiel : +${gain.toLocaleString()} 🪙`);
+      await loadProfile(session.token, session.user.id);
+      await loadLeaderboard(session.token);
     } catch (e) {
       showToast(`Erreur : ${e.message}`, "error");
     }
