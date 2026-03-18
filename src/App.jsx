@@ -48,15 +48,15 @@ const AMM = {
 };
 
 // ============================================================
-// SEED DATA
+// SEED DATA — market_id sont maintenant des UUID valides
 // ============================================================
 const SEED_MARKETS = [
-  { id: "m1", title: "Mbappé rejoint Arsenal avant le 31 août ?", description: "Real Madrid envisagerait de vendre Mbappé suite aux désaccords internes.", q_yes: 320, q_no: 180, total_volume: 8400, participants: 142, closes_at: new Date(Date.now() + 12 * 86400000).toISOString(), category: "Transferts", source: "Fabrizio Romano", status: "open" },
-  { id: "m2", title: "Barcelona signe Lamine Yamal pro avant janvier ?", description: "Le prodige barcelonais est en négociation pour un contrat professionnel.", q_yes: 480, q_no: 120, total_volume: 12600, participants: 287, closes_at: new Date(Date.now() + 5 * 86400000).toISOString(), category: "Contrats", source: "Marca", status: "open" },
-  { id: "m3", title: "PSG remporte la Champions League cette saison ?", description: "Paris Saint-Germain est favori après un début de saison exceptionnel.", q_yes: 200, q_no: 400, total_volume: 31200, participants: 891, closes_at: new Date(Date.now() + 45 * 86400000).toISOString(), category: "Compétitions", source: "L'Équipe", status: "open" },
-  { id: "m4", title: "Erling Haaland quitte City cet été ?", description: "Real Madrid et Bayern auraient tous deux contacté l'entourage de Haaland.", q_yes: 150, q_no: 350, total_volume: 9800, participants: 203, closes_at: new Date(Date.now() + 28 * 86400000).toISOString(), category: "Transferts", source: "Sky Sports", status: "open" },
-  { id: "m5", title: "Vinicius Jr. Ballon d'Or 2025 ?", description: "Après son sacre manqué de 2024, Vinicius revient fort cette saison.", q_yes: 260, q_no: 240, total_volume: 19400, participants: 534, closes_at: new Date(Date.now() + 180 * 86400000).toISOString(), category: "Récompenses", source: "France Football", status: "open" },
-  { id: "m6", title: "Bellingham marque plus de 25 buts en PL ?", description: "Bellingham veut prouver sa forme cette saison.", q_yes: 190, q_no: 310, total_volume: 7200, participants: 168, closes_at: new Date(Date.now() + 60 * 86400000).toISOString(), category: "Performances", source: "BBC Sport", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000001", title: "Mbappé rejoint Arsenal avant le 31 août ?", description: "Real Madrid envisagerait de vendre Mbappé suite aux désaccords internes.", q_yes: 320, q_no: 180, total_volume: 8400, participants: 142, closes_at: new Date(Date.now() + 12 * 86400000).toISOString(), category: "Transferts", source: "Fabrizio Romano", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000002", title: "Barcelona signe Lamine Yamal pro avant janvier ?", description: "Le prodige barcelonais est en négociation pour un contrat professionnel.", q_yes: 480, q_no: 120, total_volume: 12600, participants: 287, closes_at: new Date(Date.now() + 5 * 86400000).toISOString(), category: "Contrats", source: "Marca", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000003", title: "PSG remporte la Champions League cette saison ?", description: "Paris Saint-Germain est favori après un début de saison exceptionnel.", q_yes: 200, q_no: 400, total_volume: 31200, participants: 891, closes_at: new Date(Date.now() + 45 * 86400000).toISOString(), category: "Compétitions", source: "L'Équipe", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000004", title: "Erling Haaland quitte City cet été ?", description: "Real Madrid et Bayern auraient tous deux contacté l'entourage de Haaland.", q_yes: 150, q_no: 350, total_volume: 9800, participants: 203, closes_at: new Date(Date.now() + 28 * 86400000).toISOString(), category: "Transferts", source: "Sky Sports", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000005", title: "Vinicius Jr. Ballon d'Or 2025 ?", description: "Après son sacre manqué de 2024, Vinicius revient fort cette saison.", q_yes: 260, q_no: 240, total_volume: 19400, participants: 534, closes_at: new Date(Date.now() + 180 * 86400000).toISOString(), category: "Récompenses", source: "France Football", status: "open" },
+  { id: "00000000-0000-0000-0000-000000000006", title: "Bellingham marque plus de 25 buts en PL ?", description: "Bellingham veut prouver sa forme cette saison.", q_yes: 190, q_no: 310, total_volume: 7200, participants: 168, closes_at: new Date(Date.now() + 60 * 86400000).toISOString(), category: "Performances", source: "BBC Sport", status: "open" },
 ];
 
 const REWARD_STORE = [
@@ -132,8 +132,9 @@ function AuthPage({ onAuth }) {
         if (password.length < 6) { setError("Mot de passe trop court (6 min)"); setLoading(false); return; }
         const data = await authReq("signup", { email, password, data: { username } });
         if (data.user) {
-          setSuccess("Compte créé ! Vérifiez votre email puis connectez-vous.");
-          setMode("login");
+          // FIX Bug 4 : message correct sans mention de vérification email
+          const loginData = await authReq("token?grant_type=password", { email, password });
+          onAuth(loginData.access_token, loginData.user);
         }
       } else {
         const data = await authReq("token?grant_type=password", { email, password });
@@ -163,16 +164,13 @@ function AuthPage({ onAuth }) {
       </div>
 
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ width: 60, height: 60, background: "linear-gradient(135deg,#10b981,#3b82f6)", borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 14px" }}>⚽</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 36, letterSpacing: 3, color: "#fff" }}>MARKET<span style={{ color: "#10b981" }}>BALL</span></div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>Prédictions football — 100% gratuit</div>
         </div>
 
-        {/* Card */}
         <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 22, padding: "32px 28px" }}>
-          {/* Tabs */}
           <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 4, marginBottom: 26 }}>
             {["login", "signup"].map(m => (
               <button key={m} onClick={() => { setMode(m); setError(""); setSuccess(""); }}
@@ -182,7 +180,6 @@ function AuthPage({ onAuth }) {
             ))}
           </div>
 
-          {/* Fields */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mode === "signup" && (
               <div>
@@ -225,7 +222,6 @@ function AuthPage({ onAuth }) {
           )}
         </div>
 
-        {/* Start with 5000 coins notice */}
         <div style={{ marginTop: 16, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
           🎁 Vous démarrez avec <span style={{ color: "#fbbf24", fontWeight: 800 }}>5 000 MarketCoins</span> gratuits !
         </div>
@@ -391,12 +387,15 @@ function MarketsPage({ markets, onBet }) {
   );
 }
 
-function WalletPage({ coins, bets, profile, onSpin, onWatchAd, updateProfile, token }) {
+function WalletPage({ coins, bets, profile, onSpin, onWatchAd }) {
   const [spinning, setSpinning] = useState(false);
   const [spinResult, setSpinResult] = useState(null);
 
-  const canSpin = !profile?.last_spin || Date.now() - new Date(profile.last_spin) > 86400000;
-  const adsToday = profile?.ads_reset_date === new Date().toISOString().split("T")[0] ? (profile?.ads_watched_today || 0) : 0;
+  // FIX Bug 5 : vérification correcte de last_spin
+  const lastSpin = profile?.last_spin ? new Date(profile.last_spin).getTime() : 0;
+  const canSpin = Date.now() - lastSpin > 86400000;
+  const today = new Date().toISOString().split("T")[0];
+  const adsToday = profile?.ads_reset_date === today ? (profile?.ads_watched_today || 0) : 0;
   const canAd = adsToday < 3;
 
   const doSpin = async () => {
@@ -574,7 +573,7 @@ function ProfilePage({ profile, username, onLogout }) {
 // MAIN APP
 // ============================================================
 export default function App() {
-  const [session, setSession] = useState(null); // { token, user }
+  const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [page, setPage] = useState("home");
   const [markets, setMarkets] = useState(SEED_MARKETS);
@@ -582,22 +581,24 @@ export default function App() {
   const [bets, setBets] = useState([]);
   const [betModal, setBetModal] = useState(null);
   const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
-  // Load Supabase data
   const loadMarkets = useCallback(async () => {
     try {
       const data = await req("rumors?select=*&status=eq.open&order=created_at.desc");
       if (data?.length) {
         const mapped = data.map(r => ({
-          id: r.rumor_id, title: r.event_question || `${r.player_name} → ${r.to_club} ?`,
-          description: r.summary_fr || "", q_yes: 100, q_no: 100,
+          id: r.rumor_id,
+          title: r.event_question || `${r.player_name} → ${r.to_club} ?`,
+          description: r.summary_fr || "",
+          q_yes: 100, q_no: 100,
           total_volume: Math.floor(Math.random() * 10000) + 500,
           participants: Math.floor(Math.random() * 200) + 10,
           closes_at: r.expires_at || new Date(Date.now() + 14 * 86400000).toISOString(),
-          category: "Transferts", source: r.source_name || r.source_handle || "Source", status: "open",
+          category: "Transferts",
+          source: r.source_name || r.source_handle || "Source",
+          status: "open",
         }));
         setMarkets([...mapped, ...SEED_MARKETS]);
       }
@@ -608,14 +609,29 @@ export default function App() {
     try {
       const data = await req("leaderboard?select=*&limit=10", { _token: token });
       if (data?.length) setLeaderboard(data);
-      else setLeaderboard([]);
     } catch {}
   }, []);
 
   const loadProfile = useCallback(async (token, userId) => {
     try {
       const data = await req(`profiles?id=eq.${userId}&select=*`, { _token: token });
-      if (data?.[0]) setProfile(data[0]);
+      if (data?.[0]) {
+        setProfile(data[0]);
+      } else {
+        // FIX Bug 2 : si le profil n'existe pas, on le crée manuellement
+        const newProfile = {
+          id: userId,
+          coins: 5000,
+          total_bets: 0,
+          total_wins: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        try {
+          await req("profiles", { method: "POST", _token: token, body: JSON.stringify(newProfile) });
+        } catch {}
+        setProfile(newProfile);
+      }
     } catch {}
   }, []);
 
@@ -626,10 +642,7 @@ export default function App() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    loadMarkets();
-    setLoading(false);
-  }, []);
+  useEffect(() => { loadMarkets(); }, []);
 
   const handleAuth = async (token, user) => {
     setSession({ token, user });
@@ -644,41 +657,71 @@ export default function App() {
         method: "PATCH", _token: token,
         body: JSON.stringify({ coins: newCoins, updated_at: new Date().toISOString() }),
       });
-      setProfile(p => ({ ...p, coins: newCoins }));
-    } catch (e) {
-      setProfile(p => ({ ...p, coins: newCoins }));
-    }
+    } catch {}
+    setProfile(p => ({ ...p, coins: newCoins }));
   };
 
+  // FIX Bug 1 : market_id est maintenant un vrai UUID
   const handleBetConfirm = async (side, amount, cost, gain) => {
     if (!session) return;
     const newCoins = (profile?.coins || 0) - cost;
+    if (newCoins < 0) { showToast("Pas assez de coins !", "error"); return; }
     try {
       await req("user_bets", {
         method: "POST", _token: session.token,
-        body: JSON.stringify({ user_id: session.user.id, market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }),
+        body: JSON.stringify({
+          user_id: session.user.id,
+          market_id: betModal.id,
+          market_title: betModal.title,
+          side,
+          amount,
+          cost,
+          potential_gain: gain,
+          status: "pending",
+        }),
       });
       await updateCoins(newCoins, session.token, session.user.id);
       setBets(prev => [{ market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }, ...prev]);
-      setMarkets(prev => prev.map(m => m.id === betModal.id ? { ...m, q_yes: side === "yes" ? m.q_yes + amount : m.q_yes, q_no: side === "no" ? m.q_no + amount : m.q_no, total_volume: m.total_volume + cost, participants: m.participants + 1 } : m));
+      setMarkets(prev => prev.map(m => m.id === betModal.id ? {
+        ...m,
+        q_yes: side === "yes" ? m.q_yes + amount : m.q_yes,
+        q_no: side === "no" ? m.q_no + amount : m.q_no,
+        total_volume: m.total_volume + cost,
+        participants: m.participants + 1,
+      } : m));
       setBetModal(null);
       showToast(`✅ Prédiction placée ! Gain potentiel : +${gain.toLocaleString()} 🪙`);
     } catch (e) {
-      showToast("Erreur lors du pari", "error");
+      showToast(`Erreur : ${e.message}`, "error");
     }
   };
 
+  // FIX Bug 5 : sauvegarde last_spin dans Supabase
   const handleSpin = async (reward) => {
     if (!session) return;
     const newCoins = (profile?.coins || 0) + reward;
-    await updateCoins(newCoins, session.token, session.user.id);
+    try {
+      await req(`profiles?id=eq.${session.user.id}`, {
+        method: "PATCH", _token: session.token,
+        body: JSON.stringify({ coins: newCoins, last_spin: new Date().toISOString(), updated_at: new Date().toISOString() }),
+      });
+    } catch {}
+    setProfile(p => ({ ...p, coins: newCoins, last_spin: new Date().toISOString() }));
     showToast(`🎡 +${reward} MarketCoins gagnés !`);
   };
 
   const handleWatchAd = async () => {
     if (!session) return;
     const newCoins = (profile?.coins || 0) + 20;
-    await updateCoins(newCoins, session.token, session.user.id);
+    const today = new Date().toISOString().split("T")[0];
+    const adsToday = profile?.ads_reset_date === today ? (profile?.ads_watched_today || 0) + 1 : 1;
+    try {
+      await req(`profiles?id=eq.${session.user.id}`, {
+        method: "PATCH", _token: session.token,
+        body: JSON.stringify({ coins: newCoins, ads_watched_today: adsToday, ads_reset_date: today, updated_at: new Date().toISOString() }),
+      });
+    } catch {}
+    setProfile(p => ({ ...p, coins: newCoins, ads_watched_today: adsToday, ads_reset_date: today }));
     showToast("📺 +20 MarketCoins gagnés !");
   };
 
@@ -695,7 +738,7 @@ export default function App() {
   };
 
   const coins = profile?.coins ?? 5000;
-  const username = profile?.username || session?.user?.email?.split("@")[0] || "Joueur";
+  const username = profile?.username || session?.user?.user_metadata?.username || session?.user?.email?.split("@")[0] || "Joueur";
 
   const NAV = [
     { id: "home", icon: "⚡", label: "Accueil" },
@@ -743,7 +786,7 @@ export default function App() {
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 20px 90px", position: "relative", zIndex: 1 }}>
         {page === "home" && <HomePage markets={markets} coins={coins} username={username} onBet={setBetModal} onNavigate={setPage} />}
         {page === "markets" && <MarketsPage markets={markets} onBet={setBetModal} />}
-        {page === "wallet" && <WalletPage coins={coins} bets={bets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} token={session?.token} />}
+        {page === "wallet" && <WalletPage coins={coins} bets={bets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} />}
         {page === "leaderboard" && <LeaderboardPage leaderboard={leaderboard.length ? leaderboard : [{ rank: 1, username, coins, total_wins: profile?.total_wins || 0, total_bets: profile?.total_bets || 0, win_rate: 0 }]} username={username} />}
         {page === "store" && <StorePage coins={coins} onRedeem={handleRedeem} />}
         {page === "profile" && <ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
