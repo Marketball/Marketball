@@ -785,7 +785,7 @@ export default function App() {
             const mapped = data.matches
               .filter(m => {
                 const d = new Date(m.utcDate);
-                return d >= new Date(now - 3 * 86400000) && d <= new Date(now.getTime() + 7 * 86400000);
+                return d >= new Date(now - 3 * 86400000) && d <= new Date(now.getTime() + 30 * 86400000);
               })
               .map(m => ({
                 id: m.id.toString(),
