@@ -5,10 +5,6 @@ import { useState, useEffect, useCallback } from "react";
 // ============================================================
 const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK";
-const FOOTBALL_API_KEY = "39f143541b354376af79527e278c3149";
-const FOOTBALL_API_URL = "https://api.football-data.org/v4";
-
-const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1"];
 
 const req = async (path, opts = {}) => {
   const headers = {
@@ -37,10 +33,9 @@ const authReq = async (path, body) => {
   return data;
 };
 
-const footballReq = async (path) => {
-  const res = await fetch(`${FOOTBALL_API_URL}${path}`, {
-    headers: { "X-Auth-Token": FOOTBALL_API_KEY },
-  });
+// FIX CORS : appel via proxy Vercel au lieu de l'API directement
+const footballReq = async (competition) => {
+  const res = await fetch(`/api/matches?competition=${competition}`);
   if (!res.ok) throw new Error("Erreur API football");
   return res.json();
 };
@@ -59,27 +54,49 @@ const AMM = {
 };
 
 // ============================================================
-// SEED DATA
+// SEED DATA — cotes sauvegardées dans localStorage pour persister
 // ============================================================
-const SEED_MARKETS = [
-  { id: "00000000-0000-0000-0000-000000000001", title: "Mbappé rejoint Arsenal avant le 31 août ?", description: "Real Madrid envisagerait de vendre Mbappé.", q_yes: 320, q_no: 180, total_volume: 8400, participants: 142, closes_at: new Date(Date.now() + 12 * 86400000).toISOString(), category: "Transferts", source: "Fabrizio Romano", status: "open" },
-  { id: "00000000-0000-0000-0000-000000000002", title: "Barcelona signe Lamine Yamal pro avant janvier ?", description: "Le prodige barcelonais est en négociation.", q_yes: 480, q_no: 120, total_volume: 12600, participants: 287, closes_at: new Date(Date.now() + 5 * 86400000).toISOString(), category: "Contrats", source: "Marca", status: "open" },
-  { id: "00000000-0000-0000-0000-000000000003", title: "PSG remporte la Champions League cette saison ?", description: "PSG favori après un début de saison exceptionnel.", q_yes: 200, q_no: 400, total_volume: 31200, participants: 891, closes_at: new Date(Date.now() + 45 * 86400000).toISOString(), category: "Compétitions", source: "L'Équipe", status: "open" },
-  { id: "00000000-0000-0000-0000-000000000004", title: "Erling Haaland quitte City cet été ?", description: "Real Madrid et Bayern auraient contacté Haaland.", q_yes: 150, q_no: 350, total_volume: 9800, participants: 203, closes_at: new Date(Date.now() + 28 * 86400000).toISOString(), category: "Transferts", source: "Sky Sports", status: "open" },
-  { id: "00000000-0000-0000-0000-000000000005", title: "Vinicius Jr. Ballon d'Or 2025 ?", description: "Après son sacre manqué de 2024.", q_yes: 260, q_no: 240, total_volume: 19400, participants: 534, closes_at: new Date(Date.now() + 180 * 86400000).toISOString(), category: "Récompenses", source: "France Football", status: "open" },
-  { id: "00000000-0000-0000-0000-000000000006", title: "Bellingham marque plus de 25 buts en PL ?", description: "Bellingham veut prouver sa forme.", q_yes: 190, q_no: 310, total_volume: 7200, participants: 168, closes_at: new Date(Date.now() + 60 * 86400000).toISOString(), category: "Performances", source: "BBC Sport", status: "open" },
+const BASE_MARKETS = [
+  { id: "00000000-0000-0000-0000-000000000001", title: "Mbappé rejoint Arsenal avant le 31 août ?", q_yes: 320, q_no: 180, total_volume: 8400, participants: 142, closes_at: new Date(Date.now() + 12 * 86400000).toISOString(), category: "Transferts", source: "Fabrizio Romano" },
+  { id: "00000000-0000-0000-0000-000000000002", title: "Barcelona signe Lamine Yamal pro avant janvier ?", q_yes: 480, q_no: 120, total_volume: 12600, participants: 287, closes_at: new Date(Date.now() + 5 * 86400000).toISOString(), category: "Contrats", source: "Marca" },
+  { id: "00000000-0000-0000-0000-000000000003", title: "PSG remporte la Champions League cette saison ?", q_yes: 200, q_no: 400, total_volume: 31200, participants: 891, closes_at: new Date(Date.now() + 45 * 86400000).toISOString(), category: "Compétitions", source: "L'Équipe" },
+  { id: "00000000-0000-0000-0000-000000000004", title: "Erling Haaland quitte City cet été ?", q_yes: 150, q_no: 350, total_volume: 9800, participants: 203, closes_at: new Date(Date.now() + 28 * 86400000).toISOString(), category: "Transferts", source: "Sky Sports" },
+  { id: "00000000-0000-0000-0000-000000000005", title: "Vinicius Jr. Ballon d'Or 2025 ?", q_yes: 260, q_no: 240, total_volume: 19400, participants: 534, closes_at: new Date(Date.now() + 180 * 86400000).toISOString(), category: "Récompenses", source: "France Football" },
+  { id: "00000000-0000-0000-0000-000000000006", title: "Bellingham marque plus de 25 buts en PL ?", q_yes: 190, q_no: 310, total_volume: 7200, participants: 168, closes_at: new Date(Date.now() + 60 * 86400000).toISOString(), category: "Performances", source: "BBC Sport" },
 ];
+
+// FIX cotes : on charge les cotes depuis Supabase (table market_odds) ou localStorage
+const loadSavedOdds = () => {
+  try {
+    const saved = localStorage.getItem("marketball_odds");
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+};
+
+const saveOdds = (markets) => {
+  try {
+    const odds = {};
+    markets.forEach(m => { odds[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; });
+    localStorage.setItem("marketball_odds", JSON.stringify(odds));
+  } catch {}
+};
+
+const getSeedMarkets = () => {
+  const saved = loadSavedOdds();
+  return BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" }));
+};
 
 const REWARD_STORE = [
   { id: "r1", name: "Carte cadeau Amazon", value: "10€", cost: 5000, icon: "🎁", stock: 12 },
   { id: "r2", name: "Maillot signé", value: "Replica", cost: 12000, icon: "👕", stock: 3 },
   { id: "r3", name: "Abonnement Canal+", value: "1 mois", cost: 8000, icon: "📺", stock: 20 },
   { id: "r4", name: "Pack FIFA Ultimate", value: "10 packs", cost: 3000, icon: "🎮", stock: 50 },
-  { id: "r5", name: "Livre tactique", value: "Édition luxe", cost: 2000, icon: "📖", stock: 8 },
-  { id: "r6", name: "Badge Oracle", value: "Exclusif", cost: 500, icon: "⚡", stock: 999 },
+  { id: "r5", name: "Livre tactique", value: "Edition luxe", cost: 2000, icon: "📖", stock: 8 },
+  { id: "r6", name: "Badge Oracle", value: "Exclusif", cost: 500, icon: "⭐", stock: 999 },
 ];
 
 const SPIN_REWARDS = [10, 20, 10, 50, 20, 100, 10, 200];
+const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1"];
 
 // ============================================================
 // HELPERS
@@ -88,24 +105,22 @@ const fmt = (n) => (n ?? 0).toLocaleString("fr-FR");
 const fmtPct = (n) => `${Math.round(n * 100)}%`;
 const timeLeft = (date) => {
   const diff = new Date(date) - Date.now();
-  if (diff < 0) return "Terminé";
+  if (diff < 0) return "Termine";
   const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000);
   return d > 0 ? `${d}j ${h}h` : `${h}h`;
 };
-const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Compétitions": "#f59e0b", "Récompenses": "#ec4899", "Performances": "#10b981" })[c] || "#6b7280";
-const compLabel = (c) => ({ "PL": "Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "FL1": "Ligue 1 🇫🇷", "CL": "Champions League ⭐", "PD": "La Liga 🇪🇸", "BL1": "Bundesliga 🇩🇪" })[c] || c;
+const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Competitions": "#f59e0b", "Recompenses": "#ec4899", "Performances": "#10b981" })[c] || "#6b7280";
+const compLabel = (c) => ({ "PL": "Premier League", "FL1": "Ligue 1", "CL": "Champ. League", "PD": "La Liga", "BL1": "Bundesliga" })[c] || c;
 const compColor = (c) => ({ "PL": "#3b82f6", "FL1": "#ef4444", "CL": "#f59e0b", "PD": "#f97316", "BL1": "#6b7280" })[c] || "#6b7280";
-const formatMatchDate = (dateStr) => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-};
+const compFlag = (c) => ({ "PL": "🏴", "FL1": "🇫🇷", "CL": "🏆", "PD": "🇪🇸", "BL1": "🇩🇪" })[c] || "⚽";
+const formatMatchDate = (dateStr) => new Date(dateStr).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
 // UI ATOMS
 // ============================================================
 function CoinBadge({ amount, size = "sm" }) {
   const s = size === "lg" ? { fontSize: 24, padding: "10px 18px", borderRadius: 14 } : { fontSize: 13, padding: "4px 10px", borderRadius: 8 };
-  return <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontWeight: 800, ...s }}>🪙 {fmt(amount)}</div>;
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontWeight: 800, ...s }}>MC {fmt(amount)}</div>;
 }
 
 function Toast({ msg, type, onDone }) {
@@ -165,7 +180,7 @@ function AuthPage({ onAuth }) {
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ width: 60, height: 60, background: "linear-gradient(135deg,#10b981,#3b82f6)", borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 14px" }}>⚽</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 36, letterSpacing: 3, color: "#fff" }}>MARKET<span style={{ color: "#10b981" }}>BALL</span></div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>Prédictions football — 100% gratuit</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>Predictions football — 100% gratuit</div>
         </div>
         <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 22, padding: "32px 28px" }}>
           <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 4, marginBottom: 26 }}>
@@ -179,26 +194,26 @@ function AuthPage({ onAuth }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mode === "signup" && (
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>PSEUDO</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 6 }}>PSEUDO</label>
                 <input value={username} onChange={e => setUsername(e.target.value)} placeholder="MonPseudo" style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
             )}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>EMAIL</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 6 }}>EMAIL</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>MOT DE PASSE</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 6 }}>MOT DE PASSE</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && submit()} style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
           </div>
           {error && <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 9, color: "#ef4444", fontSize: 13 }}>⚠️ {error}</div>}
           <button onClick={submit} disabled={loading} style={{ width: "100%", marginTop: 20, padding: "13px 0", borderRadius: 11, border: "none", background: loading ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#10b981,#059669)", color: loading ? "rgba(255,255,255,0.3)" : "#fff", fontWeight: 900, fontSize: 15, cursor: loading ? "not-allowed" : "pointer" }}>
-            {loading ? "..." : mode === "login" ? "SE CONNECTER" : "CRÉER MON COMPTE"}
+            {loading ? "..." : mode === "login" ? "SE CONNECTER" : "CREER MON COMPTE"}
           </button>
         </div>
         <div style={{ marginTop: 16, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
-          🎁 Vous démarrez avec <span style={{ color: "#fbbf24", fontWeight: 800 }}>5 000 MarketCoins</span> gratuits !
+          🎁 Vous demarrez avec <span style={{ color: "#fbbf24", fontWeight: 800 }}>5 000 MarketCoins</span> gratuits !
         </div>
       </div>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;800;900&display=swap'); *{box-sizing:border-box;margin:0;padding:0;} input::placeholder{color:rgba(255,255,255,0.2);} button{font-family:inherit;}`}</style>
@@ -233,11 +248,11 @@ function MarketCard({ market, onBet }) {
       </div>
       <ProbBar qYes={market.q_yes} qNo={market.q_no} />
       <div style={{ display: "flex", gap: 20, margin: "12px 0 14px" }}>
-        <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>VOLUME</div><div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>🪙 {fmt(market.total_volume)}</div></div>
+        <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>VOLUME</div><div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>MC {fmt(market.total_volume)}</div></div>
         <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>PARTICIPANTS</div><div style={{ fontSize: 13, fontWeight: 700 }}>{fmt(market.participants)}</div></div>
       </div>
       <button onClick={() => onBet(market)} style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: hover ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-        PRÉDIRE →
+        PREDIRE →
       </button>
     </div>
   );
@@ -251,38 +266,29 @@ function MatchCard({ match, onBet }) {
   const cc = compColor(match.competition);
   const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
   const isFinished = match.status === "FINISHED";
-
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ background: hover ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.018)", border: `1px solid ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 18, padding: "18px 20px", transition: "all 0.2s", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${cc},transparent)` }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: cc, background: `${cc}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${cc}30` }}>{compLabel(match.competition)}</span>
-        {isLive ? (
-          <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.12)", padding: "2px 8px", borderRadius: 20, border: "1px solid rgba(239,68,68,0.3)" }}>🔴 EN DIRECT</span>
-        ) : isFinished ? (
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Terminé</span>
-        ) : (
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{formatMatchDate(match.match_date)}</span>
-        )}
+        <span style={{ fontSize: 10, fontWeight: 800, color: cc, background: `${cc}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${cc}30` }}>{compFlag(match.competition)} {compLabel(match.competition)}</span>
+        {isLive ? <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444" }}>EN DIRECT</span>
+          : isFinished ? <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Termine</span>
+          : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{formatMatchDate(match.match_date)}</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ flex: 1, textAlign: "center" }}>
-          {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 40, height: 40, objectFit: "contain", marginBottom: 6 }} onError={e => e.target.style.display = "none"} />}
-          <div style={{ fontWeight: 800, fontSize: 13, color: "#fff", lineHeight: 1.3 }}>{match.home_team}</div>
+          {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 6, display: "block", margin: "0 auto 6px" }} onError={e => e.target.style.display = "none"} />}
+          <div style={{ fontWeight: 800, fontSize: 12, color: "#fff" }}>{match.home_team}</div>
         </div>
-        <div style={{ textAlign: "center", padding: "0 16px" }}>
-          {(isLive || isFinished) ? (
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 32, color: "#fff", letterSpacing: 2 }}>
-              {match.home_score ?? 0} <span style={{ color: "rgba(255,255,255,0.3)" }}>-</span> {match.away_score ?? 0}
-            </div>
-          ) : (
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: "rgba(255,255,255,0.4)", letterSpacing: 3 }}>VS</div>
-          )}
+        <div style={{ textAlign: "center", padding: "0 12px" }}>
+          {(isLive || isFinished)
+            ? <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 30, color: "#fff" }}>{match.home_score ?? 0} - {match.away_score ?? 0}</div>
+            : <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: "rgba(255,255,255,0.4)" }}>VS</div>}
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
-          {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 40, height: 40, objectFit: "contain", marginBottom: 6 }} onError={e => e.target.style.display = "none"} />}
-          <div style={{ fontWeight: 800, fontSize: 13, color: "#fff", lineHeight: 1.3 }}>{match.away_team}</div>
+          {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 6, display: "block", margin: "0 auto 6px" }} onError={e => e.target.style.display = "none"} />}
+          <div style={{ fontWeight: 800, fontSize: 12, color: "#fff" }}>{match.away_team}</div>
         </div>
       </div>
       {!isFinished && (
@@ -303,56 +309,45 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const [amount, setAmount] = useState(100);
 
   const BET_TYPES = [
-    { id: "winner", label: "🏆 Vainqueur", desc: "Qui va gagner ?", mult: 2 },
-    { id: "exact_score", label: "🎯 Score exact", desc: "Quel sera le score ?", mult: 8 },
-    { id: "first_scorer", label: "⚽ 1er buteur", desc: "Qui marquera en premier ?", mult: 5 },
-    { id: "over_under", label: "📊 Plus/Moins", desc: "Plus ou moins de buts ?", mult: 1.8 },
+    { id: "winner", label: "Vainqueur", desc: "Qui va gagner ?", mult: 2 },
+    { id: "exact_score", label: "Score exact", desc: "Quel sera le score ?", mult: 8 },
+    { id: "first_scorer", label: "1er buteur", desc: "Qui marquera en premier ?", mult: 5 },
+    { id: "over_under", label: "Plus/Moins", desc: "Plus ou moins de buts ?", mult: 1.8 },
   ];
 
   const currentType = BET_TYPES.find(t => t.id === betType);
   const gain = Math.round(amount * currentType.mult);
   const canBet = prediction && amount >= 10 && amount <= coins;
 
-  const renderPredictionInputs = () => {
-    if (betType === "winner") {
-      return (
-        <div style={{ display: "flex", gap: 8 }}>
-          {[match.home_team, "Nul", match.away_team].map(opt => (
-            <button key={opt} onClick={() => setPrediction(opt)}
-              style={{ flex: 1, padding: "10px 6px", borderRadius: 10, border: `2px solid ${prediction === opt ? "#10b981" : "rgba(255,255,255,0.08)"}`, background: prediction === opt ? "rgba(16,185,129,0.12)" : "transparent", color: prediction === opt ? "#10b981" : "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      );
-    }
-    if (betType === "exact_score") {
-      return (
-        <div>
-          <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Ex: 2-1"
-            style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 800, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 6, textAlign: "center" }}>Format : buts domicile - buts extérieur</div>
-        </div>
-      );
-    }
-    if (betType === "first_scorer") {
-      return (
-        <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Nom du joueur (ex: Salah)"
-          style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, outline: "none", boxSizing: "border-box" }} />
-      );
-    }
-    if (betType === "over_under") {
-      return (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-          {["Plus de 1.5 buts", "Plus de 2.5 buts", "Moins de 2.5 buts", "Moins de 3.5 buts"].map(opt => (
-            <button key={opt} onClick={() => setPrediction(opt)}
-              style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 10, border: `2px solid ${prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.08)"}`, background: prediction === opt ? "rgba(245,158,11,0.12)" : "transparent", color: prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      );
-    }
+  const renderInputs = () => {
+    if (betType === "winner") return (
+      <div style={{ display: "flex", gap: 8 }}>
+        {[match.home_team, "Nul", match.away_team].map(opt => (
+          <button key={opt} onClick={() => setPrediction(opt)}
+            style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: `2px solid ${prediction === opt ? "#10b981" : "rgba(255,255,255,0.08)"}`, background: prediction === opt ? "rgba(16,185,129,0.12)" : "transparent", color: prediction === opt ? "#10b981" : "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    );
+    if (betType === "exact_score") return (
+      <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Ex: 2-1"
+        style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 800, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+    );
+    if (betType === "first_scorer") return (
+      <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Nom du joueur (ex: Salah)"
+        style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+    );
+    if (betType === "over_under") return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+        {["Plus de 1.5 buts", "Plus de 2.5 buts", "Moins de 2.5 buts", "Moins de 3.5 buts"].map(opt => (
+          <button key={opt} onClick={() => setPrediction(opt)}
+            style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 10, border: `2px solid ${prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.08)"}`, background: prediction === opt ? "rgba(245,158,11,0.12)" : "transparent", color: prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -360,16 +355,15 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
       <div onClick={e => e.stopPropagation()} style={{ background: "#0f1623", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: 24, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 40px 80px rgba(0,0,0,0.6)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 16px" }}>
           <div style={{ textAlign: "center", flex: 1 }}>
-            {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", marginBottom: 4 }} onError={e => e.target.style.display = "none"} />}
+            {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", display: "block", margin: "0 auto 4px" }} onError={e => e.target.style.display = "none"} />}
             <div style={{ fontSize: 12, fontWeight: 800 }}>{match.home_team}</div>
           </div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: "rgba(255,255,255,0.4)", padding: "0 10px" }}>VS</div>
           <div style={{ textAlign: "center", flex: 1 }}>
-            {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", marginBottom: 4 }} onError={e => e.target.style.display = "none"} />}
+            {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", display: "block", margin: "0 auto 4px" }} onError={e => e.target.style.display = "none"} />}
             <div style={{ fontSize: 12, fontWeight: 800 }}>{match.away_team}</div>
           </div>
         </div>
-
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>TYPE DE PARI</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 18 }}>
           {BET_TYPES.map(t => (
@@ -380,17 +374,14 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
             </button>
           ))}
         </div>
-
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>TA PRÉDICTION</div>
-        <div style={{ marginBottom: 18 }}>{renderPredictionInputs()}</div>
-
+        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>TA PREDICTION</div>
+        <div style={{ marginBottom: 18 }}>{renderInputs()}</div>
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>MISE (MIN. 10 COINS)</div>
         <input type="number" value={amount} min={10} max={10000} onChange={e => setAmount(Math.max(10, +e.target.value || 10))}
           style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 20, fontWeight: 800, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
         <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
           {[50, 100, 200, 500].map(v => <button key={v} onClick={() => setAmount(v)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: amount === v ? "rgba(255,255,255,0.1)" : "transparent", color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{v}</button>)}
         </div>
-
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "13px 15px", marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Mise</span><CoinBadge amount={amount} />
@@ -401,13 +392,12 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span>
-            <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>🪙 +{fmt(gain)}</span>
+            <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>MC +{fmt(gain)}</span>
           </div>
         </div>
-
         <button onClick={() => canBet && onConfirm(match, betType, prediction, amount, gain)} disabled={!canBet}
           style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: canBet ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,0.05)", color: canBet ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 900, fontSize: 15, cursor: canBet ? "pointer" : "not-allowed" }}>
-          {!prediction ? "Choisir une prédiction" : !canBet && coins < amount ? "Pas assez de coins" : "CONFIRMER →"}
+          {!prediction ? "Choisir une prediction" : !canBet && coins < amount ? "Pas assez de coins" : "CONFIRMER →"}
         </button>
       </div>
     </div>
@@ -428,18 +418,18 @@ function BetModal({ market, onClose, onConfirm, coins }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(12px)" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#0f1623", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: 28, width: 380, maxWidth: "95vw", boxShadow: "0 40px 80px rgba(0,0,0,0.6)" }}>
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 1, marginBottom: 4 }}>PLACER UNE PRÉDICTION</div>
+        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 1, marginBottom: 4 }}>PLACER UNE PREDICTION</div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 20, lineHeight: 1.4 }}>{market.title}</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
           {["yes", "no"].map(s => (
             <button key={s} onClick={() => setSide(s)}
               style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: `2px solid ${side === s ? (s === "yes" ? "#10b981" : "#ef4444") : "rgba(255,255,255,0.07)"}`, background: side === s ? (s === "yes" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)") : "transparent", color: side === s ? (s === "yes" ? "#10b981" : "#ef4444") : "rgba(255,255,255,0.3)", fontWeight: 900, fontSize: 14, cursor: "pointer" }}>
-              {s === "yes" ? `✓ OUI ${fmtPct(pYes)}` : `✗ NON ${fmtPct(1 - pYes)}`}
+              {s === "yes" ? `OUI ${fmtPct(pYes)}` : `NON ${fmtPct(1 - pYes)}`}
             </button>
           ))}
         </div>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 7, fontWeight: 700 }}>PARTS À ACHETER</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 7, fontWeight: 700 }}>PARTS A ACHETER</div>
           <input type="number" value={amount} min={1} max={1000} onChange={e => setAmount(Math.max(1, Math.min(1000, +e.target.value || 1)))}
             style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 20, fontWeight: 800, outline: "none", boxSizing: "border-box" }} />
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
@@ -448,11 +438,11 @@ function BetModal({ market, onClose, onConfirm, coins }) {
         </div>
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "13px 15px", marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Coût</span><CoinBadge amount={cost} />
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Cout</span><CoinBadge amount={cost} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span>
-            <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>🪙 +{fmt(gain)}</span>
+            <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>MC +{fmt(gain)}</span>
           </div>
         </div>
         <button onClick={() => canBet && onConfirm(side, amount, cost, gain)} disabled={!canBet}
@@ -468,44 +458,38 @@ function BetModal({ market, onClose, onConfirm, coins }) {
 // PAGES
 // ============================================================
 function HomePage({ markets, coins, username, onBet, onNavigate, matches, onMatchBet }) {
-  const upcomingMatches = matches.filter(m => m.status !== "FINISHED").slice(0, 3);
+  const upcoming = matches.filter(m => m.status !== "FINISHED").slice(0, 3);
   return (
     <div>
       <div style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.04))", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 22, padding: "32px 28px", marginBottom: 24, position: "relative", overflow: "hidden" }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: "#10b981", letterSpacing: 3, marginBottom: 10 }}>BIENVENUE, {username?.toUpperCase()}</div>
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 38, lineHeight: 1.05, color: "#fff", marginBottom: 8 }}>PRÉDICTE.<br />GAGNE.<br />DOMINE.</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 22 }}>Utilise tes MarketCoins pour prédire les transferts, résultats et rumeurs du football mondial.</div>
+        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 38, lineHeight: 1.05, color: "#fff", marginBottom: 8 }}>PREDICTE.<br />GAGNE.<br />DOMINE.</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 22 }}>Utilise tes MarketCoins pour predire les transferts, resultats et rumeurs du football mondial.</div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: 10, padding: "10px 16px" }}>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>TON SOLDE</div>
             <CoinBadge amount={coins} size="lg" />
           </div>
           <div style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.14)", borderRadius: 10, padding: "10px 16px" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>MARCHÉS ACTIFS</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>MARCHES ACTIFS</div>
             <div style={{ fontWeight: 900, fontSize: 22, color: "#3b82f6" }}>{markets.length}</div>
-          </div>
-          <div style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.14)", borderRadius: 10, padding: "10px 16px" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>MATCHS À VENIR</div>
-            <div style={{ fontWeight: 900, fontSize: 22, color: "#10b981" }}>{upcomingMatches.length}</div>
           </div>
         </div>
       </div>
-
-      {upcomingMatches.length > 0 && (
+      {upcoming.length > 0 && (
         <>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 14 }}>MATCHS À VENIR</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 14 }}>MATCHS A VENIR</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11, marginBottom: 14 }}>
-            {upcomingMatches.map(m => <MatchCard key={m.id} match={m} onBet={onMatchBet} />)}
+            {upcoming.map(m => <MatchCard key={m.id} match={m} onBet={onMatchBet} />)}
           </div>
           <button onClick={() => onNavigate("matches")} style={{ width: "100%", marginBottom: 26, padding: "11px 0", borderRadius: 11, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.4)", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Voir tous les matchs →</button>
         </>
       )}
-
-      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 14 }}>MARCHÉS EN VEDETTE</div>
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 14 }}>MARCHES EN VEDETTE</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 11 }}>
         {markets.slice(0, 4).map(m => <MarketCard key={m.id} market={m} onBet={onBet} />)}
       </div>
-      <button onClick={() => onNavigate("markets")} style={{ width: "100%", marginTop: 14, padding: "11px 0", borderRadius: 11, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.4)", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Voir tous les marchés →</button>
+      <button onClick={() => onNavigate("markets")} style={{ width: "100%", marginTop: 14, padding: "11px 0", borderRadius: 11, border: "1px solid rgba(255,255,255,0.07)", background: "transparent", color: "rgba(255,255,255,0.4)", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Voir tous les marches →</button>
     </div>
   );
 }
@@ -516,19 +500,18 @@ function MatchesPage({ matches, onBet, loading }) {
   const filtered = comp === "Tous" ? matches : matches.filter(m => m.competition === comp);
   const upcoming = filtered.filter(m => m.status !== "FINISHED");
   const finished = filtered.filter(m => m.status === "FINISHED");
-
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>MATCHS</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>Paris sur les vrais matchs en temps réel</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>Paris sur les vrais matchs en temps reel</div>
       <div style={{ display: "flex", gap: 7, marginBottom: 22, flexWrap: "wrap" }}>
         {allComps.map(c => (
           <button key={c} onClick={() => setComp(c)} style={{ padding: "6px 13px", borderRadius: 20, border: `1px solid ${comp === c ? compColor(c) : "rgba(255,255,255,0.07)"}`, background: comp === c ? `${compColor(c)}18` : "transparent", color: comp === c ? compColor(c) : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-            {c === "Tous" ? "Tous" : compLabel(c)}
+            {c === "Tous" ? "Tous" : `${compFlag(c)} ${compLabel(c)}`}
           </button>
         ))}
       </div>
-      {loading && <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" }}>Chargement des matchs...</div>}
+      {loading && <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" }}>⚽ Chargement des matchs...</div>}
       {!loading && upcoming.length === 0 && finished.length === 0 && (
         <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>⚽</div>
@@ -537,7 +520,7 @@ function MatchesPage({ matches, onBet, loading }) {
       )}
       {upcoming.length > 0 && (
         <>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>À VENIR & EN DIRECT</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>A VENIR ET EN DIRECT</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11, marginBottom: 24 }}>
             {upcoming.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}
           </div>
@@ -545,7 +528,7 @@ function MatchesPage({ matches, onBet, loading }) {
       )}
       {finished.length > 0 && (
         <>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "rgba(255,255,255,0.4)" }}>TERMINÉS</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "rgba(255,255,255,0.4)" }}>TERMINES</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11 }}>
             {finished.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}
           </div>
@@ -561,8 +544,8 @@ function MarketsPage({ markets, onBet }) {
   const filtered = cat === "Tous" ? markets : markets.filter(m => m.category === cat);
   return (
     <div>
-      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>MARCHÉS DE PRÉDICTION</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>{markets.length} marchés · AMM en temps réel</div>
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>MARCHES DE PREDICTION</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>{markets.length} marches · AMM en temps reel</div>
       <div style={{ display: "flex", gap: 7, marginBottom: 22, flexWrap: "wrap" }}>
         {cats.map(c => <button key={c} onClick={() => setCat(c)} style={{ padding: "6px 13px", borderRadius: 20, border: `1px solid ${cat === c ? catColor(c) : "rgba(255,255,255,0.07)"}`, background: cat === c ? `${catColor(c)}18` : "transparent", color: cat === c ? catColor(c) : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{c}</button>)}
       </div>
@@ -598,29 +581,29 @@ function WalletPage({ coins, bets, matchBets, profile, onSpin, onWatchAd }) {
       <div style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.07),rgba(251,191,36,0.02))", border: "1px solid rgba(251,191,36,0.14)", borderRadius: 20, padding: "28px", marginBottom: 18, textAlign: "center" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>SOLDE MARKETCOINS</div>
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 56, color: "#fbbf24", marginBottom: 4 }}>{fmt(coins)}</div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>Aucune valeur monétaire · Non convertibles</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>Aucune valeur monetaire · Non convertibles</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginBottom: 24 }}>
         <div style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 15, padding: "20px", textAlign: "center" }}>
           <div style={{ fontSize: 34, marginBottom: 7, display: "inline-block", transition: "transform 1.5s", transform: spinning ? "rotate(720deg)" : "none" }}>🎡</div>
           <div style={{ fontWeight: 800, marginBottom: 3 }}>Roue quotidienne</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>Jusqu'à 200 coins</div>
-          {spinResult && <div style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", marginBottom: 8 }}>+{spinResult} 🪙</div>}
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>Jusqu'a 200 coins</div>
+          {spinResult && <div style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", marginBottom: 8 }}>+{spinResult} MC</div>}
           <button onClick={doSpin} disabled={!canSpin || spinning}
             style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: canSpin && !spinning ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.05)", color: canSpin && !spinning ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canSpin && !spinning ? "pointer" : "not-allowed", fontSize: 13 }}>
-            {spinning ? "..." : canSpin ? "TOURNER" : "Demain ✓"}
+            {spinning ? "..." : canSpin ? "TOURNER" : "Demain"}
           </button>
         </div>
         <div style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 15, padding: "20px", textAlign: "center" }}>
           <div style={{ fontSize: 34, marginBottom: 7 }}>📺</div>
-          <div style={{ fontWeight: 800, marginBottom: 3 }}>Pub récompensée</div>
+          <div style={{ fontWeight: 800, marginBottom: 3 }}>Pub recompensee</div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>+20 coins · {adsToday}/3 aujourd'hui</div>
           <div style={{ height: 4, background: "rgba(59,130,246,0.15)", borderRadius: 99, marginBottom: 12, overflow: "hidden" }}>
             <div style={{ width: `${(adsToday / 3) * 100}%`, height: "100%", background: "#3b82f6", borderRadius: 99 }} />
           </div>
           <button onClick={() => canAd && onWatchAd()} disabled={!canAd}
             style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: canAd ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "rgba(255,255,255,0.05)", color: canAd ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canAd ? "pointer" : "not-allowed", fontSize: 13 }}>
-            {canAd ? "REGARDER" : "Limite ✓"}
+            {canAd ? "REGARDER" : "Limite"}
           </button>
         </div>
       </div>
@@ -631,11 +614,11 @@ function WalletPage({ coins, bets, matchBets, profile, onSpin, onWatchAd }) {
             <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "13px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{b.match_title}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}><span style={{ color: "#10b981", fontWeight: 700 }}>{b.prediction}</span>{" · "}{fmt(b.cost)} coins</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}><span style={{ color: "#10b981", fontWeight: 700 }}>{b.prediction}</span>{" · "}{fmt(b.cost)} MC</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "rgba(251,191,36,0.12)", color: "#fbbf24", fontWeight: 700, marginBottom: 3 }}>⏳ EN COURS</div>
-                <div style={{ fontWeight: 900, color: "#10b981", fontSize: 14 }}>+{fmt(b.potential_gain)} 🪙</div>
+                <div style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "rgba(251,191,36,0.12)", color: "#fbbf24", fontWeight: 700, marginBottom: 3 }}>EN COURS</div>
+                <div style={{ fontWeight: 900, color: "#10b981", fontSize: 14 }}>+{fmt(b.potential_gain)} MC</div>
               </div>
             </div>
           ))}
@@ -643,16 +626,16 @@ function WalletPage({ coins, bets, matchBets, profile, onSpin, onWatchAd }) {
       )}
       {bets.length > 0 && (
         <>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 12, marginTop: matchBets.length > 0 ? 16 : 0 }}>MES PRÉDICTIONS RUMEURS</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 12, marginTop: matchBets.length > 0 ? 16 : 0 }}>MES PREDICTIONS RUMEURS</div>
           {bets.map((b, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "13px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{b.market_title}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}><span style={{ color: b.side === "yes" ? "#10b981" : "#ef4444", fontWeight: 700 }}>{b.side === "yes" ? "OUI" : "NON"}</span>{" · "}{fmt(b.cost)} coins</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}><span style={{ color: b.side === "yes" ? "#10b981" : "#ef4444", fontWeight: 700 }}>{b.side === "yes" ? "OUI" : "NON"}</span>{" · "}{fmt(b.cost)} MC</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "rgba(251,191,36,0.12)", color: "#fbbf24", fontWeight: 700, marginBottom: 3 }}>⏳ EN COURS</div>
-                <div style={{ fontWeight: 900, color: "#10b981", fontSize: 14 }}>+{fmt(b.potential_gain)} 🪙</div>
+                <div style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "rgba(251,191,36,0.12)", color: "#fbbf24", fontWeight: 700, marginBottom: 3 }}>EN COURS</div>
+                <div style={{ fontWeight: 900, color: "#10b981", fontSize: 14 }}>+{fmt(b.potential_gain)} MC</div>
               </div>
             </div>
           ))}
@@ -671,11 +654,11 @@ function LeaderboardPage({ leaderboard, username }) {
       <div style={{ display: "flex", gap: 10, marginBottom: 22, alignItems: "flex-end" }}>
         {[leaderboard[1], leaderboard[0], leaderboard[2]].map((p, vi) => {
           if (!p) return null;
-          const hs = [130, 160, 110], cs = topColors;
+          const hs = [130, 160, 110];
           return (
-            <div key={p.username} style={{ flex: 1, background: `${cs[vi]}0d`, border: `1px solid ${cs[vi]}22`, borderRadius: 14, padding: "14px 10px", textAlign: "center", height: hs[vi], display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            <div key={p.username} style={{ flex: 1, background: `${topColors[vi]}0d`, border: `1px solid ${topColors[vi]}22`, borderRadius: 14, padding: "14px 10px", textAlign: "center", height: hs[vi], display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
               <div style={{ fontWeight: 800, fontSize: 12, color: "#fff", marginBottom: 1 }}>{p.username}</div>
-              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: cs[vi] }}>{fmt(p.coins)}</div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: topColors[vi] }}>{fmt(p.coins)}</div>
               <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{p.win_rate}%</div>
             </div>
           );
@@ -699,7 +682,7 @@ function StorePage({ coins, onRedeem }) {
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>REWARD STORE</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>Échange tes coins contre de vraies récompenses</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>Echange tes coins contre de vraies recompenses</div>
       <div style={{ marginBottom: 22 }}><CoinBadge amount={coins} size="lg" /></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 12 }}>
         {REWARD_STORE.map(r => {
@@ -737,7 +720,7 @@ function ProfilePage({ profile, username, onLogout }) {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 18 }}>
-        {[{ label: "PARIS", val: profile?.total_bets || 0, color: "#3b82f6" }, { label: "WINS", val: profile?.total_wins || 0, color: "#10b981" }, { label: "PRÉCISION", val: `${wr}%`, color: "#8b5cf6" }].map(s => (
+        {[{ label: "PARIS", val: profile?.total_bets || 0, color: "#3b82f6" }, { label: "WINS", val: profile?.total_wins || 0, color: "#10b981" }, { label: "PRECISION", val: `${wr}%`, color: "#8b5cf6" }].map(s => (
           <div key={s.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "16px 10px", textAlign: "center" }}>
             <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, color: s.color }}>{s.val}</div>
             <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontWeight: 800, letterSpacing: 1, marginTop: 2 }}>{s.label}</div>
@@ -745,10 +728,10 @@ function ProfilePage({ profile, username, onLogout }) {
         ))}
       </div>
       <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 12, padding: "13px 16px", marginBottom: 20, fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
-        ⚠️ Les MarketCoins n'ont <strong style={{ color: "rgba(255,255,255,0.7)" }}>aucune valeur monétaire</strong> et ne peuvent pas être achetés ni convertis en argent.
+        Les MarketCoins n'ont <strong style={{ color: "rgba(255,255,255,0.7)" }}>aucune valeur monetaire</strong> et ne peuvent pas etre achetes ni convertis en argent.
       </div>
       <button onClick={onLogout} style={{ width: "100%", padding: "12px 0", borderRadius: 11, border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", color: "#ef4444", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-        Se déconnecter
+        Se deconnecter
       </button>
     </div>
   );
@@ -761,7 +744,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [page, setPage] = useState("home");
-  const [markets, setMarkets] = useState(SEED_MARKETS);
+  const [markets, setMarkets] = useState(getSeedMarkets());
   const [matches, setMatches] = useState([]);
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -773,13 +756,30 @@ export default function App() {
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
+  // FIX classement : refresh automatique toutes les 30 secondes
+  const loadLeaderboard = useCallback(async (token) => {
+    try {
+      const data = await req("profiles?select=id,username,coins,total_wins,total_bets&order=coins.desc&limit=10", { _token: token || SUPABASE_KEY });
+      if (data?.length) {
+        setLeaderboard(data.map((p, i) => ({ ...p, rank: i + 1, win_rate: p.total_bets > 0 ? Math.round((p.total_wins / p.total_bets) * 100) : 0 })));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(() => loadLeaderboard(session.token), 30000);
+    return () => clearInterval(interval);
+  }, [session, loadLeaderboard]);
+
   const loadMatches = useCallback(async () => {
     setMatchesLoading(true);
     try {
       const allMatches = [];
       for (const comp of COMPETITIONS) {
         try {
-          const data = await footballReq(`/competitions/${comp}/matches?status=SCHEDULED,LIVE,IN_PLAY,PAUSED,FINISHED&limit=10`);
+          // FIX CORS : appel via proxy /api/matches
+          const data = await footballReq(comp);
           if (data?.matches) {
             const now = new Date();
             const mapped = data.matches
@@ -789,7 +789,6 @@ export default function App() {
               })
               .map(m => ({
                 id: m.id.toString(),
-                api_id: m.id,
                 home_team: m.homeTeam.shortName || m.homeTeam.name,
                 away_team: m.awayTeam.shortName || m.awayTeam.name,
                 home_logo: m.homeTeam.crest,
@@ -816,21 +815,16 @@ export default function App() {
       if (data?.length) {
         const mapped = data.map(r => ({
           id: r.rumor_id, title: r.event_question || `${r.player_name} → ${r.to_club} ?`,
-          description: r.summary_fr || "", q_yes: 100, q_no: 100,
-          total_volume: Math.floor(Math.random() * 10000) + 500,
-          participants: Math.floor(Math.random() * 200) + 10,
+          q_yes: 100, q_no: 100, total_volume: 500, participants: 10,
           closes_at: r.expires_at || new Date(Date.now() + 14 * 86400000).toISOString(),
           category: "Transferts", source: r.source_name || "Source", status: "open",
         }));
-        setMarkets([...mapped, ...SEED_MARKETS]);
+        setMarkets(prev => {
+          const saved = loadSavedOdds();
+          const seeds = BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" }));
+          return [...mapped, ...seeds];
+        });
       }
-    } catch {}
-  }, []);
-
-  const loadLeaderboard = useCallback(async (token) => {
-    try {
-      const data = await req("leaderboard?select=*&limit=10", { _token: token });
-      if (data?.length) setLeaderboard(data);
     } catch {}
   }, []);
 
@@ -885,10 +879,19 @@ export default function App() {
     try {
       await req("user_bets", { method: "POST", _token: session.token, body: JSON.stringify({ user_id: session.user.id, market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }) });
       await updateCoins(newCoins, session.token, session.user.id);
+      // FIX cotes : sauvegarde dans localStorage pour persister après refresh
+      const updatedMarkets = markets.map(m => m.id === betModal.id ? {
+        ...m,
+        q_yes: side === "yes" ? m.q_yes + amount : m.q_yes,
+        q_no: side === "no" ? m.q_no + amount : m.q_no,
+        total_volume: m.total_volume + cost,
+        participants: m.participants + 1,
+      } : m);
+      setMarkets(updatedMarkets);
+      saveOdds(updatedMarkets);
       setBets(prev => [{ market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }, ...prev]);
-      setMarkets(prev => prev.map(m => m.id === betModal.id ? { ...m, q_yes: side === "yes" ? m.q_yes + amount : m.q_yes, q_no: side === "no" ? m.q_no + amount : m.q_no, total_volume: m.total_volume + cost, participants: m.participants + 1 } : m));
       setBetModal(null);
-      showToast(`✅ Prédiction placée ! Gain potentiel : +${gain.toLocaleString()} 🪙`);
+      showToast(`Prediction placee ! Gain potentiel : +${gain.toLocaleString()} MC`);
       await loadProfile(session.token, session.user.id);
       await loadLeaderboard(session.token);
     } catch (e) { showToast(`Erreur : ${e.message}`, "error"); }
@@ -903,7 +906,7 @@ export default function App() {
       await updateCoins(newCoins, session.token, session.user.id);
       setMatchBets(prev => [{ match_title: `${match.home_team} vs ${match.away_team}`, bet_type: betType, prediction, cost: amount, potential_gain: gain, status: "pending" }, ...prev]);
       setMatchBetModal(null);
-      showToast(`✅ Pari placé ! Gain potentiel : +${gain.toLocaleString()} 🪙`);
+      showToast(`Pari place ! Gain potentiel : +${gain.toLocaleString()} MC`);
       await loadProfile(session.token, session.user.id);
       await loadLeaderboard(session.token);
     } catch (e) { showToast(`Erreur : ${e.message}`, "error"); }
@@ -916,7 +919,9 @@ export default function App() {
       await req(`profiles?id=eq.${session.user.id}`, { method: "PATCH", _token: session.token, body: JSON.stringify({ coins: newCoins, last_spin: new Date().toISOString(), updated_at: new Date().toISOString() }) });
     } catch {}
     setProfile(p => ({ ...p, coins: newCoins, last_spin: new Date().toISOString() }));
-    showToast(`🎡 +${reward} MarketCoins gagnés !`);
+    // FIX classement : refresh apres gain
+    await loadLeaderboard(session.token);
+    showToast(`+${reward} MarketCoins gagnes !`);
   };
 
   const handleWatchAd = async () => {
@@ -928,14 +933,16 @@ export default function App() {
       await req(`profiles?id=eq.${session.user.id}`, { method: "PATCH", _token: session.token, body: JSON.stringify({ coins: newCoins, ads_watched_today: adsToday, ads_reset_date: today, updated_at: new Date().toISOString() }) });
     } catch {}
     setProfile(p => ({ ...p, coins: newCoins, ads_watched_today: adsToday, ads_reset_date: today }));
-    showToast("📺 +20 MarketCoins gagnés !");
+    // FIX classement : refresh apres gain pub
+    await loadLeaderboard(session.token);
+    showToast("+20 MarketCoins gagnes !");
   };
 
   const handleRedeem = async (reward) => {
     if (!session) return;
     const newCoins = (profile?.coins || 0) - reward.cost;
     await updateCoins(newCoins, session.token, session.user.id);
-    showToast(`🎁 ${reward.name} obtenu !`);
+    showToast(`${reward.name} obtenu !`);
   };
 
   const handleLogout = async () => {
@@ -946,13 +953,14 @@ export default function App() {
   const coins = profile?.coins ?? 5000;
   const username = profile?.username || session?.user?.user_metadata?.username || session?.user?.email?.split("@")[0] || "Joueur";
 
+  // FIX Store visible : texte "Store" dans la nav du haut
   const NAV = [
     { id: "home", icon: "⚡", label: "Accueil" },
     { id: "matches", icon: "⚽", label: "Matchs" },
-    { id: "markets", icon: "📊", label: "Marchés" },
-    { id: "wallet", icon: "🪙", label: "Wallet" },
+    { id: "markets", icon: "📊", label: "Marches" },
+    { id: "wallet", icon: "MC", label: "Wallet" },
     { id: "leaderboard", icon: "🏆", label: "Top" },
-    { id: "store", icon: "🛍", label: "Store" },
+    { id: "store", icon: "★", label: "Store" },
     { id: "profile", icon: "👤", label: "Profil" },
   ];
 
@@ -964,29 +972,30 @@ export default function App() {
         <div style={{ position: "absolute", top: -200, left: "25%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,0.04),transparent 70%)" }} />
       </div>
 
+      {/* Header */}
       <div style={{ position: "sticky", top: 0, zIndex: 200, background: "rgba(8,12,18,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 54 }}>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 54 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <div style={{ width: 30, height: 30, background: "linear-gradient(135deg,#10b981,#3b82f6)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>⚽</div>
             <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 2 }}>MARKET<span style={{ color: "#10b981" }}>BALL</span></span>
           </div>
           <nav style={{ display: "flex", gap: 2 }}>
-            {NAV.slice(0, 5).map(n => (
-              <button key={n.id} onClick={() => setPage(n.id)} style={{ padding: "5px 11px", borderRadius: 7, border: "none", background: page === n.id ? "rgba(16,185,129,0.12)" : "transparent", color: page === n.id ? "#10b981" : "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+            {NAV.slice(0, 6).map(n => (
+              <button key={n.id} onClick={() => setPage(n.id)} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: page === n.id ? "rgba(16,185,129,0.12)" : "transparent", color: page === n.id ? "#10b981" : "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>
                 {n.icon} {n.label}
               </button>
             ))}
           </nav>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <button onClick={() => setPage("store")} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "transparent", color: "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>🛍</button>
-            <button onClick={() => setPage("profile")} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "transparent", color: "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>👤 {username}</button>
+            <button onClick={() => setPage("profile")} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: page === "profile" ? "rgba(16,185,129,0.12)" : "transparent", color: page === "profile" ? "#10b981" : "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>👤 {username}</button>
             <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: 7, padding: "4px 10px", display: "flex", gap: 4, alignItems: "center" }}>
-              <span style={{ fontSize: 11 }}>🪙</span><span style={{ fontWeight: 800, color: "#fbbf24", fontSize: 12 }}>{fmt(coins)}</span>
+              <span style={{ fontWeight: 800, color: "#fbbf24", fontSize: 12 }}>MC {fmt(coins)}</span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Content */}
       <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 20px 90px", position: "relative", zIndex: 1 }}>
         {page === "home" && <HomePage markets={markets} coins={coins} username={username} onBet={setBetModal} onNavigate={setPage} matches={matches} onMatchBet={setMatchBetModal} />}
         {page === "matches" && <MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
@@ -997,11 +1006,12 @@ export default function App() {
         {page === "profile" && <ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
       </div>
 
+      {/* Bottom nav */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(8,12,18,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", zIndex: 200 }}>
         {NAV.map(n => (
           <button key={n.id} onClick={() => setPage(n.id)} style={{ flex: 1, padding: "8px 0", background: "transparent", border: "none", color: page === n.id ? "#10b981" : "rgba(255,255,255,0.3)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 17 }}>{n.icon}</span>
-            <span style={{ fontSize: 9, fontWeight: 700 }}>{n.label}</span>
+            <span style={{ fontSize: 15 }}>{n.icon}</span>
+            <span style={{ fontSize: 8, fontWeight: 700 }}>{n.label}</span>
           </button>
         ))}
       </div>
@@ -1017,7 +1027,6 @@ export default function App() {
         input:focus { border-color:rgba(16,185,129,0.4) !important; }
         button { font-family:inherit; }
         @keyframes slideUp { from{transform:translateX(-50%) translateY(16px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
         ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:99px; }
       `}</style>
     </div>
