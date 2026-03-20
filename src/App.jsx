@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ============================================================
 // CONFIG
@@ -53,38 +53,89 @@ const AMM = {
 };
 
 // ============================================================
-// SYSTEME XP / BADGES / NIVEAUX
+// BADGES / XP
 // ============================================================
 const BADGES = [
-  { id: "rookie", label: "Rookie", minLevel: 1, maxLevel: 10, color: "#6b7280", icon: "R" },
-  { id: "scout", label: "Scout", minLevel: 11, maxLevel: 25, color: "#3b82f6", icon: "S" },
-  { id: "analyst", label: "Analyst", minLevel: 26, maxLevel: 50, color: "#8b5cf6", icon: "A" },
-  { id: "pro", label: "Pro", minLevel: 51, maxLevel: 80, color: "#f59e0b", icon: "P" },
-  { id: "legend", label: "Legend", minLevel: 81, maxLevel: 999, color: "#10b981", icon: "L" },
+  { id: "rookie", label: "Rookie", minLevel: 1, maxLevel: 10, color: "#6b7280", emoji: "🌱" },
+  { id: "scout", label: "Scout", minLevel: 11, maxLevel: 25, color: "#3b82f6", emoji: "🔍" },
+  { id: "analyst", label: "Analyst", minLevel: 26, maxLevel: 50, color: "#8b5cf6", emoji: "📈" },
+  { id: "pro", label: "Pro", minLevel: 51, maxLevel: 80, color: "#f59e0b", emoji: "⚡" },
+  { id: "legend", label: "Legend", minLevel: 81, maxLevel: 999, color: "#10b981", emoji: "👑" },
 ];
 
 const XP_PER_LEVEL = 100;
-
 const getBadge = (level) => BADGES.find(b => level >= b.minLevel && level <= b.maxLevel) || BADGES[0];
-const getLevel = (xp) => Math.floor(xp / XP_PER_LEVEL) + 1;
-const getXPProgress = (xp) => xp % XP_PER_LEVEL;
+const getLevel = (xp) => Math.floor((xp || 0) / XP_PER_LEVEL) + 1;
+const getXPProgress = (xp) => (xp || 0) % XP_PER_LEVEL;
 
 // ============================================================
-// SYSTEME STORE COINS
+// STORE ITEMS
 // ============================================================
-// 1 SC = 0.1€ (1€ = 10 SC)
-// Reward store accessible selon badge
 const STORE_ITEMS = [
-  { id: "s1", name: "Badge digital exclusif", value: "Digital", cost: 10, icon: "★", requiredBadge: "rookie", description: "Badge unique sur ton profil" },
-  { id: "s2", name: "Carte cadeau Amazon 5€", value: "5€", cost: 50, icon: "A", requiredBadge: "scout", description: "Code envoyé par email" },
-  { id: "s3", name: "Carte cadeau 20€", value: "20€", cost: 200, icon: "C", requiredBadge: "analyst", description: "Amazon, Uber, Foot Locker" },
-  { id: "s4", name: "Maillot de foot au choix", value: "~90€", cost: 900, icon: "M", requiredBadge: "pro", description: "Replica officielle, taille au choix" },
-  { id: "s5", name: "Place VIP + rencontre joueur", value: "Priceless", cost: 2000, icon: "V", requiredBadge: "legend", description: "Experience unique, sur demande" },
-  { id: "sc1", name: "Pack 50 MC", value: "50 MC", cost: 5, isMCPack: true, priceEur: 5, icon: "MC", requiredBadge: "rookie", description: "5€ = 50 MarketCoins de jeu" },
-  { id: "sc2", name: "Pack 100 MC", value: "100 MC", cost: 10, isMCPack: true, priceEur: 10, icon: "MC", requiredBadge: "rookie", description: "10€ = 100 MarketCoins de jeu" },
+  { id: "s2", name: "Carte cadeau Amazon 5€", value: "5€", cost: 50, emoji: "🛒", requiredBadge: "scout", description: "Code envoyé par email sous 48h" },
+  { id: "s3", name: "Carte cadeau Foot Locker 20€", value: "20€", cost: 200, emoji: "👟", requiredBadge: "analyst", description: "Code envoyé par email sous 48h" },
+  { id: "s4", name: "Maillot de foot officiel", value: "~90€", cost: 900, emoji: "👕", requiredBadge: "pro", description: "Replica officielle, taille au choix" },
+  { id: "s5", name: "Place VIP + rencontre joueur", value: "Unique", cost: 2000, emoji: "🏟️", requiredBadge: "legend", description: "Experience unique sur demande" },
+];
+
+const SC_PACKS = [
+  { id: "sc1", name: "Pack 10 SC", sc: 10, priceEur: 1, emoji: "💎" },
+  { id: "sc2", name: "Pack 50 SC", sc: 50, priceEur: 5, emoji: "💎" },
+  { id: "sc3", name: "Pack 100 SC", sc: 100, priceEur: 10, emoji: "💎" },
+];
+
+const MC_PACKS = [
+  { id: "mc1", name: "Pack 50 MC", mc: 50, priceEur: 5, emoji: "🪙" },
+  { id: "mc2", name: "Pack 100 MC", mc: 100, priceEur: 10, emoji: "🪙" },
 ];
 
 const WEEKLY_MC_LIMIT = 200;
+
+// ============================================================
+// JOUEURS PAR EQUIPE (pour les paris buteurs)
+// ============================================================
+const TEAM_PLAYERS = {
+  "Arsenal": ["Saka", "Havertz", "Trossard", "Martinelli", "Odegaard", "White", "Timber"],
+  "Chelsea": ["Palmer", "Jackson", "Mudryk", "Nkunku", "Gallagher", "Sterling", "Madueke"],
+  "Liverpool": ["Salah", "Nunez", "Diaz", "Jota", "Gakpo", "Mac Allister", "Szoboszlai"],
+  "Man City": ["Haaland", "De Bruyne", "Doku", "Foden", "Bernardo", "Grealish", "Bobb"],
+  "Man United": ["Rashford", "Hojlund", "Fernandes", "Garnacho", "Antony", "Zirkzee", "Mainoo"],
+  "Tottenham": ["Son", "Kulusevski", "Maddison", "Richarlison", "Johnson", "Solanke", "Bergvall"],
+  "Newcastle": ["Isak", "Gordon", "Wilson", "Almiron", "Trippier", "Murphy", "Barnes"],
+  "Aston Villa": ["Watkins", "Rogers", "Bailey", "Diaby", "Tielemans", "Duran", "McGinn"],
+  "PSG": ["Dembele", "Barcola", "Asensio", "Doue", "Kolo Muani", "Vitinha", "Fabian"],
+  "Marseille": ["Greenwood", "Rabiot", "Aubameyang", "Moumbagna", "Harit", "Wahi", "Luis Henrique"],
+  "Lyon": ["Lacazette", "Cherki", "Tolisso", "Nuamah", "Benrahma", "Mikautadze", "Gusto"],
+  "Monaco": ["Ben Seghir", "Minamino", "Embolo", "Akliouche", "Golovin", "Diatta", "Zakaria"],
+  "Real Madrid": ["Vinicius", "Bellingham", "Mbappe", "Rodrygo", "Valverde", "Brahim", "Camavinga"],
+  "Barcelona": ["Yamal", "Lewandowski", "Raphinha", "Olmo", "Fermin", "Pedri", "Gavi"],
+  "Atletico": ["Griezmann", "Morata", "Correa", "Sorloth", "De Paul", "Witsel", "Llorente"],
+  "Bayern": ["Kane", "Musiala", "Muller", "Gnabry", "Coman", "Sane", "Kim"],
+  "Dortmund": ["Guirassy", "Adeyemi", "Brandt", "Gross", "Nmecha", "Gittens", "Sabitzer"],
+  "Inter": ["Lautaro", "Thuram", "Calhanoglu", "Dimarco", "Barella", "Dumfries", "Zielinski"],
+  "Juventus": ["Vlahovic", "Yildiz", "Conceicao", "Koopmeiners", "Cambiaso", "Milik", "Weah"],
+  "default": ["Joueur 1", "Joueur 2", "Joueur 3", "Joueur 4", "Joueur 5", "Joueur 6", "Joueur 7"],
+};
+
+const getTeamPlayers = (teamName) => {
+  if (!teamName) return TEAM_PLAYERS.default;
+  const key = Object.keys(TEAM_PLAYERS).find(k => teamName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(teamName.toLowerCase().split(" ")[0]));
+  return key ? TEAM_PLAYERS[key] : TEAM_PLAYERS.default;
+};
+
+// ============================================================
+// ROUE CONFIG
+// ============================================================
+const SPIN_SEGMENTS = [
+  { label: "10 MC", value: 10, type: "mc", color: "#3b82f6" },
+  { label: "20 MC", value: 20, type: "mc", color: "#8b5cf6" },
+  { label: "1 SC", value: 1, type: "sc", color: "#10b981" },
+  { label: "50 MC", value: 50, type: "mc", color: "#f59e0b" },
+  { label: "10 MC", value: 10, type: "mc", color: "#3b82f6" },
+  { label: "100 MC", value: 100, type: "mc", color: "#ef4444" },
+  { label: "20 MC", value: 20, type: "mc", color: "#8b5cf6" },
+  { label: "200 MC", value: 200, type: "mc", color: "#fbbf24" },
+];
 
 // ============================================================
 // COTES PERSISTANTES
@@ -102,7 +153,6 @@ const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); r
 const saveOdds = (markets) => { try { const o = {}; markets.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 const getSeedMarkets = () => { const saved = loadSavedOdds(); return BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" })); };
 
-const SPIN_REWARDS = [10, 20, 10, 50, 20, 100, 10, 200];
 const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1"];
 
 // ============================================================
@@ -112,28 +162,29 @@ const fmt = (n) => (n ?? 0).toLocaleString("fr-FR");
 const fmtPct = (n) => `${Math.round(n * 100)}%`;
 const timeLeft = (date) => { const diff = new Date(date) - Date.now(); if (diff < 0) return "Termine"; const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000); return d > 0 ? `${d}j ${h}h` : `${h}h`; };
 const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Competitions": "#f59e0b", "Recompenses": "#ec4899", "Performances": "#10b981" })[c] || "#6b7280";
-const compLabel = (c) => ({ "PL": "Premier League", "FL1": "Ligue 1", "CL": "Champ. League", "PD": "La Liga", "BL1": "Bundesliga" })[c] || c;
+// FIX : noms complets sans préfixe pays
+const compLabel = (c) => ({ "PL": "Premier League", "FL1": "Ligue 1", "CL": "Champions League", "PD": "La Liga", "BL1": "Bundesliga" })[c] || c;
 const compColor = (c) => ({ "PL": "#3b82f6", "FL1": "#ef4444", "CL": "#f59e0b", "PD": "#f97316", "BL1": "#6b7280" })[c] || "#6b7280";
-const compFlag = (c) => ({ "PL": "EN", "FL1": "FR", "CL": "CL", "PD": "ES", "BL1": "DE" })[c] || "⚽";
+const compEmoji = (c) => ({ "PL": "🏴", "FL1": "🇫🇷", "CL": "🏆", "PD": "🇪🇸", "BL1": "🇩🇪" })[c] || "⚽";
 const formatMatchDate = (d) => new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-const getWeekKey = () => { const d = new Date(); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(d.setDate(diff)).toISOString().split("T")[0]; };
+const getWeekKey = () => { const d = new Date(); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(new Date().setDate(diff)).toISOString().split("T")[0]; };
 
 // ============================================================
 // UI ATOMS
 // ============================================================
 function MCBadge({ amount, size = "sm" }) {
-  const s = size === "lg" ? { fontSize: 22, padding: "8px 16px", borderRadius: 12 } : { fontSize: 12, padding: "3px 9px", borderRadius: 7 };
-  return <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontWeight: 800, ...s }}>MC {fmt(amount)}</div>;
+  const s = size === "lg" ? { fontSize: 20, padding: "8px 14px", borderRadius: 12 } : { fontSize: 12, padding: "3px 9px", borderRadius: 7 };
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontWeight: 800, ...s }}>🪙 {fmt(amount)} MC</div>;
 }
 
 function SCBadge({ amount, size = "sm" }) {
-  const s = size === "lg" ? { fontSize: 22, padding: "8px 16px", borderRadius: 12 } : { fontSize: 12, padding: "3px 9px", borderRadius: 7 };
-  return <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", fontWeight: 800, ...s }}>SC {fmt(amount)}</div>;
+  const s = size === "lg" ? { fontSize: 20, padding: "8px 14px", borderRadius: 12 } : { fontSize: 12, padding: "3px 9px", borderRadius: 7 };
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", fontWeight: 800, ...s }}>💎 {fmt(amount)} SC</div>;
 }
 
 function BadgeTag({ level }) {
   const badge = getBadge(level || 1);
-  return <span style={{ fontSize: 10, fontWeight: 800, color: badge.color, background: `${badge.color}18`, padding: "2px 7px", borderRadius: 20, border: `1px solid ${badge.color}30` }}>{badge.icon} {badge.label}</span>;
+  return <span style={{ fontSize: 11, fontWeight: 800, color: badge.color, background: `${badge.color}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${badge.color}30` }}>{badge.emoji} {badge.label}</span>;
 }
 
 function XPBar({ xp }) {
@@ -143,7 +194,7 @@ function XPBar({ xp }) {
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 10, color: badge.color, fontWeight: 700 }}>Niv. {level} — {badge.label}</span>
+        <span style={{ fontSize: 10, color: badge.color, fontWeight: 700 }}>{badge.emoji} Niv. {level} — {badge.label}</span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{progress}/{XP_PER_LEVEL} XP</span>
       </div>
       <div style={{ height: 4, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
@@ -170,6 +221,124 @@ function ProbBar({ qYes, qNo }) {
       <div style={{ height: 5, borderRadius: 99, background: "rgba(239,68,68,0.2)", overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#10b981,#059669)", borderRadius: 99, transition: "width 0.5s" }} />
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ROUE ANIMEE
+// ============================================================
+function SpinWheel({ onSpin, canSpin }) {
+  const canvasRef = useRef(null);
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState(null);
+  const [rotation, setRotation] = useState(0);
+  const animRef = useRef(null);
+
+  const drawWheel = useCallback((rot) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2, r = W / 2 - 4;
+    const segAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
+    ctx.clearRect(0, 0, W, H);
+
+    SPIN_SEGMENTS.forEach((seg, i) => {
+      const startAngle = rot + i * segAngle;
+      const endAngle = startAngle + segAngle;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = seg.color;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.3)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(startAngle + segAngle / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 11px DM Sans, sans-serif";
+      ctx.fillText(seg.label, r - 8, 4);
+      ctx.restore();
+    });
+
+    // Centre
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+    ctx.fillStyle = "#080c12";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Fleche
+    ctx.beginPath();
+    ctx.moveTo(cx + r - 2, cy - 10);
+    ctx.lineTo(cx + r + 14, cy);
+    ctx.lineTo(cx + r - 2, cy + 10);
+    ctx.closePath();
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+  }, []);
+
+  useEffect(() => { drawWheel(rotation); }, [rotation, drawWheel]);
+
+  const doSpin = () => {
+    if (!canSpin || spinning) return;
+    setSpinning(true);
+    setResult(null);
+
+    const segIdx = Math.floor(Math.random() * SPIN_SEGMENTS.length);
+    const segAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
+    // La fleche pointe a droite (angle 0), on calcule la rotation pour que le segment soit en face
+    const targetAngle = 2 * Math.PI * 8 + (2 * Math.PI - segIdx * segAngle - segAngle / 2);
+    const startRot = rotation;
+    const startTime = performance.now();
+    const duration = 4000;
+
+    const animate = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Easing out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const currentRot = startRot + targetAngle * ease;
+      setRotation(currentRot);
+      drawWheel(currentRot);
+
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      } else {
+        setSpinning(false);
+        setResult(SPIN_SEGMENTS[segIdx]);
+        onSpin(SPIN_SEGMENTS[segIdx]);
+      }
+    };
+    animRef.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => () => { if (animRef.current) cancelAnimationFrame(animRef.current); }, []);
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
+        <canvas ref={canvasRef} width={220} height={220} style={{ display: "block", filter: canSpin ? "none" : "grayscale(0.5) opacity(0.7)" }} />
+      </div>
+      {result && (
+        <div style={{ marginBottom: 12, padding: "8px 16px", background: result.type === "sc" ? "rgba(16,185,129,0.15)" : "rgba(251,191,36,0.15)", border: `1px solid ${result.type === "sc" ? "rgba(16,185,129,0.3)" : "rgba(251,191,36,0.3)"}`, borderRadius: 10, display: "inline-block" }}>
+          <span style={{ fontWeight: 900, fontSize: 16, color: result.type === "sc" ? "#10b981" : "#fbbf24" }}>
+            +{result.value} {result.type === "sc" ? "💎 SC" : "🪙 MC"}
+          </span>
+        </div>
+      )}
+      <button onClick={doSpin} disabled={!canSpin || spinning}
+        style={{ display: "block", width: "100%", padding: "10px 0", borderRadius: 10, border: "none", background: canSpin && !spinning ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.05)", color: canSpin && !spinning ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canSpin && !spinning ? "pointer" : "not-allowed", fontSize: 14 }}>
+        {spinning ? "..." : canSpin ? "TOURNER" : "Reviens demain"}
+      </button>
     </div>
   );
 }
@@ -231,7 +400,7 @@ function AuthPage({ onAuth }) {
           </button>
         </div>
         <div style={{ marginTop: 16, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
-          Vous demarrez avec <span style={{ color: "#fbbf24", fontWeight: 800 }}>500 MC</span> + <span style={{ color: "#10b981", fontWeight: 800 }}>0 SC</span> gratuits !
+          Demarrez avec <span style={{ color: "#fbbf24", fontWeight: 800 }}>500 🪙 MC</span> gratuits !
         </div>
       </div>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;800;900&display=swap'); *{box-sizing:border-box;margin:0;padding:0;} input::placeholder{color:rgba(255,255,255,0.2);} button{font-family:inherit;}`}</style>
@@ -266,7 +435,7 @@ function MarketCard({ market, onBet }) {
       </div>
       <ProbBar qYes={market.q_yes} qNo={market.q_no} />
       <div style={{ display: "flex", gap: 20, margin: "12px 0 14px" }}>
-        <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>VOLUME</div><div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>MC {fmt(market.total_volume)}</div></div>
+        <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>VOLUME</div><div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>🪙 {fmt(market.total_volume)}</div></div>
         <div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>PARTICIPANTS</div><div style={{ fontSize: 13, fontWeight: 700 }}>{fmt(market.participants)}</div></div>
       </div>
       <button onClick={() => onBet(market)} style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: hover ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
@@ -281,22 +450,32 @@ function MarketCard({ market, onBet }) {
 // ============================================================
 function MatchCard({ match, onBet }) {
   const [hover, setHover] = useState(false);
+  const [imgErrors, setImgErrors] = useState({});
   const cc = compColor(match.competition);
   const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
   const isFinished = match.status === "FINISHED";
+
+  const TeamLogo = ({ logo, name, side }) => {
+    if (logo && !imgErrors[side]) {
+      return <img src={logo} alt={name} style={{ width: 36, height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} onError={() => setImgErrors(e => ({ ...e, [side]: true }))} />;
+    }
+    const initials = name ? name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "??";
+    return <div style={{ width: 36, height: 36, borderRadius: "50%", background: cc + "33", border: `1px solid ${cc}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", fontWeight: 900, fontSize: 12, color: cc }}>{initials}</div>;
+  };
+
   return (
     <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ background: hover ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.018)", border: `1px solid ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 18, padding: "18px 20px", transition: "all 0.2s", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${cc},transparent)` }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: cc, background: `${cc}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${cc}30` }}>{compFlag(match.competition)} {compLabel(match.competition)}</span>
-        {isLive ? <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444" }}>EN DIRECT</span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: cc, background: `${cc}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${cc}30` }}>{compEmoji(match.competition)} {compLabel(match.competition)}</span>
+        {isLive ? <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444" }}>🔴 EN DIRECT</span>
           : isFinished ? <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Termine</span>
           : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{formatMatchDate(match.match_date)}</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ flex: 1, textAlign: "center" }}>
-          {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 36, height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} onError={e => e.target.style.display = "none"} />}
+          <TeamLogo logo={match.home_logo} name={match.home_team} side="home" />
           <div style={{ fontWeight: 800, fontSize: 12, color: "#fff" }}>{match.home_team}</div>
         </div>
         <div style={{ textAlign: "center", padding: "0 12px" }}>
@@ -304,7 +483,7 @@ function MatchCard({ match, onBet }) {
             : <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: "rgba(255,255,255,0.4)" }}>VS</div>}
         </div>
         <div style={{ flex: 1, textAlign: "center" }}>
-          {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 36, height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} onError={e => e.target.style.display = "none"} />}
+          <TeamLogo logo={match.away_logo} name={match.away_team} side="away" />
           <div style={{ fontWeight: 800, fontSize: 12, color: "#fff" }}>{match.away_team}</div>
         </div>
       </div>
@@ -348,7 +527,7 @@ function BetModal({ market, onClose, onConfirm, coins }) {
         </div>
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "13px 15px", marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Cout</span><MCBadge amount={cost} /></div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span><span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>MC +{fmt(gain)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span><span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>🪙 +{fmt(gain)} MC</span></div>
         </div>
         <button onClick={() => canBet && onConfirm(side, amount, cost, gain)} disabled={!canBet} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: canBet ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,0.05)", color: canBet ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 900, fontSize: 15, cursor: canBet ? "pointer" : "not-allowed" }}>
           {!canBet && coins < cost ? "Pas assez de MC" : "CONFIRMER →"}
@@ -359,21 +538,29 @@ function BetModal({ market, onClose, onConfirm, coins }) {
 }
 
 // ============================================================
-// MATCH BET MODAL
+// MATCH BET MODAL - avec choix buteurs depuis liste
 // ============================================================
 function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const [betType, setBetType] = useState("winner");
   const [prediction, setPrediction] = useState("");
   const [amount, setAmount] = useState(100);
+  const [scorerTeam, setScorerTeam] = useState("home");
+
   const BET_TYPES = [
-    { id: "winner", label: "Vainqueur", desc: "Qui va gagner ?", mult: 2 },
-    { id: "exact_score", label: "Score exact", desc: "Quel sera le score ?", mult: 8 },
-    { id: "first_scorer", label: "1er buteur", desc: "Qui marquera en premier ?", mult: 5 },
-    { id: "over_under", label: "Plus/Moins", desc: "Plus ou moins de buts ?", mult: 1.8 },
+    { id: "winner", label: "🏆 Vainqueur", desc: "Qui va gagner ?", mult: 2 },
+    { id: "exact_score", label: "🎯 Score exact", desc: "Quel score ?", mult: 8 },
+    { id: "first_scorer", label: "⚽ 1er buteur", desc: "Qui marque en premier ?", mult: 5 },
+    { id: "scorer", label: "🥅 Buteur du match", desc: "Qui va marquer ?", mult: 3 },
+    { id: "over_under", label: "📊 Plus/Moins", desc: "Combien de buts ?", mult: 1.8 },
   ];
+
   const currentType = BET_TYPES.find(t => t.id === betType);
   const gain = Math.round(amount * currentType.mult);
   const canBet = prediction && amount >= 10 && amount <= coins;
+
+  const homePlayers = getTeamPlayers(match.home_team);
+  const awayPlayers = getTeamPlayers(match.away_team);
+  const currentPlayers = scorerTeam === "home" ? homePlayers : awayPlayers;
 
   const renderInputs = () => {
     if (betType === "winner") return (
@@ -383,11 +570,38 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
         ))}
       </div>
     );
-    if (betType === "exact_score") return <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Ex: 2-1" style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 800, outline: "none", boxSizing: "border-box", textAlign: "center" }} />;
-    if (betType === "first_scorer") return <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Nom du joueur (ex: Salah)" style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />;
+
+    if (betType === "exact_score") return (
+      <input value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="Ex: 2-1"
+        style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 800, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+    );
+
+    if (betType === "first_scorer" || betType === "scorer") return (
+      <div>
+        {/* Choix equipe */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          {["home", "away"].map(t => (
+            <button key={t} onClick={() => { setScorerTeam(t); setPrediction(""); }}
+              style={{ flex: 1, padding: "8px 4px", borderRadius: 9, border: `1px solid ${scorerTeam === t ? "#10b981" : "rgba(255,255,255,0.08)"}`, background: scorerTeam === t ? "rgba(16,185,129,0.1)" : "transparent", color: scorerTeam === t ? "#10b981" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+              {t === "home" ? match.home_team : match.away_team}
+            </button>
+          ))}
+        </div>
+        {/* Liste joueurs */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: 180, overflowY: "auto" }}>
+          {currentPlayers.map(p => (
+            <button key={p} onClick={() => setPrediction(p)}
+              style={{ padding: "8px 10px", borderRadius: 9, border: `1px solid ${prediction === p ? "#10b981" : "rgba(255,255,255,0.07)"}`, background: prediction === p ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.02)", color: prediction === p ? "#10b981" : "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 12, cursor: "pointer", textAlign: "left" }}>
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+
     if (betType === "over_under") return (
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-        {["Plus de 1.5 buts", "Plus de 2.5 buts", "Moins de 2.5 buts", "Moins de 3.5 buts"].map(opt => (
+        {["Plus de 1.5 buts", "Plus de 2.5 buts", "Plus de 3.5 buts", "Moins de 1.5 buts", "Moins de 2.5 buts", "Moins de 3.5 buts"].map(opt => (
           <button key={opt} onClick={() => setPrediction(opt)} style={{ flex: "1 1 45%", padding: "9px 8px", borderRadius: 10, border: `2px solid ${prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.08)"}`, background: prediction === opt ? "rgba(245,158,11,0.12)" : "transparent", color: prediction === opt ? "#f59e0b" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{opt}</button>
         ))}
       </div>
@@ -397,37 +611,44 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(12px)", padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#0f1623", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: 24, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 16px" }}>
           <div style={{ textAlign: "center", flex: 1 }}>
-            {match.home_logo && <img src={match.home_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", display: "block", margin: "0 auto 4px" }} onError={e => e.target.style.display = "none"} />}
             <div style={{ fontSize: 12, fontWeight: 800 }}>{match.home_team}</div>
           </div>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: "rgba(255,255,255,0.4)", padding: "0 10px" }}>VS</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: "rgba(255,255,255,0.4)", padding: "0 10px" }}>VS</div>
           <div style={{ textAlign: "center", flex: 1 }}>
-            {match.away_logo && <img src={match.away_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain", display: "block", margin: "0 auto 4px" }} onError={e => e.target.style.display = "none"} />}
             <div style={{ fontSize: 12, fontWeight: 800 }}>{match.away_team}</div>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 18 }}>
+
+        {/* Types de paris */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 16 }}>
           {BET_TYPES.map(t => (
-            <button key={t.id} onClick={() => { setBetType(t.id); setPrediction(""); }} style={{ padding: "10px 12px", borderRadius: 11, border: `2px solid ${betType === t.id ? "#10b981" : "rgba(255,255,255,0.07)"}`, background: betType === t.id ? "rgba(16,185,129,0.1)" : "transparent", color: betType === t.id ? "#10b981" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer", textAlign: "left" }}>
+            <button key={t.id} onClick={() => { setBetType(t.id); setPrediction(""); setScorerTeam("home"); }}
+              style={{ padding: "9px 10px", borderRadius: 10, border: `2px solid ${betType === t.id ? "#10b981" : "rgba(255,255,255,0.07)"}`, background: betType === t.id ? "rgba(16,185,129,0.1)" : "transparent", color: betType === t.id ? "#10b981" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 11, cursor: "pointer", textAlign: "left" }}>
               <div>{t.label}</div>
-              <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.7, marginTop: 2 }}>x{t.mult} · {t.desc}</div>
+              <div style={{ fontSize: 9, fontWeight: 400, opacity: 0.7, marginTop: 1 }}>x{t.mult} · {t.desc}</div>
             </button>
           ))}
         </div>
-        <div style={{ marginBottom: 18 }}>{renderInputs()}</div>
-        <input type="number" value={amount} min={10} max={10000} onChange={e => setAmount(Math.max(10, +e.target.value || 10))} style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 20, fontWeight: 800, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {[50, 100, 200, 500].map(v => <button key={v} onClick={() => setAmount(v)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: amount === v ? "rgba(255,255,255,0.1)" : "transparent", color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{v}</button>)}
+
+        <div style={{ marginBottom: 16 }}>{renderInputs()}</div>
+
+        <input type="number" value={amount} min={10} max={coins} onChange={e => setAmount(Math.max(10, Math.min(coins, +e.target.value || 10)))}
+          style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 18, fontWeight: 800, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+          {[50, 100, 200, 500].map(v => <button key={v} onClick={() => setAmount(Math.min(v, coins))} style={{ flex: 1, padding: "6px 0", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: amount === v ? "rgba(255,255,255,0.1)" : "transparent", color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{v}</button>)}
         </div>
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "13px 15px", marginBottom: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Mise</span><MCBadge amount={amount} /></div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Multiplicateur</span><span style={{ fontWeight: 800, color: "#3b82f6" }}>x{currentType.mult}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span><span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>MC +{fmt(gain)}</span></div>
+
+        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "12px 14px", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Prediction</span><span style={{ fontWeight: 700, fontSize: 13 }}>{prediction || "—"}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Cote</span><span style={{ fontWeight: 800, color: "#3b82f6" }}>x{currentType.mult}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Gain potentiel</span><span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>🪙 +{fmt(gain)} MC</span></div>
         </div>
-        <button onClick={() => canBet && onConfirm(match, betType, prediction, amount, gain)} disabled={!canBet} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: canBet ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,0.05)", color: canBet ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 900, fontSize: 15, cursor: canBet ? "pointer" : "not-allowed" }}>
-          {!prediction ? "Choisir une prediction" : !canBet && coins < amount ? "Pas assez de MC" : "CONFIRMER →"}
+
+        <button onClick={() => canBet && onConfirm(match, betType, prediction, amount, gain)} disabled={!canBet}
+          style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: canBet ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,0.05)", color: canBet ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 900, fontSize: 15, cursor: canBet ? "pointer" : "not-allowed" }}>
+          {!prediction ? "Choisir une prediction" : coins < amount ? "Pas assez de MC" : "CONFIRMER →"}
         </button>
       </div>
     </div>
@@ -440,25 +661,18 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
 function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile }) {
   const upcoming = matches.filter(m => m.status !== "FINISHED").slice(0, 3);
   const level = getLevel(profile?.xp || 0);
-  const badge = getBadge(level);
   return (
     <div>
-      <div style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.04))", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 22, padding: "28px", marginBottom: 24, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.04))", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 22, padding: "28px", marginBottom: 24 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: "#10b981", letterSpacing: 3, marginBottom: 8 }}>BIENVENUE, {username?.toUpperCase()}</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           <BadgeTag level={level} />
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Niv. {level} · {profile?.xp || 0} XP total</span>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Niv. {level} · {profile?.xp || 0} XP</span>
         </div>
         <XPBar xp={profile?.xp || 0} />
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-          <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: 10, padding: "10px 16px" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>MARKETCOINS</div>
-            <MCBadge amount={coins} size="lg" />
-          </div>
-          <div style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 10, padding: "10px 16px" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>STORECOINS</div>
-            <SCBadge amount={sc} size="lg" />
-          </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          <MCBadge amount={coins} size="lg" />
+          <SCBadge amount={sc} size="lg" />
         </div>
       </div>
       {upcoming.length > 0 && (
@@ -488,24 +702,14 @@ function MatchesPage({ matches, onBet, loading }) {
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>MATCHS</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>Paris sur les vrais matchs en temps reel</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>Paris sur les vrais matchs · 5 types de paris</div>
       <div style={{ display: "flex", gap: 7, marginBottom: 22, flexWrap: "wrap" }}>
-        {allComps.map(c => <button key={c} onClick={() => setComp(c)} style={{ padding: "6px 13px", borderRadius: 20, border: `1px solid ${comp === c ? compColor(c) : "rgba(255,255,255,0.07)"}`, background: comp === c ? `${compColor(c)}18` : "transparent", color: comp === c ? compColor(c) : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{c === "Tous" ? "Tous" : `${compFlag(c)} ${compLabel(c)}`}</button>)}
+        {allComps.map(c => <button key={c} onClick={() => setComp(c)} style={{ padding: "6px 13px", borderRadius: 20, border: `1px solid ${comp === c ? compColor(c) : "rgba(255,255,255,0.07)"}`, background: comp === c ? `${compColor(c)}18` : "transparent", color: comp === c ? compColor(c) : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{c === "Tous" ? "Tous" : `${compEmoji(c)} ${compLabel(c)}`}</button>)}
       </div>
       {loading && <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" }}>Chargement...</div>}
       {!loading && upcoming.length === 0 && finished.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" }}>Aucun match disponible</div>}
-      {upcoming.length > 0 && <>
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>A VENIR ET EN DIRECT</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11, marginBottom: 24 }}>
-          {upcoming.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}
-        </div>
-      </>}
-      {finished.length > 0 && <>
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "rgba(255,255,255,0.4)" }}>TERMINES</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11 }}>
-          {finished.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}
-        </div>
-      </>}
+      {upcoming.length > 0 && <><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>A VENIR ET EN DIRECT</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11, marginBottom: 24 }}>{upcoming.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}</div></>}
+      {finished.length > 0 && <><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 12, color: "rgba(255,255,255,0.4)" }}>TERMINES</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 11 }}>{finished.map(m => <MatchCard key={m.id} match={m} onBet={onBet} />)}</div></>}
     </div>
   );
 }
@@ -517,7 +721,7 @@ function MarketsPage({ markets, onBet }) {
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>MARCHES DE PREDICTION</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>{markets.length} marches · AMM en temps reel</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>{markets.length} marches actifs</div>
       <div style={{ display: "flex", gap: 7, marginBottom: 22, flexWrap: "wrap" }}>
         {cats.map(c => <button key={c} onClick={() => setCat(c)} style={{ padding: "6px 13px", borderRadius: 20, border: `1px solid ${cat === c ? catColor(c) : "rgba(255,255,255,0.07)"}`, background: cat === c ? `${catColor(c)}18` : "transparent", color: cat === c ? catColor(c) : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{c}</button>)}
       </div>
@@ -529,8 +733,6 @@ function MarketsPage({ markets, onBet }) {
 }
 
 function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC }) {
-  const [spinning, setSpinning] = useState(false);
-  const [spinResult, setSpinResult] = useState(null);
   const [convertAmount, setConvertAmount] = useState(10);
   const lastSpin = profile?.last_spin ? new Date(profile.last_spin).getTime() : 0;
   const canSpin = Date.now() - lastSpin > 86400000;
@@ -541,29 +743,17 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
   const weeklyPurchased = profile?.weekly_reset_date === weekKey ? (profile?.weekly_mc_purchased || 0) : 0;
   const remainingLimit = WEEKLY_MC_LIMIT - weeklyPurchased;
 
-  const doSpin = async () => {
-    if (!canSpin || spinning) return;
-    setSpinning(true);
-    await new Promise(r => setTimeout(r, 1200));
-    const reward = SPIN_REWARDS[Math.floor(Math.random() * SPIN_REWARDS.length)];
-    setSpinResult(reward);
-    onSpin(reward);
-    setSpinning(false);
-  };
-
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 20 }}>WALLET</div>
-
-      {/* Soldes */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginBottom: 18 }}>
         <div style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.07),rgba(251,191,36,0.02))", border: "1px solid rgba(251,191,36,0.14)", borderRadius: 16, padding: "20px", textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>MARKETCOINS</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>MARKETCOINS 🪙</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 36, color: "#fbbf24" }}>{fmt(coins)}</div>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>Pour jouer et parier</div>
         </div>
         <div style={{ background: "linear-gradient(135deg,rgba(16,185,129,0.07),rgba(16,185,129,0.02))", border: "1px solid rgba(16,185,129,0.14)", borderRadius: 16, padding: "20px", textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>STORECOINS</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>STORECOINS 💎</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 36, color: "#10b981" }}>{fmt(sc)}</div>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>Pour les recompenses</div>
         </div>
@@ -571,50 +761,48 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
 
       {/* Conversion SC → MC */}
       <div style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
-        <div style={{ fontWeight: 800, color: "#3b82f6", marginBottom: 4 }}>Convertir SC en MC</div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>1 SC = 1 MC · Limite {remainingLimit} MC restants cette semaine</div>
+        <div style={{ fontWeight: 800, color: "#3b82f6", marginBottom: 4 }}>💱 Convertir SC en MC</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>1 SC = 1 MC · Limite hebdo: {remainingLimit} MC restants</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input type="number" value={convertAmount} min={1} max={Math.min(sc, remainingLimit)} onChange={e => setConvertAmount(Math.max(1, Math.min(sc, remainingLimit, +e.target.value || 1)))}
             style={{ flex: 1, padding: "8px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, color: "#fff", fontSize: 15, fontWeight: 700, outline: "none" }} />
           <button onClick={() => sc >= convertAmount && remainingLimit >= convertAmount && onConvertSC(convertAmount)}
-            disabled={sc < convertAmount || remainingLimit < convertAmount}
-            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: sc >= convertAmount && remainingLimit >= convertAmount ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "rgba(255,255,255,0.05)", color: sc >= convertAmount && remainingLimit >= convertAmount ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 800, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap" }}>
+            disabled={sc < convertAmount || remainingLimit <= 0}
+            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: sc >= convertAmount && remainingLimit > 0 ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "rgba(255,255,255,0.05)", color: sc >= convertAmount && remainingLimit > 0 ? "#fff" : "rgba(255,255,255,0.2)", fontWeight: 800, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap" }}>
             Convertir →
           </button>
         </div>
       </div>
 
-      {/* Roue + Pub */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginBottom: 24 }}>
-        <div style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 15, padding: "20px", textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 7, display: "inline-block", transition: "transform 1.5s", transform: spinning ? "rotate(720deg)" : "none" }}>🎡</div>
-          <div style={{ fontWeight: 800, marginBottom: 3 }}>Roue quotidienne</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>Jusqu'a 200 MC</div>
-          {spinResult && <div style={{ fontSize: 16, fontWeight: 900, color: "#f59e0b", marginBottom: 8 }}>+{spinResult} MC</div>}
-          <button onClick={doSpin} disabled={!canSpin || spinning}
-            style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: canSpin && !spinning ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.05)", color: canSpin && !spinning ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canSpin && !spinning ? "pointer" : "not-allowed", fontSize: 13 }}>
-            {spinning ? "..." : canSpin ? "TOURNER" : "Demain"}
-          </button>
-        </div>
-        <div style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 15, padding: "20px", textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 7 }}>📺</div>
-          <div style={{ fontWeight: 800, marginBottom: 3 }}>Pub recompensee</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>+20 MC · {adsToday}/3 aujourd'hui</div>
-          <div style={{ height: 4, background: "rgba(59,130,246,0.15)", borderRadius: 99, marginBottom: 12, overflow: "hidden" }}>
-            <div style={{ width: `${(adsToday / 3) * 100}%`, height: "100%", background: "#3b82f6", borderRadius: 99 }} />
+      {/* Roue animee */}
+      <div style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 15, padding: "20px", marginBottom: 18 }}>
+        <div style={{ fontWeight: 800, marginBottom: 4, fontSize: 15 }}>🎡 Roue quotidienne</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>Tourne la roue une fois par jour — jusqu'a 200 MC ou 1 SC !</div>
+        <SpinWheel onSpin={onSpin} canSpin={canSpin} />
+      </div>
+
+      {/* Pub */}
+      <div style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 15, padding: "20px", marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div>
+            <div style={{ fontWeight: 800, marginBottom: 2 }}>📺 Pub recompensee</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>+20 MC · {adsToday}/3 aujourd'hui</div>
           </div>
           <button onClick={() => canAd && onWatchAd()} disabled={!canAd}
-            style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: canAd ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "rgba(255,255,255,0.05)", color: canAd ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canAd ? "pointer" : "not-allowed", fontSize: 13 }}>
+            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: canAd ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "rgba(255,255,255,0.05)", color: canAd ? "#fff" : "rgba(255,255,255,0.25)", fontWeight: 800, cursor: canAd ? "pointer" : "not-allowed", fontSize: 13 }}>
             {canAd ? "REGARDER" : "Limite"}
           </button>
         </div>
+        <div style={{ height: 4, background: "rgba(59,130,246,0.15)", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ width: `${(adsToday / 3) * 100}%`, height: "100%", background: "#3b82f6", borderRadius: 99 }} />
+        </div>
       </div>
 
-      {/* Historique paris */}
+      {/* Historique */}
       {(bets.length > 0 || matchBets.length > 0) && (
         <>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 12 }}>MES PARIS</div>
-          {[...matchBets.map(b => ({ ...b, isMatch: true })), ...bets].map((b, i) => (
+          {[...matchBets.map(b => ({ ...b, isMatch: true })), ...bets].slice(0, 10).map((b, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "13px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{b.market_title || b.match_title || "Paris"}</div>
@@ -637,7 +825,10 @@ function LeaderboardPage({ leaderboard, username }) {
   return (
     <div>
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>CLASSEMENT</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 22 }}>Top oracles — classement par profit net hebdo</div>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>Classe par gains MC issus des paris uniquement</div>
+      <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+        La roue et les pubs ne comptent pas — seuls tes paris comptent !
+      </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 22, alignItems: "flex-end" }}>
         {[leaderboard[1], leaderboard[0], leaderboard[2]].map((p, vi) => {
           if (!p) return null;
@@ -646,8 +837,7 @@ function LeaderboardPage({ leaderboard, username }) {
             <div key={p.username} style={{ flex: 1, background: `${topColors[vi]}0d`, border: `1px solid ${topColors[vi]}22`, borderRadius: 14, padding: "14px 10px", textAlign: "center", height: hs[vi], display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
               <BadgeTag level={getLevel(p.xp || 0)} />
               <div style={{ fontWeight: 800, fontSize: 12, color: "#fff", marginBottom: 1, marginTop: 4 }}>{p.username}</div>
-              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: topColors[vi] }}>MC {fmt(p.coins)}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{p.win_rate}% win</div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: topColors[vi] }}>+{fmt(p.total_profit || 0)} MC</div>
             </div>
           );
         })}
@@ -663,73 +853,80 @@ function LeaderboardPage({ leaderboard, username }) {
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{p.total_wins}/{p.total_bets} paris · Niv. {getLevel(p.xp || 0)}</div>
           </div>
-          <MCBadge amount={p.coins} />
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#10b981" }}>+{fmt(p.total_profit || 0)} MC</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>gain total</div>
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function StorePage({ coins, sc, profile, onRedeemSC, onBuyMC }) {
+function StorePage({ coins, sc, profile, onRedeemSC, onBuySC, onBuyMC }) {
   const level = getLevel(profile?.xp || 0);
   const userBadge = getBadge(level);
   const badgeOrder = ["rookie", "scout", "analyst", "pro", "legend"];
   const userBadgeIndex = badgeOrder.indexOf(userBadge.id);
-
   const canAccess = (requiredBadge) => badgeOrder.indexOf(requiredBadge) <= userBadgeIndex;
-
-  const rewardItems = STORE_ITEMS.filter(i => !i.isMCPack);
-  const mcPacks = STORE_ITEMS.filter(i => i.isMCPack);
 
   return (
     <div>
-      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>REWARD STORE</div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>Echange tes StoreCoins ou achete des MarketCoins</div>
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 5 }}>STORE</div>
       <div style={{ display: "flex", gap: 10, marginBottom: 22, flexWrap: "wrap" }}>
         <MCBadge amount={coins} size="lg" />
         <SCBadge amount={sc} size="lg" />
         <BadgeTag level={level} />
       </div>
 
-      {/* Packs MC */}
-      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 12, color: "#fbbf24" }}>ACHETER DES MARKETCOINS</div>
-      <div style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-        1€ = 10 MC · Limite 200 MC/semaine
+      {/* Acheter SC */}
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>💎 ACHETER DES STORECOINS</div>
+      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>1€ = 1 StoreCoins · Utilisables pour les recompenses</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, marginBottom: 28 }}>
+        {SC_PACKS.map(p => (
+          <div key={p.id} style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 14, padding: "16px 14px", textAlign: "center" }}>
+            <div style={{ fontSize: 26, marginBottom: 6 }}>{p.emoji}</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#10b981", marginBottom: 2 }}>{p.sc} SC</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>{p.priceEur}€</div>
+            <button onClick={() => onBuySC(p)} style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>
+              Acheter
+            </button>
+          </div>
+        ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 11, marginBottom: 28 }}>
-        {mcPacks.map(r => (
-          <div key={r.id} style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: 17, padding: "18px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 28, color: "#fbbf24", fontWeight: 900 }}>MC</div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 2 }}>{r.name}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{r.description}</div>
-            </div>
-            <div style={{ flex: 1 }} />
-            <button onClick={() => onBuyMC(r)} style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
-              Acheter {r.priceEur}€
+
+      {/* Acheter MC */}
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 12, color: "#fbbf24" }}>🪙 ACHETER DES MARKETCOINS</div>
+      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>1€ = 10 MC · Limite 200 MC/semaine</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, marginBottom: 28 }}>
+        {MC_PACKS.map(p => (
+          <div key={p.id} style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: 14, padding: "16px 14px", textAlign: "center" }}>
+            <div style={{ fontSize: 26, marginBottom: 6 }}>{p.emoji}</div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#fbbf24", marginBottom: 2 }}>{p.mc} MC</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>{p.priceEur}€</div>
+            <button onClick={() => onBuyMC(p)} style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>
+              Acheter
             </button>
           </div>
         ))}
       </div>
 
       {/* Recompenses SC */}
-      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 12, color: "#10b981" }}>RECOMPENSES (STORECOINS)</div>
-      <div style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-        L'acces aux recompenses depend de ton badge. Monte de niveau pour debloquer !
-      </div>
+      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 12, color: "#fff" }}>🎁 RECOMPENSES</div>
+      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>Accès conditionné par ton badge — monte de niveau pour debloquer !</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 11 }}>
-        {rewardItems.map(r => {
+        {STORE_ITEMS.map(r => {
           const accessible = canAccess(r.requiredBadge);
           const affordable = sc >= r.cost;
           const reqBadge = BADGES.find(b => b.id === r.requiredBadge);
           return (
             <div key={r.id} style={{ background: accessible ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.01)", border: `1px solid ${accessible ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)"}`, borderRadius: 17, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 10, opacity: accessible ? 1 : 0.6 }}>
-              <div style={{ fontSize: 30, color: accessible ? reqBadge?.color : "rgba(255,255,255,0.2)", fontWeight: 900 }}>{r.icon}</div>
+              <div style={{ fontSize: 32 }}>{r.emoji}</div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 2 }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>{r.description}</div>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{r.name}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>{r.description}</div>
                 <span style={{ fontSize: 10, fontWeight: 800, color: reqBadge?.color, background: `${reqBadge?.color}18`, padding: "2px 7px", borderRadius: 20, border: `1px solid ${reqBadge?.color}30` }}>
-                  {reqBadge?.icon} {reqBadge?.label} requis
+                  {reqBadge?.emoji} {reqBadge?.label} requis
                 </span>
               </div>
               <div style={{ flex: 1 }} />
@@ -758,7 +955,7 @@ function ProfilePage({ profile, username, onLogout }) {
       <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1, marginBottom: 20 }}>MON PROFIL</div>
       <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "24px", marginBottom: 18 }}>
         <div style={{ display: "flex", gap: 18, alignItems: "center", marginBottom: 14 }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg,${badge.color},#3b82f6)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 900, flexShrink: 0, color: "#fff" }}>{badge.icon}</div>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg,${badge.color},#3b82f6)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{badge.emoji}</div>
           <div>
             <div style={{ fontWeight: 900, fontSize: 20 }}>{username}</div>
             <BadgeTag level={level} />
@@ -779,19 +976,16 @@ function ProfilePage({ profile, username, onLogout }) {
           </div>
         ))}
       </div>
-
-      {/* Infos badges */}
       <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
         <div style={{ fontWeight: 800, marginBottom: 12, fontSize: 13 }}>Progression des badges</div>
         {BADGES.map(b => (
           <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: b.color, background: `${b.color}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${b.color}30`, minWidth: 70, textAlign: "center" }}>{b.icon} {b.label}</span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Niv. {b.minLevel}-{b.maxLevel === 999 ? "+" : b.maxLevel}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: b.color, background: `${b.color}18`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${b.color}30`, minWidth: 80, textAlign: "center" }}>{b.emoji} {b.label}</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Niv. {b.minLevel}{b.maxLevel === 999 ? "+" : `-${b.maxLevel}`}</span>
             {level >= b.minLevel && <span style={{ fontSize: 10, color: b.color }}>✓ Debloque</span>}
           </div>
         ))}
       </div>
-
       <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 12, padding: "13px 16px", marginBottom: 20, fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
         Les MarketCoins n'ont <strong style={{ color: "rgba(255,255,255,0.7)" }}>aucune valeur monetaire</strong> et ne peuvent pas etre achetes ni convertis en argent.
       </div>
@@ -821,9 +1015,10 @@ export default function App() {
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
+  // FIX classement : basé sur total_profit (gains paris uniquement)
   const loadLeaderboard = useCallback(async (token) => {
     try {
-      const data = await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets&order=coins.desc&limit=10", { _token: token || SUPABASE_KEY });
+      const data = await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit&order=total_profit.desc&limit=10", { _token: token || SUPABASE_KEY });
       if (data?.length) setLeaderboard(data.map((p, i) => ({ ...p, rank: i + 1, win_rate: p.total_bets > 0 ? Math.round((p.total_wins / p.total_bets) * 100) : 0 })));
     } catch {}
   }, []);
@@ -874,7 +1069,7 @@ export default function App() {
       if (data?.[0]) {
         setProfile(data[0]);
       } else {
-        const newProfile = { id: userId, coins: 500, store_coins: 0, xp: 0, level: 1, total_bets: 0, total_wins: 0, weekly_profit: 0, weekly_sc_earned: 0, total_profit: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const newProfile = { id: userId, coins: 500, store_coins: 0, xp: 0, level: 1, total_bets: 0, total_wins: 0, total_profit: 0, weekly_profit: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         try { await req("profiles", { method: "POST", _token: token, body: JSON.stringify(newProfile) }); } catch {}
         setProfile(newProfile);
       }
@@ -900,24 +1095,16 @@ export default function App() {
   };
 
   const updateProfile = async (updates, token, userId) => {
-    try {
-      await req(`profiles?id=eq.${userId}`, { method: "PATCH", _token: token, body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }) });
-    } catch {}
+    try { await req(`profiles?id=eq.${userId}`, { method: "PATCH", _token: token, body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }) }); } catch {}
     setProfile(p => ({ ...p, ...updates }));
-  };
-
-  // Calcul XP après un pari
-  const addXP = (currentXP, betCost) => {
-    const xpFromBet = 5; // 5 XP par pari
-    const newXP = (currentXP || 0) + xpFromBet;
-    return { newXP, newLevel: getLevel(newXP) };
   };
 
   const handleBetConfirm = async (side, amount, cost, gain) => {
     if (!session) return;
     const newCoins = (profile?.coins || 0) - cost;
     if (newCoins < 0) { showToast("Pas assez de MC !", "error"); return; }
-    const { newXP, newLevel } = addXP(profile?.xp, cost);
+    const newXP = (profile?.xp || 0) + 5;
+    const newLevel = getLevel(newXP);
     try {
       await req("user_bets", { method: "POST", _token: session.token, body: JSON.stringify({ user_id: session.user.id, market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }) });
       const updatedMarkets = markets.map(m => m.id === betModal.id ? { ...m, q_yes: side === "yes" ? m.q_yes + amount : m.q_yes, q_no: side === "no" ? m.q_no + amount : m.q_no, total_volume: m.total_volume + cost, participants: m.participants + 1 } : m);
@@ -926,7 +1113,7 @@ export default function App() {
       setBets(prev => [{ market_id: betModal.id, market_title: betModal.title, side, amount, cost, potential_gain: gain, status: "pending" }, ...prev]);
       await updateProfile({ coins: newCoins, xp: newXP, level: newLevel, total_bets: (profile?.total_bets || 0) + 1 }, session.token, session.user.id);
       setBetModal(null);
-      showToast(`Prediction placee ! +5 XP | Gain potentiel : +${gain.toLocaleString()} MC`);
+      showToast(`Prediction placee ! +5 XP`);
       await loadLeaderboard(session.token);
     } catch (e) { showToast(`Erreur : ${e.message}`, "error"); }
   };
@@ -935,22 +1122,29 @@ export default function App() {
     if (!session) return;
     const newCoins = (profile?.coins || 0) - amount;
     if (newCoins < 0) { showToast("Pas assez de MC !", "error"); return; }
-    const { newXP, newLevel } = addXP(profile?.xp, amount);
+    const newXP = (profile?.xp || 0) + 5;
+    const newLevel = getLevel(newXP);
     try {
       await req("match_bets", { method: "POST", _token: session.token, body: JSON.stringify({ user_id: session.user.id, match_id: null, match_title: `${match.home_team} vs ${match.away_team}`, bet_type: betType, prediction, cost: amount, potential_gain: gain, status: "pending" }) });
       setMatchBets(prev => [{ match_title: `${match.home_team} vs ${match.away_team}`, bet_type: betType, prediction, cost: amount, potential_gain: gain, status: "pending" }, ...prev]);
       await updateProfile({ coins: newCoins, xp: newXP, level: newLevel, total_bets: (profile?.total_bets || 0) + 1 }, session.token, session.user.id);
       setMatchBetModal(null);
-      showToast(`Pari place ! +5 XP | Gain potentiel : +${gain.toLocaleString()} MC`);
+      showToast(`Pari place ! +5 XP`);
       await loadLeaderboard(session.token);
     } catch (e) { showToast(`Erreur : ${e.message}`, "error"); }
   };
 
-  const handleSpin = async (reward) => {
+  // FIX roue : gere MC et SC separement
+  const handleSpin = async (segment) => {
     if (!session) return;
-    await updateProfile({ coins: (profile?.coins || 0) + reward, last_spin: new Date().toISOString() }, session.token, session.user.id);
-    await loadLeaderboard(session.token);
-    showToast(`+${reward} MC gagnes !`);
+    const updates = { last_spin: new Date().toISOString() };
+    if (segment.type === "mc") {
+      updates.coins = (profile?.coins || 0) + segment.value;
+    } else {
+      updates.store_coins = (profile?.store_coins || 0) + segment.value;
+    }
+    await updateProfile(updates, session.token, session.user.id);
+    showToast(`+${segment.value} ${segment.type === "sc" ? "💎 SC" : "🪙 MC"} gagnes !`);
   };
 
   const handleWatchAd = async () => {
@@ -958,7 +1152,6 @@ export default function App() {
     const today = new Date().toISOString().split("T")[0];
     const adsToday = profile?.ads_reset_date === today ? (profile?.ads_watched_today || 0) + 1 : 1;
     await updateProfile({ coins: (profile?.coins || 0) + 20, ads_watched_today: adsToday, ads_reset_date: today }, session.token, session.user.id);
-    await loadLeaderboard(session.token);
     showToast("+20 MC gagnes !");
   };
 
@@ -967,21 +1160,22 @@ export default function App() {
     const newSC = (profile?.store_coins || 0) - reward.cost;
     if (newSC < 0) { showToast("Pas assez de SC !", "error"); return; }
     await updateProfile({ store_coins: newSC }, session.token, session.user.id);
-    showToast(`${reward.name} obtenu ! On te contacte par email.`);
+    showToast(`${reward.emoji} ${reward.name} obtenu ! On te contacte par email.`);
+  };
+
+  const handleBuySC = async (pack) => {
+    if (!session) return;
+    await updateProfile({ store_coins: (profile?.store_coins || 0) + pack.sc }, session.token, session.user.id);
+    showToast(`💎 +${pack.sc} SC ajoutes ! (simulation — paiement reel bientot)`);
   };
 
   const handleBuyMC = async (pack) => {
     if (!session) return;
     const weekKey = getWeekKey();
     const weeklyPurchased = profile?.weekly_reset_date === weekKey ? (profile?.weekly_mc_purchased || 0) : 0;
-    const mcAmount = pack.priceEur * 10;
-    if (weeklyPurchased + mcAmount > WEEKLY_MC_LIMIT) {
-      showToast(`Limite hebdo atteinte ! Max ${WEEKLY_MC_LIMIT} MC/semaine.`, "error");
-      return;
-    }
-    // Simulation achat (pas de vrai paiement ici)
-    await updateProfile({ coins: (profile?.coins || 0) + mcAmount, weekly_mc_purchased: weeklyPurchased + mcAmount, weekly_reset_date: weekKey }, session.token, session.user.id);
-    showToast(`+${mcAmount} MC ajoutes ! (simulation)`);
+    if (weeklyPurchased + pack.mc > WEEKLY_MC_LIMIT) { showToast(`Limite hebdo atteinte ! Max ${WEEKLY_MC_LIMIT} MC/semaine.`, "error"); return; }
+    await updateProfile({ coins: (profile?.coins || 0) + pack.mc, weekly_mc_purchased: weeklyPurchased + pack.mc, weekly_reset_date: weekKey }, session.token, session.user.id);
+    showToast(`🪙 +${pack.mc} MC ajoutes ! (simulation — paiement reel bientot)`);
   };
 
   const handleConvertSC = async (amount) => {
@@ -1003,13 +1197,14 @@ export default function App() {
   const sc = profile?.store_coins ?? 0;
   const username = profile?.username || session?.user?.user_metadata?.username || session?.user?.email?.split("@")[0] || "Joueur";
 
+  // FIX : nav sans MC devant les labels
   const NAV = [
     { id: "home", icon: "⚡", label: "Accueil" },
     { id: "matches", icon: "⚽", label: "Matchs" },
     { id: "markets", icon: "📊", label: "Marches" },
-    { id: "wallet", icon: "MC", label: "Wallet" },
+    { id: "wallet", icon: "💰", label: "Wallet" },
     { id: "leaderboard", icon: "🏆", label: "Top" },
-    { id: "store", icon: "★", label: "Store" },
+    { id: "store", icon: "🎁", label: "Store" },
     { id: "profile", icon: "👤", label: "Profil" },
   ];
 
@@ -1021,7 +1216,7 @@ export default function App() {
         <div style={{ position: "absolute", top: -200, left: "25%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,0.04),transparent 70%)" }} />
       </div>
 
-      {/* Header */}
+      {/* Header - FIX : sans MC dans les labels */}
       <div style={{ position: "sticky", top: 0, zIndex: 200, background: "rgba(8,12,18,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 54 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -1038,10 +1233,10 @@ export default function App() {
           <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
             <button onClick={() => setPage("profile")} style={{ padding: "4px 9px", borderRadius: 7, border: "none", background: "transparent", color: "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>👤 {username}</button>
             <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: 7, padding: "3px 8px" }}>
-              <span style={{ fontWeight: 800, color: "#fbbf24", fontSize: 11 }}>MC {fmt(coins)}</span>
+              <span style={{ fontWeight: 800, color: "#fbbf24", fontSize: 11 }}>🪙 {fmt(coins)}</span>
             </div>
             <div style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 7, padding: "3px 8px" }}>
-              <span style={{ fontWeight: 800, color: "#10b981", fontSize: 11 }}>SC {fmt(sc)}</span>
+              <span style={{ fontWeight: 800, color: "#10b981", fontSize: 11 }}>💎 {fmt(sc)}</span>
             </div>
           </div>
         </div>
@@ -1053,16 +1248,16 @@ export default function App() {
         {page === "matches" && <MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
         {page === "markets" && <MarketsPage markets={markets} onBet={setBetModal} />}
         {page === "wallet" && <WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} />}
-        {page === "leaderboard" && <LeaderboardPage leaderboard={leaderboard.length ? leaderboard : [{ rank: 1, username, coins, xp: profile?.xp || 0, total_wins: profile?.total_wins || 0, total_bets: profile?.total_bets || 0, win_rate: 0 }]} username={username} />}
-        {page === "store" && <StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onBuyMC={handleBuyMC} />}
+        {page === "leaderboard" && <LeaderboardPage leaderboard={leaderboard.length ? leaderboard : [{ rank: 1, username, coins, xp: profile?.xp || 0, total_wins: profile?.total_wins || 0, total_bets: profile?.total_bets || 0, win_rate: 0, total_profit: 0 }]} username={username} />}
+        {page === "store" && <StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onBuySC={handleBuySC} onBuyMC={handleBuyMC} />}
         {page === "profile" && <ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
       </div>
 
-      {/* Bottom nav */}
+      {/* Bottom nav - FIX : icones propres sans MC */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(8,12,18,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", zIndex: 200 }}>
         {NAV.map(n => (
           <button key={n.id} onClick={() => setPage(n.id)} style={{ flex: 1, padding: "8px 0", background: "transparent", border: "none", color: page === n.id ? "#10b981" : "rgba(255,255,255,0.3)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 14 }}>{n.icon}</span>
+            <span style={{ fontSize: 16 }}>{n.icon}</span>
             <span style={{ fontSize: 8, fontWeight: 700 }}>{n.label}</span>
           </button>
         ))}
