@@ -175,7 +175,7 @@ const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); r
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 const getSeedMarkets = () => { const saved = loadSavedOdds(); return BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" })); };
 
-const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1"];
+const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1", "SA", "PPL"];
 const COMP_INFO = {
   "PL": { name: "Premier League", emoji: "🏴", color: "#3b82f6" },
   "FL1": { name: "Ligue 1", emoji: "🇫🇷", color: "#ef4444" },
