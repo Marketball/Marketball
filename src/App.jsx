@@ -175,7 +175,7 @@ const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); r
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 const getSeedMarkets = () => { const saved = loadSavedOdds(); return BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" })); };
 
-const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1", "SA", "PPL", "EL"];
+const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1"];
 const COMP_INFO = {
   "PL": { name: "Premier League", emoji: "🏴", color: "#3b82f6" },
   "FL1": { name: "Ligue 1", emoji: "🇫🇷", color: "#ef4444" },
@@ -758,7 +758,7 @@ function MatchesPage({ matches, onBet, loading }) {
   const finished=filtered.filter(m=>m.status==="FINISHED");
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>MATCHS</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}>Cotes dynamiques · 5 types de paris · Vrais effectifs</div>
+    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}></div>
     <div style={{ display:"flex", gap:7, marginBottom:22, flexWrap:"wrap" }}>
       {allComps.map(c=><button key={c} onClick={()=>setComp(c)} style={{ padding:"6px 13px", borderRadius:20, border:`1px solid ${comp===c?compColor(c):"rgba(241,245,249,0.07)"}`, background:comp===c?`${compColor(c)}12`:"transparent", color:comp===c?compColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:12, cursor:"pointer", transition:"all 0.2s" }}>{c==="Tous"?"Tous":`${compEmoji(c)} ${compLabel(c)}`}</button>)}
     </div>
@@ -775,7 +775,7 @@ function MarketsPage({ markets, onBet }) {
   const filtered=cat==="Tous"?markets:markets.filter(m=>m.category===cat);
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>MARCHES DE PREDICTION</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}>{markets.length} marches actifs · AMM en temps reel</div>
+    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}></div>
     <div style={{ display:"flex", gap:7, marginBottom:22, flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px", borderRadius:20, border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`, background:cat===c?`${catColor(c)}12`:"transparent", color:cat===c?catColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:12, cursor:"pointer", transition:"all 0.2s" }}>{c}</button>)}</div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
   </div>;
@@ -1244,7 +1244,6 @@ export default function App() {
     {id:"wallet",icon:"💰",label:"Wallet"},
     {id:"leaderboard",icon:"🏆",label:"Top"},
     {id:"store",icon:"🎁",label:"Store"},
-    {id:"profile",icon:"👤",label:"Profil"},
     {id:"howto",icon:"❓",label:"Guide"},
   ];
 
