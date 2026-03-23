@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — MarketBall</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030712; color: #f1f5f9; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    input, select, textarea, button { font-family: 'DM Sans', sans-serif; }
+
+    .login { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .login-box { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.08); border-radius: 20px; padding: 40px 32px; width: 100%; max-width: 380px; text-align: center; }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 3px; margin-bottom: 6px; }
+    .logo span { color: #10b981; }
+    .subtitle { font-size: 13px; color: rgba(241,245,249,0.35); margin-bottom: 28px; }
+    .inp { width: 100%; padding: 12px 14px; background: rgba(241,245,249,0.04); border: 1px solid rgba(241,245,249,0.08); border-radius: 11px; color: #f1f5f9; font-size: 15px; outline: none; margin-bottom: 14px; }
+    .inp:focus { border-color: rgba(16,185,129,0.5); }
+    .btn-primary { width: 100%; padding: 13px 0; border-radius: 12px; border: none; background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 8px 25px rgba(16,185,129,0.3); }
+    .error { color: #f87171; font-size: 13px; margin-top: 10px; }
+
+    .admin { display: none; max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+    .header-title span { color: #10b981; }
+    .logout-btn { padding: 7px 14px; border-radius: 9px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); color: #f87171; font-weight: 700; font-size: 12px; cursor: pointer; }
+
+    .card { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.07); border-radius: 18px; padding: 24px; margin-bottom: 24px; }
+    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; color: #10b981; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 11px; font-weight: 700; color: rgba(241,245,249,0.4); letter-spacing: 0.5px; }
+    .form-inp { padding: 11px 14px; background: rgba(241,245,249,0.04); border: 1px solid rgba(241,245,249,0.08); border-radius: 10px; color: #f1f5f9; font-size: 14px; outline: none; width: 100%; transition: border-color 0.2s; }
+    .form-inp:focus { border-color: rgba(16,185,129,0.4); }
+    select.form-inp option { background: #1e293b; }
+
+    .toggle-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: rgba(241,245,249,0.04); border: 1px solid rgba(241,245,249,0.08); border-radius: 10px; cursor: pointer; }
+    .toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #10b981; cursor: pointer; }
+    .toggle-row span { font-size: 13px; color: rgba(241,245,249,0.6); }
+
+    .prob-preview { margin-top: 8px; display: flex; gap: 8px; }
+    .prob-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+
+    .submit-btn { margin-top: 18px; padding: 12px 28px; border-radius: 11px; border: none; background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,0.3); transition: all 0.2s; }
+    .submit-btn:hover { transform: translateY(-1px); }
+    .submit-btn:disabled { background: rgba(241,245,249,0.06); color: rgba(241,245,249,0.2); cursor: not-allowed; box-shadow: none; transform: none; }
+
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999; white-space: nowrap; animation: slideUp 0.3s ease; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+    .toast.success { background: linear-gradient(135deg,#10b981,#059669); color: #fff; }
+    .toast.error { background: #ef4444; color: #fff; }
+    @keyframes slideUp { from { transform: translateX(-50%) translateY(16px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.06); border-radius: 14px; padding: 16px; text-align: center; }
+    .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; }
+    .stat-label { font-size: 10px; color: rgba(241,245,249,0.3); font-weight: 700; letter-spacing: 1px; margin-top: 3px; }
+
+    .markets-list { display: flex; flex-direction: column; gap: 10px; }
+    .market-item { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.06); border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .market-item-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .market-item-meta { font-size: 12px; color: rgba(241,245,249,0.35); }
+    .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-right: 6px; }
+    .actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .close-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(251,191,36,0.2); background: rgba(251,191,36,0.06); color: #fbbf24; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .close-btn:hover { background: rgba(251,191,36,0.15); }
+    .reopen-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.2); background: rgba(16,185,129,0.06); color: #10b981; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .delete-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); color: #f87171; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .delete-btn:hover { background: rgba(239,68,68,0.15); }
+    .empty { text-align: center; padding: 30px; color: rgba(241,245,249,0.25); font-size: 14px; }
+
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .filter-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(241,245,249,0.08); background: transparent; color: rgba(241,245,249,0.35); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .filter-tab.active { border-color: #10b981; background: rgba(16,185,129,0.1); color: #10b981; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .market-item { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginPage">
+  <div class="login-box">
+    <div class="logo">MARKET<span>BALL</span></div>
+    <div class="subtitle">Interface d'administration</div>
+    <input type="password" class="inp" id="pwdInput" placeholder="Mot de passe admin" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn-primary" onclick="doLogin()">ACCEDER</button>
+    <div class="error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="admin" id="adminPage">
+  <div class="header">
+    <div class="header-title">ADMIN — <span>MARKETBALL</span></div>
+    <button class="logout-btn" onclick="doLogout()">Déconnexion</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-val" id="statTotal" style="color:#10b981">—</div>
+      <div class="stat-label">MARCHES ACTIFS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statRumeurs" style="color:#f59e0b">—</div>
+      <div class="stat-label">RUMEURS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statClosed" style="color:#6b7280">—</div>
+      <div class="stat-label">FERMES</div>
+    </div>
+  </div>
+
+  <!-- Créer un marché -->
+  <div class="card">
+    <div class="card-title">➕ CREER UN MARCHE</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>TITRE DU MARCHE *</label>
+        <input class="form-inp" id="mTitle" placeholder="Ex: Mbappe va se mettre en couple avec Ester Exposito ?" />
+      </div>
+      <div class="form-group">
+        <label>CATEGORIE</label>
+        <select class="form-inp" id="mCategory">
+          <option value="Rumeurs">🔥 Rumeurs</option>
+          <option value="Transferts">💸 Transferts</option>
+          <option value="Competitions">🏆 Competitions</option>
+          <option value="Performances">📈 Performances</option>
+          <option value="Contrats">📝 Contrats</option>
+          <option value="Recompenses">🎖️ Recompenses</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SOURCE</label>
+        <input class="form-inp" id="mSource" placeholder="Ex: TMZ, L'Equipe, Twitter..." value="MarketBall" />
+      </div>
+      <div class="form-group">
+        <label>PROBABILITE INITIALE OUI (%)</label>
+        <input class="form-inp" type="number" id="mProb" value="50" min="5" max="95" oninput="updateProbPreview()" />
+        <div class="prob-preview">
+          <span class="prob-badge" id="probOui" style="background:rgba(16,185,129,0.12);color:#10b981">OUI 50%</span>
+          <span class="prob-badge" id="probNon" style="background:rgba(239,68,68,0.12);color:#ef4444">NON 50%</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>DATE DE CLOTURE</label>
+        <div class="toggle-row" onclick="toggleNoDate()" style="margin-bottom:8px">
+          <input type="checkbox" id="noDateCheck" onclick="event.stopPropagation();toggleNoDate()" />
+          <span>Sans date limite (fermeture manuelle)</span>
+        </div>
+        <input class="form-inp" type="datetime-local" id="mCloses" />
+      </div>
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="createMarket()">PUBLIER LE MARCHE →</button>
+  </div>
+
+  <!-- Liste des marchés -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:0">📋 MARCHES</div>
+      <button onclick="loadMarkets()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">↻ Rafraichir</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('open',this)">Actifs</button>
+      <button class="filter-tab" onclick="setFilter('closed',this)">Fermés</button>
+      <button class="filter-tab" onclick="setFilter('all',this)">Tous</button>
+    </div>
+    <div class="markets-list" id="marketsList">
+      <div class="empty">Chargement...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK";
+const ADMIN_PASSWORD = "adminmarketball9233005";
+
+const CAT_COLORS = {
+  "Rumeurs": "#f59e0b",
+  "Transferts": "#3b82f6",
+  "Competitions": "#fbbf24",
+  "Performances": "#10b981",
+  "Contrats": "#8b5cf6",
+  "Recompenses": "#ec4899",
+};
+
+let currentFilter = "open";
+let allMarkets = [];
+
+async function sbReq(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...opts.headers,
+    },
+  });
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function doLogin() {
+  const pwd = document.getElementById("pwdInput").value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("adminPage").style.display = "block";
+    const d = new Date(Date.now() + 14 * 86400000);
+    document.getElementById("mCloses").value = d.toISOString().slice(0, 16);
+    loadMarkets();
+  } else {
+    document.getElementById("loginError").textContent = "Mot de passe incorrect ❌";
+    document.getElementById("pwdInput").value = "";
+    setTimeout(() => document.getElementById("loginError").textContent = "", 3000);
+  }
+}
+
+function doLogout() {
+  document.getElementById("loginPage").style.display = "flex";
+  document.getElementById("adminPage").style.display = "none";
+  document.getElementById("pwdInput").value = "";
+}
+
+function showToast(msg, type = "success") {
+  const t = document.createElement("div");
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function toggleNoDate() {
+  const cb = document.getElementById("noDateCheck");
+  const inp = document.getElementById("mCloses");
+  cb.checked = !cb.checked;
+  inp.disabled = cb.checked;
+  inp.style.opacity = cb.checked ? "0.3" : "1";
+  if (!cb.checked) {
+    const d = new Date(Date.now() + 14 * 86400000);
+    inp.value = d.toISOString().slice(0, 16);
+  }
+}
+
+function updateProbPreview() {
+  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
+  document.getElementById("probOui").textContent = `OUI ${prob}%`;
+  document.getElementById("probNon").textContent = `NON ${100 - prob}%`;
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderMarkets();
+}
+
+async function createMarket() {
+  const title = document.getElementById("mTitle").value.trim();
+  const category = document.getElementById("mCategory").value;
+  const source = document.getElementById("mSource").value.trim() || "MarketBall";
+  const noDate = document.getElementById("noDateCheck").checked;
+  const closes = document.getElementById("mCloses").value;
+  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
+
+  if (!title) { showToast("Le titre est obligatoire !", "error"); return; }
+  if (!noDate && !closes) { showToast("Choisis une date de clôture ou coche 'Sans date limite'", "error"); return; }
+
+  // Convertir probabilité en q_yes/q_no
+  const ratio = prob / (100 - prob);
+  const q_no = 100;
+  const q_yes = Math.round(q_no * ratio);
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Publication en cours...";
+
+  try {
+    await sbReq("custom_markets", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        category,
+        source,
+        closes_at: noDate ? null : new Date(closes).toISOString(),
+        q_yes,
+        q_no,
+        total_volume: 0,
+        participants: 0,
+        status: "open",
+        created_by: "admin",
+      }),
+    });
+    showToast("✅ Marché publié !");
+    // Reset form
+    document.getElementById("mTitle").value = "";
+    document.getElementById("mSource").value = "MarketBall";
+    document.getElementById("mProb").value = "50";
+    document.getElementById("mCategory").value = "Rumeurs";
+    document.getElementById("noDateCheck").checked = false;
+    document.getElementById("mCloses").disabled = false;
+    document.getElementById("mCloses").style.opacity = "1";
+    const d = new Date(Date.now() + 14 * 86400000);
+    document.getElementById("mCloses").value = d.toISOString().slice(0, 16);
+    updateProbPreview();
+    loadMarkets();
+  } catch (e) {
+    showToast("Erreur : " + e.message, "error");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "PUBLIER LE MARCHE →";
+}
+
+async function closeMarket(id) {
+  if (!confirm("Fermer ce marché ?")) return;
+  try {
+    await sbReq(`custom_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "closed" }) });
+    showToast("Marché fermé !");
+    loadMarkets();
+  } catch { showToast("Erreur", "error"); }
+}
+
+async function reopenMarket(id) {
+  try {
+    await sbReq(`custom_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "open" }) });
+    showToast("Marché réouvert !");
+    loadMarkets();
+  } catch { showToast("Erreur", "error"); }
+}
+
+async function deleteMarket(id) {
+  if (!confirm("Supprimer définitivement ce marché ? Cette action est irréversible.")) return;
+  try {
+    await sbReq(`custom_markets?id=eq.${id}`, { method: "DELETE" });
+    showToast("Marché supprimé !");
+    loadMarkets();
+  } catch { showToast("Erreur", "error"); }
+}
+
+function renderMarkets() {
+  const list = document.getElementById("marketsList");
+  const filtered = currentFilter === "all" ? allMarkets : allMarkets.filter(m => m.status === currentFilter);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">Aucun marché ${currentFilter === "open" ? "actif" : currentFilter === "closed" ? "fermé" : ""}</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(m => {
+    const cc = CAT_COLORS[m.category] || "#6b7280";
+    const closes = m.closes_at ? new Date(m.closes_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Sans limite";
+    const isClosed = m.status === "closed";
+    const prob = Math.round((Math.exp(m.q_yes / 100) / (Math.exp(m.q_yes / 100) + Math.exp(m.q_no / 100))) * 100);
+
+    return `
+      <div class="market-item" style="opacity:${isClosed ? 0.6 : 1}">
+        <div style="flex:1;min-width:0">
+          <div class="market-item-title">${m.title}</div>
+          <div class="market-item-meta">
+            <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
+            ${m.source} · Clôture: ${closes} · OUI: ${prob}%
+            ${isClosed ? ' · <span style="color:#6b7280;font-weight:700">FERMÉ</span>' : ''}
+          </div>
+        </div>
+        <div class="actions">
+          ${!isClosed
+            ? `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`
+            : `<button class="reopen-btn" onclick="reopenMarket('${m.id}')">Rouvrir</button>`
+          }
+          <button class="delete-btn" onclick="deleteMarket('${m.id}')">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadMarkets() {
+  document.getElementById("marketsList").innerHTML = '<div class="empty">Chargement...</div>';
+  try {
+    const data = await sbReq("custom_markets?order=created_at.desc&limit=100");
+    allMarkets = data || [];
+    const active = allMarkets.filter(m => m.status === "open");
+    const closed = allMarkets.filter(m => m.status === "closed");
+    document.getElementById("statTotal").textContent = active.length;
+    document.getElementById("statRumeurs").textContent = active.filter(m => m.category === "Rumeurs").length;
+    document.getElementById("statClosed").textContent = closed.length;
+    renderMarkets();
+  } catch (e) {
+    document.getElementById("marketsList").innerHTML = `<div class="empty" style="color:#f87171">Erreur de chargement</div>`;
+  }
+}
+</script>
+</body>
+</html>
