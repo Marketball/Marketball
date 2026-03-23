@@ -111,7 +111,7 @@ const STORE_ITEMS = [
   { id: "s4", name: "Maillot de foot officiel", cost: 900, emoji: "👕", requiredBadge: "pro", description: "Replica officielle, taille au choix" },
   { id: "s5", name: "Place VIP + rencontre joueur", cost: 2000, emoji: "🏟️", requiredBadge: "legend", description: "Experience unique sur demande" },
 ];
-const SC_PACKS = [{ id: "sc1", sc: 10, priceEur: 1 }, { id: "sc2", sc: 50, priceEur: 5 }, { id: "sc3", sc: 100, priceEur: 10 }];
+const SC_PACKS = [{ id: "sc1", sc: 10, priceEur: 1 }, { id: "sc2", sc: 50, priceEur: 50 }, { id: "sc3", sc: 100, priceEur: 100 }];
 const MC_PACKS = [{ id: "mc1", mc: 50, priceEur: 5 }, { id: "mc2", mc: 100, priceEur: 10 }];
 const WEEKLY_MC_LIMIT = 200;
 
