@@ -9,7 +9,14 @@ const req = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new Error(data?.message || data?.error_description || JSON.stringify(data));
+  if (!res.ok) {
+    const msg = data?.message || data?.error_description || JSON.stringify(data);
+    if (msg?.includes("JWT") || msg?.includes("expired") || res.status === 401) {
+      // Token expire - recharger la page pour forcer reconnexion
+      setTimeout(() => window.location.reload(), 1000);
+    }
+    throw new Error(msg);
+  }
   return data;
 };
 
