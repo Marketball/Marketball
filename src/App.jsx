@@ -1128,9 +1128,11 @@ export default function App() {
   const loadBets=useCallback(async(t,u)=>{try{const d=await req(`user_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=20`,{_token:t});if(d)setBets(d);}catch{}},[]);
   const loadMatchBets=useCallback(async(t,u)=>{
     try{
-      const d=await req(`match_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=20`,{_token:t});
+      // Charger tous les paris pour affichage
+      const d=await req(`match_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=30`,{_token:t});
       if(d) setMatchBets(d);
-      return d||[];
+      // Retourner uniquement les pending pour la resolution
+      return (d||[]).filter(b=>b.status==="pending");
     }catch{return[];}
   },[]);
 
