@@ -56,16 +56,26 @@ const calcExactScoreOdds = (hG, aG, odds) => {
   return Math.min(200, Math.max(3, +((1 / Math.max(poi(lH, hG) * poi(lA, aG), 0.001)) * 1.1).toFixed(1)));
 };
 
-const calcScorerOdds = (player, isFirst) => {
+const calcScorerOdds = (player, isFirst, position) => {
+  // Utilise la position API si disponible, sinon fallback sur le nom
+  const pos = position || "";
+  const isFwd = pos.includes("Forward") || pos.includes("Centre-Forward") || pos.includes("Winger") || pos.includes("Striker");
+  const isMid = pos.includes("Midfield") && !pos.includes("Defensive");
+  const isDef = pos.includes("Back") || pos.includes("Defensive") || pos.includes("Goalkeeper") || pos.includes("Keeper");
+
+  // Fallback noms connus si pas de position
   const TOP = ["Haaland","Kane","Mbappe","Salah","Vinicius","Lewandowski","Lautaro","Vlahovic","Osimhen","Guirassy","Watkins","Isak"];
-  const ATT = ["Nunez","Dembele","Aubameyang","Lacazette","Morata","Griezmann","Embolo","Son","Rashford","Barcola","Yamal","Greenwood","Muani","Dia","David","Firmino","Werner"];
-  const OFF = ["Bellingham","De Bruyne","Odegaard","Saka","Palmer","Musiala","Pedri","Foden","Grealish","Szoboszlai","Cherki","Fernandes","Valverde"];
-  const isTop = TOP.some(a => player?.includes(a));
-  const isAtt = ATT.some(a => player?.includes(a));
-  const isOff = OFF.some(m => player?.includes(m));
-  let pScore = isTop ? 0.50 : isAtt ? 0.32 : isOff ? 0.20 : 0.15;
-  const pFirst = isFirst ? pScore / 4.5 : pScore;
-  return Math.min(isFirst ? 40 : 20, Math.max(isFirst ? 2.5 : 1.5, +((1.1 / Math.max(pFirst, 0.02))).toFixed(1)));
+  const isTopName = TOP.some(a => player?.includes(a));
+
+  let pScore;
+  if (isTopName) pScore = 0.52;
+  else if (isFwd) pScore = 0.35;
+  else if (isMid) pScore = 0.18;
+  else if (isDef) pScore = 0.05;
+  else pScore = 0.22; // inconnu = attaquant probable vu le filtrage
+
+  const pFirst = isFirst ? pScore / 4.0 : pScore;
+  return Math.min(isFirst ? 35 : 15, Math.max(isFirst ? 2.5 : 1.4, +((1.05 / Math.max(pFirst, 0.02))).toFixed(1)));
 };
 
 const calcOverUnderOdds = (line, isOver, odds) => {
@@ -116,7 +126,7 @@ const filterScorers = (squad) => {
       if (EXCLUDE.some(e => pos.includes(e))) return false;
       return INCLUDE.some(i => pos.includes(i)) || pos === "Midfielder" || pos === "Forward" || pos === "Attacker";
     })
-    .map(p => p.name)
+    .map(p => ({ name: p.name, position: p.position || "" }))
     .slice(0, 14);
 };
 
@@ -592,8 +602,10 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
         :currentPlayers.length>0?(
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, maxHeight:200, overflowY:"auto" }}>
             {currentPlayers.map(p=>{
-              const o=calcScorerOdds(p,betType==="first_scorer");
-              return <button key={p} onClick={()=>setPrediction(p)} style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${prediction===p?"#10b981":"rgba(241,245,249,0.06)"}`, background:prediction===p?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:prediction===p?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.15s" }}><span>{p}</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:12 }}>x{o}</span></button>;
+              const name = typeof p === "object" ? p.name : p;
+              const pos = typeof p === "object" ? p.position : "";
+              const o=calcScorerOdds(name,betType==="first_scorer",pos);
+              return <button key={name} onClick={()=>setPrediction(name)} style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${prediction===name?"#10b981":"rgba(241,245,249,0.06)"}`, background:prediction===name?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:prediction===name?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.15s" }}><span>{name}</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:12 }}>x{o}</span></button>;
             })}
           </div>
         ):<div style={{ fontSize:12, color:"rgba(241,245,249,0.25)", textAlign:"center", padding:16 }}>Joueurs non disponibles</div>}
