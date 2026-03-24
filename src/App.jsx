@@ -547,7 +547,7 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const currentOdds=getOdds();
   const gain=Math.round(amount*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
-  const canBet=finalPred&&amount>=10&&amount<=coins;
+  const canBet=finalPred&&amount>=1&&amount<=coins;
 
   const BET_TYPES=[
     {id:"winner",label:"🏆 Vainqueur",desc:"1X2"},
@@ -617,7 +617,7 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
         {BET_TYPES.map(t=><button key={t.id} onClick={()=>{setBetType(t.id);setPrediction("");setScorerTeam("home");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"left", transition:"all 0.2s" }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
       </div>
       <div style={{ marginBottom:16 }}>{renderInputs()}</div>
-      <input type="number" value={amount} min={10} max={coins} onChange={e=>setAmount(Math.max(10,Math.min(coins,+e.target.value||10)))} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+      <input type="number" value={amount} min={1} max={coins} onChange={e=>setAmount(Math.max(1,Math.min(coins,+e.target.value||1)))} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
       <div style={{ display:"flex", gap:6, marginBottom:14 }}>{[50,100,200,500].map(v=><button key={v} onClick={()=>setAmount(Math.min(v,coins))} style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===v?"rgba(16,185,129,0.1)":"transparent", color:amount===v?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>)}</div>
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Prediction</span><span style={{ fontWeight:700, fontSize:13 }}>{finalPred||"—"}</span></div>
