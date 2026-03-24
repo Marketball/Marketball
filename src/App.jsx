@@ -1268,7 +1268,12 @@ export default function App() {
       const pendingMB=await loadMatchBets(token,user.id);
       await checkAndResolveBets(token,user.id,lm,pendingMB);
     },5*60*1000);
-    return()=>clearInterval(interval);
+    // Refresh rapide 60s uniquement si matchs en direct
+    const liveInterval=setInterval(async()=>{
+      const hasLive=matches.some(m=>m.status==="IN_PLAY"||m.status==="PAUSED");
+      if(hasLive) await loadMatches();
+    },60*1000);
+    return()=>{clearInterval(interval);clearInterval(liveInterval);};
   };
 
   const updateProfile=async(updates,token,userId)=>{
