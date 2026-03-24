@@ -1340,8 +1340,18 @@ export default function App() {
 
   const handleBuySC=async(pack)=>{
     if(!session) return;
-    await updateProfile({store_coins:(profile?.store_coins||0)+pack.sc},session.token,session.user.id);
-    showToast(`💎 +${pack.sc} SC ! (simulation)`);
+    try{
+      showToast("Redirection vers le paiement...");
+      const packIds={10:"sc10",50:"sc50",100:"sc100"};
+      const res=await fetch("/api/create-checkout",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pack:packIds[pack.sc]||"sc10",userId:session.user.id})
+      });
+      const data=await res.json();
+      if(data.url) window.location.href=data.url;
+      else showToast("Erreur paiement","error");
+    }catch(e){showToast("Erreur : "+e.message,"error");}
   };
 
   const handleConvertSC=async(amount)=>{
