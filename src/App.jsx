@@ -413,8 +413,8 @@ function AuthPage({ onAuth }) {
 function MarketCard({ market, onBet }) {
   const [hover,setHover]=useState(false);
   const p=AMM.probYes(market.q_yes,market.q_no), cc=catColor(market.category);
-  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
-    style={{ background:hover?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${hover?"rgba(16,185,129,0.15)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"20px 22px", position:"relative", overflow:"hidden", boxShadow:hover?"0 16px 40px rgba(0,0,0,0.3)":"0 4px 15px rgba(0,0,0,0.15)" }}>
+  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onClick={()=>onBet(market)}
+    style={{ background:hover?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${hover?"rgba(16,185,129,0.15)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"20px 22px", position:"relative", overflow:"hidden", boxShadow:hover?"0 16px 40px rgba(0,0,0,0.3)":"0 4px 15px rgba(0,0,0,0.15)", cursor:"pointer" }}>
     <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${cc},transparent)` }} />
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
       <div style={{ flex:1, paddingRight:12 }}>
@@ -455,8 +455,8 @@ function MatchCard({ match, onBet }) {
     const init=name?name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?";
     return <div style={{ width:38,height:38,borderRadius:"50%",background:`${clubColor}25`,border:`2px solid ${clubColor}50`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 7px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:clubColor,letterSpacing:1 }}>{init}</div>;
   };
-  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
-    style={{ background:hover?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${isLive?"rgba(239,68,68,0.25)":hover?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"18px 20px", position:"relative", overflow:"hidden", boxShadow:hover?"0 16px 40px rgba(0,0,0,0.3)":"0 4px 15px rgba(0,0,0,0.15)" }}>
+  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onClick={()=>!isFinished&&onBet(match)}
+    style={{ background:hover?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${isLive?"rgba(239,68,68,0.25)":hover?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"18px 20px", position:"relative", overflow:"hidden", boxShadow:hover?"0 16px 40px rgba(0,0,0,0.3)":"0 4px 15px rgba(0,0,0,0.15)", cursor:isFinished?"default":"pointer" }}>
     <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${isLive?"#ef4444":cc},transparent)` }} />
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
       <span style={{ fontSize:10, fontWeight:700, color:cc, background:`${cc}12`, padding:"2px 8px", borderRadius:20, border:`1px solid ${cc}20` }}>{compEmoji(match.competition)} {compLabel(match.competition)}</span>
