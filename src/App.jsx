@@ -1081,7 +1081,7 @@ export default function App() {
   // Clôture automatique des paris matchs terminés
   const checkAndResolveBets=useCallback(async(token,userId,currentMatches,pendingBets)=>{
     if(!token||!pendingBets?.length||!currentMatches?.length) return;
-    const pending=pendingBets.filter(b=>b.status==="pending");
+    const pending=pendingBets.filter(b=>b.status==="pending"&&b.id);
     if(!pending.length) return;
     let profileUpdated=false;
     let newCoins=profileRef.current?.coins||0;
@@ -1250,7 +1250,7 @@ export default function App() {
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
       const res=await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,match_id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"})});
-      const newBet=res?.[0]||{match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"};
+      const newBet=res?.[0]||{id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"};
       setMatchBets(prev=>[newBet,...prev]);
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setMatchBetModal(null);
