@@ -91,6 +91,8 @@ const calcOverUnderOdds = (line, isOver, odds) => {
 const resolveBet = (bet, matchResult) => {
   const { bet_type, prediction } = bet;
   const { homeScore, awayScore, homeTeam, awayTeam, scorers } = matchResult;
+  // Ne pas resoudre si le match n'est pas termine ou scores invalides
+  if (homeScore === null || homeScore === undefined || awayScore === null || awayScore === undefined) return false;
   if (bet_type === "winner") {
     const winner = homeScore > awayScore ? homeTeam : awayScore > homeScore ? awayTeam : "Nul";
     return prediction === winner;
