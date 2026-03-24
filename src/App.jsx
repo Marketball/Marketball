@@ -853,19 +853,79 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
   </div>;
 }
 
+function useCountdown() {
+  const [timeLeft, setTimeLeft] = useState("");
+  useEffect(() => {
+    const calc = () => {
+      const now = new Date();
+      const nextMonday = new Date(now);
+      const day = now.getDay();
+      const daysUntilMonday = day === 0 ? 1 : 8 - day;
+      nextMonday.setDate(now.getDate() + daysUntilMonday);
+      nextMonday.setHours(0, 0, 0, 0);
+      const diff = nextMonday - now;
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${d}j ${String(h).padStart(2,"0")}h ${String(m).padStart(2,"0")}m ${String(s).padStart(2,"0")}s`);
+    };
+    calc();
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
+  }, []);
+  return timeLeft;
+}
+
+const WEEKLY_REWARDS = [
+  { rank: 1, sc: 25, emoji: "🥇", color: "#fbbf24" },
+  { rank: 2, sc: 20, emoji: "🥈", color: "#94a3b8" },
+  { rank: 3, sc: 15, emoji: "🥉", color: "#cd7f32" },
+  { rank: 4, sc: 5, emoji: "4️⃣", color: "#6b7280" },
+  { rank: 5, sc: 5, emoji: "5️⃣", color: "#6b7280" },
+];
+
 function LeaderboardPage({ leaderboard, username }) {
   const topColors=["#94a3b8","#fbbf24","#cd7f32"];
   const medals=["🥈","🥇","🥉"];
+  const countdown = useCountdown();
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>CLASSEMENT</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:8 }}>Classe par gains MC des paris uniquement</div>
+    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Classe par gains MC des paris uniquement</div>
+
+    {/* Compte a rebours */}
+    <div style={{ background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(251,191,36,0.03))", border:"1px solid rgba(251,191,36,0.15)", borderRadius:16, padding:"16px 18px", marginBottom:16 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#fbbf24", marginBottom:2 }}>⏰ REINITIALISATION DANS</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:2, color:"#f1f5f9" }}>{countdown}</div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>Chaque lundi à 00h00</div>
+          <div style={{ fontSize:11, color:"#10b981", fontWeight:700 }}>Classement remis à zéro</div>
+        </div>
+      </div>
+      {/* Récompenses */}
+      <div style={{ borderTop:"1px solid rgba(251,191,36,0.1)", paddingTop:12 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", letterSpacing:1, marginBottom:8 }}>RECOMPENSES DE FIN DE SEMAINE</div>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {WEEKLY_REWARDS.map(r=>(
+            <div key={r.rank} style={{ flex:"1 1 80px", background:`${r.color}10`, border:`1px solid ${r.color}25`, borderRadius:10, padding:"8px 6px", textAlign:"center" }}>
+              <div style={{ fontSize:16, marginBottom:3 }}>{r.emoji}</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:r.color, letterSpacing:1 }}>{r.sc} SC</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
     <div style={{ background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:10, padding:"10px 14px", marginBottom:22, fontSize:12, color:"rgba(241,245,249,0.35)" }}>
       Roue et pubs ne comptent pas — seuls tes paris font la difference !
     </div>
     <div style={{ display:"flex", gap:10, marginBottom:24, alignItems:"flex-end" }}>
       {[leaderboard[1],leaderboard[0],leaderboard[2]].map((p,vi)=>{
         if(!p) return <div key={vi} style={{ flex:1 }} />;
-        const hs=[130,155,130]; // FIX bronze même niveau
+        const hs=[130,155,130];
         return <div key={p.username} style={{ flex:1, background:`${topColors[vi]}0d`, border:`1px solid ${topColors[vi]}20`, borderRadius:16, padding:"14px 10px", textAlign:"center", height:hs[vi], display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" }}>
           <div style={{ position:"absolute", top:8, left:"50%", transform:"translateX(-50%)", fontSize:20 }}>{medals[vi]}</div>
           <BadgeTag level={getLevel(p.xp||0)} />
@@ -888,6 +948,7 @@ function LeaderboardPage({ leaderboard, username }) {
         <div style={{ textAlign:"right" }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>gain total</div>
+          {i<5&&<div style={{ fontSize:10, color:WEEKLY_REWARDS[i]?.color||"#6b7280", fontWeight:700 }}>+{WEEKLY_REWARDS[i]?.sc} SC lundi</div>}
         </div>
       </div>
     ))}
