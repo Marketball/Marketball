@@ -1128,32 +1128,35 @@ export default function App() {
     setMatchesLoading(true);
     const allMatches=[];
     try{
-      for(const comp of COMPETITIONS){
+      const fetchComp=async(comp)=>{
         try{
-          const data=await fetch(`/api/matches?competition=${comp}`).then(r=>r.json());
-          if(data?.matches){
-            const now=new Date();
-            const mapped=data.matches
-              .filter(m=>{const d=new Date(m.utcDate);return d>=new Date(now-7*86400000)&&d<=new Date(now.getTime()+30*86400000);})
-              .map(m=>({
-                id:m.id.toString(),
-                home_team:m.homeTeam.shortName||m.homeTeam.name,
-                away_team:m.awayTeam.shortName||m.awayTeam.name,
-                home_logo:m.homeTeam.crest,
-                away_logo:m.awayTeam.crest,
-                home_team_id:m.homeTeam.id,
-                away_team_id:m.awayTeam.id,
-                competition:comp,
-                match_date:m.utcDate,
-                status:m.status,
-                home_score:m.score?.fullTime?.home,
-                away_score:m.score?.fullTime?.away,
-                scorers:m.goals||[],
-              }));
-            allMatches.push(...mapped);
-          }
-        }catch{}
-      }
+          const controller=new AbortController();
+          const timeout=setTimeout(()=>controller.abort(),8000);
+          const data=await fetch(`/api/matches?competition=${comp}`,{signal:controller.signal}).then(r=>r.json());
+          clearTimeout(timeout);
+          if(!data?.matches) return [];
+          const now=new Date();
+          return data.matches
+            .filter(m=>{const d=new Date(m.utcDate);return d>=new Date(now-7*86400000)&&d<=new Date(now.getTime()+30*86400000);})
+            .map(m=>({
+              id:m.id.toString(),
+              home_team:m.homeTeam.shortName||m.homeTeam.name,
+              away_team:m.awayTeam.shortName||m.awayTeam.name,
+              home_logo:m.homeTeam.crest,
+              away_logo:m.awayTeam.crest,
+              home_team_id:m.homeTeam.id,
+              away_team_id:m.awayTeam.id,
+              competition:comp,
+              match_date:m.utcDate,
+              status:m.status,
+              home_score:m.score?.fullTime?.home,
+              away_score:m.score?.fullTime?.away,
+              scorers:m.goals||[],
+            }));
+        }catch{return [];}
+      };
+      const results=await Promise.allSettled(COMPETITIONS.map(comp=>fetchComp(comp)));
+      results.forEach(r=>{if(r.status==="fulfilled") allMatches.push(...r.value);});
       allMatches.sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
       setMatches(allMatches);
     }catch{}
