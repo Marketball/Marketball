@@ -206,7 +206,7 @@ const getClubColor = (name) => { if (!name) return "#6b7280"; const k = Object.k
 const fmt = (n) => (n ?? 0).toLocaleString("fr-FR");
 const fmtPct = (n) => `${Math.round(n * 100)}%`;
 const timeLeft = (date) => { const diff = new Date(date) - Date.now(); if (diff < 0) return "Termine"; const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000); return d > 0 ? `${d}j ${h}h` : `${h}h`; };
-const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Competitions": "#f59e0b", "Recompenses": "#ec4899", "Performances": "#10b981" })[c] || "#6b7280";
+const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Competitions": "#f59e0b", "Recompenses": "#ec4899", "Performances": "#10b981", "Rumeurs": "#f59e0b" })[c] || "#6b7280";
 const compLabel = (c) => COMP_INFO[c]?.name || c;
 const compColor = (c) => COMP_INFO[c]?.color || "#6b7280";
 const compEmoji = (c) => COMP_INFO[c]?.emoji || "⚽";
