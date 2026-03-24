@@ -1252,6 +1252,22 @@ export default function App() {
     }catch{}
   };
 
+  // Gerer retour apres paiement Stripe
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const payment=params.get("payment");
+    const sc=parseInt(params.get("sc")||"0");
+    if(payment==="success"&&sc>0&&session&&profile){
+      updateProfile({store_coins:(profile?.store_coins||0)+sc},session.token,session.user.id);
+      showToast(`💎 +${sc} SC credites ! Merci !`);
+      window.history.replaceState({},"","/");
+    }
+    if(payment==="cancel"){
+      showToast("Paiement annule","warning");
+      window.history.replaceState({},"","/");
+    }
+  },[session,profile]);
+
   const handleAuth=async(token,user)=>{
     setSession({token,user});
     await loadProfile(token,user.id);
