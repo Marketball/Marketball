@@ -736,7 +736,13 @@ function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, on
   return <div className="page-enter">
     <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.04))", border:"1px solid rgba(16,185,129,0.1)", borderRadius:22, padding:"26px", marginBottom:22, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${getBadge(level).glow},transparent 70%)`, pointerEvents:"none" }} />
-      <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3, marginBottom:8 }}>BIENVENUE, {username?.toUpperCase()}</div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>BIENVENUE, {username?.toUpperCase()}</div>
+        {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:5, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
+          <span style={{ fontSize:14 }}>🔥</span>
+          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#f59e0b", letterSpacing:1 }}>{profile.streak} JOUR{profile.streak>1?"S":""}</span>
+        </div>}
+      </div>
       <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Niv. {level} · {profile?.xp||0} XP</span></div>
       <XPBar xp={profile?.xp||0} />
       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:16 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
@@ -1217,6 +1223,28 @@ export default function App() {
 
   useEffect(()=>{loadMarkets();loadMatches();},[]);
 
+  const handleDailyStreak=async(token,userId)=>{
+    try{
+      const today=new Date().toISOString().split("T")[0];
+      const p=profileRef.current;
+      if(!p) return;
+      if(p.last_login===today) return; // Deja connecte aujourd'hui
+      const yesterday=new Date(Date.now()-86400000).toISOString().split("T")[0];
+      const newStreak=p.last_login===yesterday?(p.streak||0)+1:1;
+      let bonusCoins=10; // +10 MC par jour de base
+      let bonusMsg=`🔥 Streak ${newStreak} jour${newStreak>1?"s":""} ! +${bonusCoins} MC`;
+      if(newStreak===3){bonusCoins=30;bonusMsg="🔥 Streak 3 jours ! +30 MC bonus !";}
+      if(newStreak===7){bonusCoins=100;bonusMsg="🔥🔥 STREAK 7 JOURS ! +100 MC !";}
+      if(newStreak>7&&newStreak%7===0){bonusCoins=100;bonusMsg=`🔥🔥 STREAK ${newStreak} JOURS ! +100 MC !`;}
+      const newCoins=(p.coins||0)+bonusCoins;
+      const newXP=(p.xp||0)+5;
+      await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:getLevel(newXP),updated_at:new Date().toISOString()})});
+      setProfile(pr=>({...pr,last_login:today,streak:newStreak,coins:newCoins,xp:newXP}));
+      profileRef.current={...profileRef.current,last_login:today,streak:newStreak,coins:newCoins,xp:newXP};
+      showToast(bonusMsg);
+    }catch{}
+  };
+
   const handleAuth=async(token,user)=>{
     setSession({token,user});
     await loadProfile(token,user.id);
@@ -1225,6 +1253,8 @@ export default function App() {
     await loadLeaderboard(token);
     const loadedMatches=await loadMatches();
     if(mb?.length) await checkAndResolveBets(token,user.id,loadedMatches,mb);
+    // Streak de connexion
+    await handleDailyStreak(token,user.id);
     // Vérifier toutes les 5 minutes
     const interval=setInterval(async()=>{
       const lm=await loadMatches();
