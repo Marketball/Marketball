@@ -1108,7 +1108,8 @@ export default function App() {
         req("custom_markets?status=eq.open&order=created_at.desc").catch(()=>[]),
       ]);
       const rumorMarkets=(rumors||[]).map(r=>({id:r.rumor_id,title:r.event_question||`${r.player_name} → ${r.to_club} ?`,q_yes:100,q_no:100,total_volume:500,participants:10,closes_at:r.expires_at||new Date(Date.now()+14*86400000).toISOString(),category:"Transferts",source:r.source_name||"Source",status:"open"}));
-      const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:c.q_yes||100,q_no:c.q_no||100,total_volume:c.total_volume||0,participants:c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open"}));
+      const savedOdds=loadSavedOdds();
+      const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:savedOdds[c.id]?.q_yes||c.q_yes||100,q_no:savedOdds[c.id]?.q_no||c.q_no||100,total_volume:savedOdds[c.id]?.total_volume||c.total_volume||0,participants:savedOdds[c.id]?.participants||c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open"}));
       setMarkets([...customMarkets,...rumorMarkets,...seeds]);
     }catch{}
   },[]);
