@@ -507,11 +507,12 @@ function MatchCard({ match, onBet }) {
 // BET MODAL
 // ============================================================
 function BetModal({ market, onClose, onConfirm, coins }) {
-  const [side,setSide]=useState("yes"),[amount,setAmount]=useState(50);
+  const [side,setSide]=useState("yes"),[amount,setAmount]=useState("");
   const pYes=AMM.probYes(market.q_yes,market.q_no);
-  const cost=AMM.costToBuy(market.q_yes,market.q_no,amount,side);
-  const gain=side==="yes"?Math.round(amount/pYes):Math.round(amount/(1-pYes));
-  const canBet=cost>=1&&cost<=coins;
+  const amtNum=parseInt(amount)||0;
+  const cost=amtNum>0?AMM.costToBuy(market.q_yes,market.q_no,amtNum,side):0;
+  const gain=amtNum>0?(side==="yes"?Math.round(amtNum/pYes):Math.round(amtNum/(1-pYes))):0;
+  const canBet=amtNum>=1&&cost>=1&&cost<=coins;
   return <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease" }}>
     <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:28, width:380, maxWidth:"95vw", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, letterSpacing:2, marginBottom:4 }}>PLACER UNE PREDICTION</div>
@@ -528,7 +529,7 @@ function BetModal({ market, onClose, onConfirm, coins }) {
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Cout</span><MCBadge amount={cost} /></div>
         <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#fbbf24", letterSpacing:1 }}>🪙 +{fmt(gain)}</span></div>
       </div>
-      <button onClick={()=>canBet&&onConfirm(side,amount,cost,gain)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
+      <button onClick={()=>canBet&&onConfirm(side,amtNum,cost,gain)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
         {!canBet&&coins<cost?"Pas assez de MC":"CONFIRMER →"}
       </button>
     </div>
@@ -539,7 +540,7 @@ function BetModal({ market, onClose, onConfirm, coins }) {
 // MATCH BET MODAL
 // ============================================================
 function MatchBetModal({ match, onClose, onConfirm, coins }) {
-  const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(""),[amount,setAmount]=useState(100);
+  const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(""),[amount,setAmount]=useState("");
   const [scorerTeam,setScorerTeam]=useState("home"),[homePlayers,setHomePlayers]=useState([]),[awayPlayers,setAwayPlayers]=useState([]),[loadingPlayers,setLoadingPlayers]=useState(false);
   const [homeGoals,setHomeGoals]=useState(1),[awayGoals,setAwayGoals]=useState(1);
   const odds=calcMatchOdds(match);
@@ -564,9 +565,10 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
     return 2;
   };
   const currentOdds=getOdds();
-  const gain=Math.round(amount*currentOdds);
+  const amtNum=parseInt(amount)||0;
+  const gain=Math.round(amtNum*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
-  const canBet=finalPred&&amount>=1&&amount<=coins;
+  const canBet=finalPred&&amtNum>=1&&amtNum<=coins;
 
   const BET_TYPES=[
     {id:"winner",label:"🏆 Vainqueur",desc:"1X2"},
@@ -645,7 +647,7 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Cote</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:18, letterSpacing:1 }}>x{currentOdds}</span></div>
         <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:1 }}>+{fmt(gain)} 🪙</span></div>
       </div>
-      <button onClick={()=>canBet&&onConfirm(match,betType,finalPred,amount,gain,currentOdds)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
+      <button onClick={()=>canBet&&onConfirm(match,betType,finalPred,amtNum,gain,currentOdds)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
         {!finalPred?"Choisir une prediction":coins<amount?"Pas assez de MC":"CONFIRMER →"}
       </button>
     </div>
