@@ -521,7 +521,7 @@ function BetModal({ market, onClose, onConfirm, coins }) {
       </div>
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", marginBottom:7 }}>PARTS A ACHETER</div>
-        <input type="number" value={amount} min={1} max={1000} onChange={e=>setAmount(Math.max(1,Math.min(1000,+e.target.value||"")))} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+        <input type="number" value={amount} min={1} max={coins} onChange={e=>setAmount(Math.max(1,Math.min(coins,+e.target.value||"")))} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
         <div style={{ display:"flex", gap:6, marginTop:8 }}>{[10,50,100,200].map(v=><button key={v} onClick={()=>setAmount(v)} style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===v?"rgba(16,185,129,0.1)":"transparent", color:amount===v?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>)}</div>
       </div>
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"13px 15px", marginBottom:18 }}>
