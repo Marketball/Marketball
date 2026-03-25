@@ -1305,8 +1305,15 @@ export default function App() {
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:gain,status:"pending"})});
+      const updMarket=markets.find(m=>m.id===betModal.id);
       const upd=markets.map(m=>m.id===betModal.id?{...m,q_yes:side==="yes"?m.q_yes+amount:m.q_yes,q_no:side==="no"?m.q_no+amount:m.q_no,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
+      // Sync cotes vers Supabase pour les custom_markets
+      if(updMarket){
+        const newQYes=side==="yes"?updMarket.q_yes+amount:updMarket.q_yes;
+        const newQNo=side==="no"?updMarket.q_no+amount:updMarket.q_no;
+        try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch{}
+      }
       setBets(prev=>[{market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:gain,status:"pending"},...prev]);
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
