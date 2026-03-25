@@ -1123,7 +1123,7 @@ export default function App() {
           (bet.match_title.includes(m.home_team)||bet.match_title.includes(m.away_team))
         );
         if(!match) continue;
-        const matchResult={homeScore:match.home_score??0,awayScore:match.away_score??0,homeTeam:match.home_team,awayTeam:match.away_team,scorers:match.scorers||[]};
+        const matchResult={homeScore:match.home_score,awayScore:match.away_score,homeTeam:match.home_team,awayTeam:match.away_team,scorers:match.scorers||[]};
         const won=resolveBet(bet,matchResult);
         const newStatus=won?"won":"lost";
         try{await req(`match_bets?id=eq.${bet.id}`,{method:"PATCH",_token:token,body:JSON.stringify({status:newStatus})});}catch{}
