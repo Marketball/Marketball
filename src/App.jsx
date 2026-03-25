@@ -190,8 +190,7 @@ const SUBSCRIPTION_PLANS = [
     color: "#3b82f6",
     emoji: "⚡",
     mcBoost: 150,
-    priceId: null, // à remplir quand Price ID Stripe dispo
-    features: ["150 MC chaque lundi","Option Cashout","Récompenses Premium (maillots, tech)","Sans pub"],
+    priceId: "price_1TF03SEMwfOErJuWzQ59d54A", // Ligue Pro
     noFeatures: ["Marchés exclusifs Elite","Support prioritaire"],
     popular: true,
   },
@@ -203,8 +202,7 @@ const SUBSCRIPTION_PLANS = [
     color: "#f59e0b",
     emoji: "👑",
     mcBoost: 250,
-    priceId: null, // à remplir quand Price ID Stripe dispo
-    features: ["250 MC chaque lundi","Accès marchés exclusifs","Récompenses de luxe (VIP, dédicaces)","Sans pub","Support prioritaire"],
+    priceId: "price_1TF03vEMwfOErJuWF6vlaoue", // Ligue Elite
     noFeatures: [],
   },
 ];
