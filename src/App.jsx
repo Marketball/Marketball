@@ -1122,7 +1122,7 @@ export default function App() {
       try{
         const match=currentMatches.find(m=>
           m.status==="FINISHED"&&bet.match_title&&
-          (bet.match_title.includes(m.home_team)||bet.match_title.includes(m.away_team))
+          bet.match_title.includes(m.home_team)&&bet.match_title.includes(m.away_team)
         );
         if(!match) continue;
         const matchResult={homeScore:match.home_score,awayScore:match.away_score,homeTeam:match.home_team,awayTeam:match.away_team,scorers:match.scorers||[]};
