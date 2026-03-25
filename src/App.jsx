@@ -1072,8 +1072,8 @@ function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:16 }}>
-            {plan.features.map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.7)", display:"flex", alignItems:"center", gap:7 }}><span style={{ color:"#10b981", fontSize:14 }}>✓</span>{f}</div>)}
-            {plan.noFeatures.map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.2)", display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:14 }}>✗</span>{f}</div>)}
+            {(plan.features||[]).map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.7)", display:"flex", alignItems:"center", gap:7 }}><span style={{ color:"#10b981", fontSize:14 }}>✓</span>{f}</div>)}
+            {(plan.noFeatures||[]).map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.2)", display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:14 }}>✗</span>{f}</div>)}
           </div>
           {isCurrent?(
             <div style={{ display:"flex", gap:8 }}>
