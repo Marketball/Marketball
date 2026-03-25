@@ -191,7 +191,7 @@ const SUBSCRIPTION_PLANS = [
     emoji: "⚡",
     mcBoost: 150,
     priceId: "price_1TF03SEMwfOErJuWzQ59d54A", // Ligue Pro
-    noFeatures: ["Marchés exclusifs Elite","Support prioritaire"],
+    features: ["150 MC chaque lundi","Option Cashout","Récompenses Premium (maillots, tech)","Sans pub"],
     popular: true,
   },
   {
@@ -203,7 +203,7 @@ const SUBSCRIPTION_PLANS = [
     emoji: "👑",
     mcBoost: 250,
     priceId: "price_1TF03vEMwfOErJuWF6vlaoue", // Ligue Elite
-    noFeatures: [],
+    features: ["250 MC chaque lundi","Accès marchés exclusifs","Récompenses de luxe (VIP, dédicaces)","Sans pub","Support prioritaire"],
   },
 ];
 const WEEKLY_MC_LIMIT = 200;
