@@ -165,10 +165,13 @@ const getXPProgress = (xp) => (xp || 0) % XP_PER_LEVEL;
 // STORE — 1€ = 1 SC
 // ============================================================
 const STORE_ITEMS = [
-  { id: "s2", name: "Carte cadeau Amazon 5€", cost: 50, emoji: "🛒", requiredBadge: "scout", description: "Code envoyé par email sous 48h" },
-  { id: "s3", name: "Carte cadeau Foot Locker 20€", cost: 200, emoji: "👟", requiredBadge: "analyst", description: "Code envoyé par email sous 48h" },
-  { id: "s4", name: "Maillot de foot officiel", cost: 900, emoji: "👕", requiredBadge: "pro", description: "Replica officielle, taille au choix" },
-  { id: "s5", name: "Place VIP + rencontre joueur", cost: 2000, emoji: "🏟️", requiredBadge: "legend", description: "Experience unique sur demande" },
+  { id: "s1", name: "Carte cadeau Amazon", cost: 50, emoji: "🛒", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
+  { id: "s2", name: "Carte cadeau JD Sport", cost: 80, emoji: "👟", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "10€", description: "Code envoyé par email sous 48h" },
+  { id: "s3", name: "Points FIFA", cost: 100, emoji: "🎮", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "10€", description: "Code envoyé par email sous 48h" },
+  { id: "s4", name: "Maillot de foot officiel", cost: 400, emoji: "👕", plan: "pro", planLabel: "Pro", planColor: "#3b82f6", value: "Replica officielle", description: "Taille au choix, livraison sous 7j" },
+  { id: "s5", name: "Carte cadeau Unisport", cost: 350, emoji: "⚽", plan: "pro", planLabel: "Pro", planColor: "#3b82f6", value: "50€", description: "Code envoyé par email sous 48h" },
+  { id: "s6", name: "Maillot dédicacé", cost: 1200, emoji: "✍️", plan: "elite", planLabel: "Elite", planColor: "#f59e0b", value: "Signature originale", description: "Maillot officiel signé par un joueur pro" },
+  { id: "s7", name: "Place VIP match", cost: 2000, emoji: "🏟️", plan: "elite", planLabel: "Elite", planColor: "#f59e0b", value: "Expérience unique", description: "Tribune VIP + accès coulisses sur demande" },
 ];
 const SUBSCRIPTION_PLANS = [
   {
@@ -713,15 +716,19 @@ function HowItWorksPage({ onNavigate }) {
     {bg:"#3b82f6",icon:"📈",text:"COTES DYNAMIQUES",sub:"Comme une vraie bourse football"},
     {bg:"#f59e0b",icon:"🏆",text:"GAGNE DES RECOMPENSES",sub:"Maillots, places VIP, cartes cadeaux"},
     {bg:"#a78bfa",icon:"👑",text:"MONTE DE NIVEAU",sub:"Rookie → Scout → Analyst → Pro → Legend"},
+    {bg:"#f59e0b",icon:"👑",text:"3 LIGUES DISPONIBLES",sub:"Starter gratuit · Pro 4.99€ · Elite 14.99€"},
+    {bg:"#5865f2",icon:"🌐",text:"COMMUNAUTE DISCORD",sub:"News, analyses et marches proposes par les joueurs"},
   ];
   useEffect(()=>{const t=setInterval(()=>setVideoFrame(f=>(f+1)%VIDEO_FRAMES.length),2500);return()=>clearInterval(t);},[]);
   const STEPS=[
-    {icon:"🎁",title:"Inscris-toi gratuitement",color:"#10b981",desc:"500 MC gratuits a l'inscription. Aucune carte bancaire.",detail:"Les MC n'ont aucune valeur monetaire mais te permettent de participer a tous les marches."},
-    {icon:"📊",title:"Choisis un marche",color:"#3b82f6",desc:"Transferts, matchs, performances. Chaque marche pose une question sur le football.",detail:"Les cotes bougent selon les paris des autres joueurs, comme une vraie bourse."},
-    {icon:"⚽",title:"Parie sur les matchs",color:"#f59e0b",desc:"Vainqueur, score exact, 1er buteur, buteur ou +/- buts.",detail:"Quand le match se termine, tes gains sont credites automatiquement si tu as gagne !"},
-    {icon:"🏆",title:"Monte de niveau",color:"#a78bfa",desc:"Chaque pari donne 5 XP. Chaque gain donne du XP bonus.",detail:"Les badges debloquent des recompenses exclusives. Legend = places VIP."},
-    {icon:"💎",title:"Gagne des StoreCoins",color:"#fbbf24",desc:"Achete des SC (1€ = 1 SC) ou via la roue. 1 SC = 10 MC.",detail:"Echange tes SC dans le Store contre des cadeaux reels."},
-    {icon:"🎡",title:"Bonus quotidiens",color:"#ec4899",desc:"Roue : jusqu'a 200 MC ou 1 SC par jour. Pubs : +20 MC x3.",detail:"Reviens chaque jour pour maximiser tes gains !"},
+    {icon:"🎁",title:"Inscris-toi gratuitement",color:"#10b981",desc:"500 MC gratuits a l'inscription. Aucune carte bancaire requise.",detail:"Les MarketCoins (MC) n'ont aucune valeur monetaire mais te permettent de participer a tous les marches et paris."},
+    {icon:"📊",title:"Choisis un marche",color:"#3b82f6",desc:"Transferts, matchs, performances. Chaque marche pose une question sur le football.",detail:"Les cotes bougent selon les paris des autres joueurs, comme une vraie bourse. Plus les gens parient d'un cote, plus la cote baisse."},
+    {icon:"⚽",title:"Parie sur les matchs",color:"#f59e0b",desc:"Vainqueur, score exact, 1er buteur, buteur ou +/- buts.",detail:"Quand le match se termine, tes gains sont credites automatiquement si tu as gagne. Chaque pari rapporte +5 XP."},
+    {icon:"👑",title:"Choisis ta Ligue",color:"#f59e0b",desc:"Starter gratuit, Pro a 4.99€/mois, Elite a 14.99€/mois.",detail:"Plus ta ligue est elevee, plus tu recois de MC chaque lundi (100 → 150 → 250), plus tes recompenses sont prestigieuses. La ligue Elite donne acces aux marches exclusifs et aux recompenses VIP."},
+    {icon:"🏆",title:"Monte de niveau",color:"#a78bfa",desc:"Chaque pari donne 5 XP. Chaque gain donne du XP bonus. La progression est permanente.",detail:"Les badges (Rookie → Scout → Analyst → Pro → Legend) sont ta reputation sur MarketBall. Un joueur niveau 40 a construit un avantage competitif qu'il ne veut pas perdre."},
+    {icon:"💎",title:"Gagne des StoreCoins",color:"#34d399",desc:"Via la roue quotidienne (jusqu'a 1 SC/jour) ou le classement hebdomadaire.",detail:"Echange tes SC dans le Store contre des cadeaux reels. Starter : cartes cadeaux. Pro : maillots. Elite : maillots dedicaces et places VIP."},
+    {icon:"🎡",title:"Bonus quotidiens",color:"#ec4899",desc:"Roue : jusqu'a 200 MC ou 1 SC par jour. Streak : bonus MC chaque jour consecutif.",detail:"Streak 3 jours = +30 MC, streak 7 jours = +100 MC. Reviens chaque jour pour maximiser tes gains et gravir le classement !"},
+    {icon:"🌐",title:"Communaute Discord",color:"#5865f2",desc:"Rejoins le serveur Discord MarketBall pour les news et les analyses.",detail:"News en temps reel, salons exclusifs Pro/Elite, et les meilleurs joueurs (niveau 60+) peuvent proposer leurs propres marches de prediction !"},
   ];
   return <div className="page-enter">
     <div style={{ textAlign:"center", marginBottom:32 }}>
@@ -760,7 +767,7 @@ function HowItWorksPage({ onNavigate }) {
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>FAQ</div>
     <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
       {[
-        {q:"C'est gratuit ?",a:"100% gratuit. 500 MC offerts sans carte bancaire. Tu peux acheter des SC (1€=1SC) mais c'est optionnel."},
+        {q:"C'est gratuit ?",a:"L'inscription est 100% gratuite avec 500 MC offerts. Des abonnements optionnels existent : Pro (4.99€/mois) et Elite (14.99€/mois) pour plus de MC et des récompenses exclusives. Plafond de dépenses à 14.99€/mois."},
         {q:"C'est legal en France ?",a:"Oui, totalement legal. Les MC n'ont aucune valeur monetaire. Ce n'est pas du jeu d'argent."},
         {q:"Comment les paris sont resolus ?",a:"Quand un match se termine, nos systemes resolvent tes paris automatiquement. Si tu as gagne, les coins sont credites et ton XP augmente."},
         {q:"1 SC = combien de MC ?",a:"1 SC = 10 MC lors de la conversion dans le Wallet. Les SC s'achetent a 1€=1SC ou se gagnent avec la roue."},
@@ -848,17 +855,14 @@ function MatchesPage({ matches, onBet, loading }) {
 
 function MarketsPage({ markets, onBet, profile }) {
   const [cat,setCat]=useState("Tous");
-  const cats=["Tous",...new Set(markets.map(m=>m.category))];
   const userIsElite=isElite(profile);
-  const filtered=(cat==="Tous"?markets:markets.filter(m=>m.category===cat))
-    .filter(m=>!m.elite_only||userIsElite);
+  const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
+  const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
+  const filtered=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>MARCHES DE PREDICTION</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}></div>
-    {!userIsElite&&<div style={{ background:"rgba(245,158,11,0.05)", border:"1px solid rgba(245,158,11,0.12)", borderRadius:11, padding:"10px 14px", marginBottom:16, fontSize:12, color:"rgba(245,158,11,0.7)", display:"flex", gap:8, alignItems:"center" }}>
-      <span>👑</span><span>Certains marchés exclusifs sont réservés aux membres <strong>Elite</strong>.</span>
-    </div>}
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>MARCHES DE PREDICTION</div>
     <div style={{ display:"flex", gap:7, marginBottom:22, flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px", borderRadius:20, border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`, background:cat===c?`${catColor(c)}12`:"transparent", color:cat===c?catColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:12, cursor:"pointer", transition:"all 0.2s" }}>{c}</button>)}</div>
+    {filtered.length===0&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
   </div>;
 }
@@ -1038,93 +1042,142 @@ function LeaderboardPage({ leaderboard, username }) {
   </div>;
 }
 
+// ============================================================
+// PAGE ABONNEMENTS
+// ============================================================
+function SubscriptionPage({ profile, onSubscribe }) {
+  const currentSub=getSubPlan(profile);
+  return <div className="page-enter">
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>ABONNEMENTS</div>
+    <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28 }}>Choisis ta ligue et débloque des avantages exclusifs.</div>
+    {/* Plan actuel */}
+    <div style={{ background:`linear-gradient(135deg,${getSubColor(currentSub)}12,rgba(3,7,18,0.8))`, border:`1px solid ${getSubColor(currentSub)}30`, borderRadius:18, padding:"18px 22px", marginBottom:28, display:"flex", alignItems:"center", gap:14 }}>
+      <div style={{ width:52, height:52, borderRadius:14, background:`${getSubColor(currentSub)}20`, border:`1px solid ${getSubColor(currentSub)}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{getSubEmoji(currentSub)}</div>
+      <div>
+        <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1.5, marginBottom:3 }}>TON PLAN ACTUEL</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:getSubColor(currentSub), letterSpacing:1 }}>{getSubLabel(currentSub)}</div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)", marginTop:2 }}>{getMCBoost(currentSub)} MC offerts chaque lundi</div>
+      </div>
+    </div>
+    {/* Comparatif */}
+    <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+      {SUBSCRIPTION_PLANS.map((plan,idx)=>{
+        const isCurrent=currentSub===plan.id;
+        const color=plan.color;
+        return <div key={plan.id} style={{ background:isCurrent?`${color}08`:"rgba(241,245,249,0.02)", border:`2px solid ${isCurrent?color:plan.popular?"rgba(59,130,246,0.15)":"rgba(241,245,249,0.05)"}`, borderRadius:20, overflow:"hidden", position:"relative" }}>
+          {plan.popular&&!isCurrent&&<div style={{ background:"linear-gradient(90deg,#3b82f6,#2563eb)", padding:"5px 0", textAlign:"center", fontSize:11, fontWeight:800, color:"#fff", letterSpacing:2 }}>⚡ LE PLUS POPULAIRE</div>}
+          {isCurrent&&<div style={{ background:`linear-gradient(90deg,${color},${color}cc)`, padding:"5px 0", textAlign:"center", fontSize:11, fontWeight:800, color:"#fff", letterSpacing:2 }}>✓ TON PLAN ACTUEL</div>}
+          <div style={{ padding:"22px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:48, height:48, borderRadius:13, background:`${color}15`, border:`1px solid ${color}25`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{plan.emoji}</div>
+                <div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:1, color }}>{plan.label}</div>
+                  <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginTop:1 }}>{plan.priceLabel}</div>
+                </div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginBottom:2 }}>chaque lundi</div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"#fbbf24", letterSpacing:1 }}>{plan.mcBoost} <span style={{ fontSize:14 }}>MC</span></div>
+              </div>
+            </div>
+            {/* Features */}
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+              {(plan.features||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"rgba(241,245,249,0.75)" }}>
+                <div style={{ width:20, height:20, borderRadius:"50%", background:`${color}20`, border:`1px solid ${color}40`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ color, fontSize:11 }}>✓</span>
+                </div>
+                {f}
+              </div>)}
+              {(plan.noFeatures||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"rgba(241,245,249,0.2)" }}>
+                <div style={{ width:20, height:20, borderRadius:"50%", background:"rgba(241,245,249,0.04)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontSize:11 }}>✗</span>
+                </div>
+                {f}
+              </div>)}
+            </div>
+            {isCurrent?(
+              <div style={{ display:"flex", gap:8 }}>
+                <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>Plan actuel ✓</div>
+                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Résilier</button>}
+                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>Passer Elite 👑</button>}
+              </div>
+            ):(
+              <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.05)":`linear-gradient(135deg,${color},${color}bb)`, color:plan.id==="starter"?"rgba(241,245,249,0.3)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 8px 25px ${color}35`:"none", transition:"all 0.2s" }}>
+                {plan.id==="starter"?"Plan gratuit par défaut":`S'abonner — ${plan.priceLabel} →`}
+              </button>
+            )}
+          </div>
+        </div>;
+      })}
+    </div>
+    {/* Note légale */}
+    <div style={{ marginTop:24, padding:"12px 16px", background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, fontSize:11, color:"rgba(241,245,249,0.25)", lineHeight:1.7 }}>
+      Plafond de dépenses : 14,99€/mois. Les MarketCoins n'ont aucune valeur monétaire. Résiliation possible à tout moment. Conforme à la loi JONUM française.
+    </div>
+  </div>;
+}
+
 function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
   const level=getLevel(profile?.xp||0), userBadge=getBadge(level);
   const badgeOrder=["rookie","scout","analyst","pro","legend"];
   const canAccess=(req)=>badgeOrder.indexOf(req)<=badgeOrder.indexOf(userBadge.id);
   const currentSub=getSubPlan(profile);
-  const showPubs=!isPro(profile);
 
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>STORE</div>
-    <div style={{ display:"flex", gap:10, marginBottom:22, flexWrap:"wrap" }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /><SubBadge profile={profile} size="lg" /></div>
-
-    {/* ABONNEMENTS */}
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, marginBottom:6, color:"#f1f5f9" }}>CHOISIR SON ABONNEMENT</div>
-    <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Plus ton plan est élevé, plus tu reçois de MC chaque lundi et de récompenses exclusives.</div>
-
-    <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:30 }}>
-      {SUBSCRIPTION_PLANS.map(plan=>{
-        const isCurrent=currentSub===plan.id;
-        const color=plan.color;
-        return <div key={plan.id} style={{ background:isCurrent?`${color}0a`:"rgba(241,245,249,0.02)", border:`2px solid ${isCurrent?color:plan.popular?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"20px 22px", position:"relative", overflow:"hidden" }}>
-          {plan.popular&&!isCurrent&&<div style={{ position:"absolute", top:12, right:12, fontSize:10, fontWeight:700, color:"#3b82f6", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:20, padding:"2px 10px" }}>POPULAIRE</div>}
-          {isCurrent&&<div style={{ position:"absolute", top:12, right:12, fontSize:10, fontWeight:700, color, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:20, padding:"2px 10px" }}>✓ MON PLAN</div>}
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-            <div style={{ width:44, height:44, borderRadius:12, background:`${color}15`, border:`1px solid ${color}25`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{plan.emoji}</div>
-            <div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:1, color }}>{plan.label}</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#fbbf24", letterSpacing:1 }}>{plan.priceLabel}</div>
-            </div>
-            <div style={{ marginLeft:"auto", textAlign:"right" }}>
-              <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginBottom:2 }}>MC lundi</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#fbbf24", letterSpacing:1 }}>{plan.mcBoost}</div>
-            </div>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:16 }}>
-            {(plan.features||[]).map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.7)", display:"flex", alignItems:"center", gap:7 }}><span style={{ color:"#10b981", fontSize:14 }}>✓</span>{f}</div>)}
-            {(plan.noFeatures||[]).map(f=><div key={f} style={{ fontSize:12, color:"rgba(241,245,249,0.2)", display:"flex", alignItems:"center", gap:7 }}><span style={{ fontSize:14 }}>✗</span>{f}</div>)}
-          </div>
-          {isCurrent?(
-            <div style={{ display:"flex", gap:8 }}>
-              <div style={{ flex:1, padding:"10px 0", borderRadius:11, background:`${color}12`, border:`1px solid ${color}20`, color, fontWeight:700, fontSize:13, textAlign:"center" }}>Plan actuel ✓</div>
-              {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"10px 14px", borderRadius:11, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Résilier</button>}
-              {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"10px 0", borderRadius:11, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>Passer Elite 👑</button>}
-            </div>
-          ):(
-            <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"12px 0", borderRadius:11, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.06)":`linear-gradient(135deg,${color},${color}cc)`, color:plan.id==="starter"?"rgba(241,245,249,0.4)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"not-allowed":"pointer", transition:"all 0.2s", boxShadow:plan.id!=="starter"?`0 6px 20px ${color}35`:"none" }}>
-              {plan.id==="starter"?"Plan gratuit par défaut":`S'abonner ${plan.priceLabel} →`}
-            </button>
-          )}
-        </div>;
-      })}
+    <div style={{ display:"flex", gap:10, marginBottom:10, flexWrap:"wrap" }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /><SubBadge profile={profile} size="lg" /></div>
+    <div style={{ background:`${getSubColor(currentSub)}08`, border:`1px solid ${getSubColor(currentSub)}20`, borderRadius:12, padding:"10px 16px", marginBottom:24, display:"flex", alignItems:"center", gap:10 }}>
+      <span style={{ fontSize:18 }}>{getSubEmoji(currentSub)}</span>
+      <span style={{ fontSize:13, color:"rgba(241,245,249,0.6)" }}>Ligue <strong style={{ color:getSubColor(currentSub) }}>{getSubLabel(currentSub)}</strong> · {getMCBoost(currentSub)} MC chaque lundi</span>
     </div>
 
-    {/* Pubs fictif toggle pour Starter */}
-    {showPubs&&<div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:14, padding:"14px 18px", marginBottom:22, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-      <div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:1, color:"#f59e0b" }}>PUBS ACTIVÉES</div>
-        <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>Passe en Pro ou Elite pour supprimer les pubs</div>
-      </div>
-      <div style={{ width:40, height:22, borderRadius:99, background:"rgba(245,158,11,0.3)", display:"flex", alignItems:"center", padding:3 }}>
-        <div style={{ width:16, height:16, borderRadius:"50%", background:"#f59e0b", marginLeft:"auto" }} />
-      </div>
-    </div>}
-
-    {/* RECOMPENSES */}
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, marginBottom:12 }}>RECOMPENSES</div>
-    <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>Badge requis pour acceder aux recompenses</div>
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:11 }}>
-      {STORE_ITEMS.map(r=>{
-        const accessible=canAccess(r.requiredBadge),affordable=sc>=r.cost,reqBadge=BADGES.find(b=>b.id===r.requiredBadge);
-        return <div key={r.id} className="card-hover" style={{ background:accessible?"rgba(241,245,249,0.02)":"rgba(241,245,249,0.01)", border:`1px solid ${accessible?"rgba(241,245,249,0.06)":"rgba(241,245,249,0.03)"}`, borderRadius:16, padding:"20px 18px", display:"flex", flexDirection:"column", gap:10, opacity:accessible?1:0.55 }}>
-          <div style={{ fontSize:32 }}>{r.emoji}</div>
-          <div>
-            <div style={{ fontWeight:800, fontSize:14, marginBottom:4 }}>{r.name}</div>
-            <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:7 }}>{r.description}</div>
-            <span style={{ fontSize:10, fontWeight:700, color:reqBadge?.color, background:`${reqBadge?.color}12`, padding:"2px 8px", borderRadius:20, border:`1px solid ${reqBadge?.color}25` }}>{reqBadge?.emoji} {reqBadge?.label} requis</span>
-          </div>
-          <div style={{ flex:1 }} />
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <SCBadge amount={r.cost} />
-            <button onClick={()=>accessible&&affordable&&onRedeemSC(r)} disabled={!accessible||!affordable}
-              style={{ padding:"8px 14px", borderRadius:9, border:"none", background:accessible&&affordable?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:accessible&&affordable?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:12, cursor:accessible&&affordable?"pointer":"not-allowed" }}>
-              {!accessible?"Badge requis":!affordable?"Insuffisant":"OBTENIR"}
-            </button>
-          </div>
-        </div>;
-      })}
-    </div>
+    {/* RECOMPENSES PAR LIGUE */}
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, marginBottom:6 }}>RÉCOMPENSES</div>
+    <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:20 }}>Échange tes SC contre des récompenses exclusives selon ta ligue.</div>
+    {["starter","pro","elite"].map(planId=>{
+      const planInfo=SUBSCRIPTION_PLANS.find(p=>p.id===planId);
+      const items=STORE_ITEMS.filter(r=>r.plan===planId);
+      const planOrder=["starter","pro","elite"];
+      const userOrder=planOrder.indexOf(currentSub);
+      const planOrderIdx=planOrder.indexOf(planId);
+      const accessible=userOrder>=planOrderIdx;
+      return <div key={planId} style={{ marginBottom:24 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+          <span style={{ fontSize:18 }}>{planInfo.emoji}</span>
+          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:planInfo.color }}>{planInfo.label}</span>
+          {!accessible&&<span style={{ fontSize:11, color:planInfo.color, background:`${planInfo.color}12`, border:`1px solid ${planInfo.color}25`, borderRadius:20, padding:"2px 10px", fontWeight:700 }}>🔒 Abonnement requis</span>}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+          {items.map(r=>{
+            const affordable=sc>=r.cost;
+            return <div key={r.id} className="card-hover" style={{ background:accessible?"rgba(241,245,249,0.02)":"rgba(241,245,249,0.01)", border:`2px solid ${accessible?planInfo.color+"20":"rgba(241,245,249,0.04)"}`, borderRadius:16, padding:"18px", display:"flex", flexDirection:"column", gap:8, position:"relative", overflow:"hidden" }}>
+              {!accessible&&<div style={{ position:"absolute", inset:0, background:"rgba(3,7,18,0.7)", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", zIndex:2, backdropFilter:"blur(2px)" }}>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:28, marginBottom:6 }}>🔒</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:planInfo.color }}>Ligue {planInfo.label}</div>
+                  <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", marginTop:2 }}>requise</div>
+                </div>
+              </div>}
+              <div style={{ fontSize:30 }}>{r.emoji}</div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:13, marginBottom:2 }}>{r.name}</div>
+                <div style={{ fontSize:11, color:planInfo.color, fontWeight:700, marginBottom:4 }}>{r.value}</div>
+                <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)" }}>{r.description}</div>
+              </div>
+              <div style={{ flex:1 }} />
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
+                <SCBadge amount={r.cost} />
+                <button onClick={()=>accessible&&affordable&&onRedeemSC(r)} disabled={!accessible||!affordable}
+                  style={{ padding:"7px 12px", borderRadius:9, border:"none", background:accessible&&affordable?`linear-gradient(135deg,${planInfo.color},${planInfo.color}cc)`:"rgba(241,245,249,0.04)", color:accessible&&affordable?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:11, cursor:accessible&&affordable?"pointer":"not-allowed" }}>
+                  {!affordable?"Insuffisant":"OBTENIR"}
+                </button>
+              </div>
+            </div>;
+          })}
+        </div>
+      </div>;
+    })}
   </div>;
 }
 
@@ -1548,6 +1601,7 @@ export default function App() {
     {id:"wallet",icon:"💰",label:"Wallet"},
     {id:"leaderboard",icon:"🏆",label:"Top"},
     {id:"store",icon:"🎁",label:"Store"},
+    {id:"subscription",icon:"👑",label:"Ligues"},
     {id:"howto",icon:"❓",label:"Guide"},
   ];
 
@@ -1596,6 +1650,7 @@ export default function App() {
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} />}
       {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} />}
       {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} />}
+      {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
       {page==="howto"&&<HowItWorksPage onNavigate={setPage} />}
     </div>
