@@ -1038,8 +1038,28 @@ function LeaderboardPage({ leaderboard, username }) {
 function SubscriptionPage({ profile, onSubscribe }) {
   const currentSub=getSubPlan(profile);
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>ABONNEMENTS</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28 }}>Choisis ta ligue et débloque des avantages exclusifs.</div>
+    {/* HERO */}
+    <div style={{ position:"relative", textAlign:"center", padding:"32px 20px 28px", marginBottom:32, background:"linear-gradient(180deg,rgba(16,185,129,0.06),transparent)", borderRadius:24, border:"1px solid rgba(16,185,129,0.08)", overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:-60, left:"50%", transform:"translateX(-50%)", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.07),transparent 65%)", pointerEvents:"none" }} />
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:11, letterSpacing:4, color:"#10b981", marginBottom:10 }}>CHOISIR TA LIGUE</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:38, letterSpacing:3, marginBottom:8 }}>TES <span style={{ color:"#10b981" }}>AVANTAGES</span></div>
+      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", maxWidth:380, margin:"0 auto", lineHeight:1.6 }}>Plus ta ligue est élevée, plus tu reçois de MC chaque lundi et plus tes récompenses sont exclusives.</div>
+      {/* Barre progression */}
+      <div style={{ marginTop:20, position:"relative" }}>
+        <div style={{ height:4, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden", margin:"0 20px" }}>
+          <div style={{ width:currentSub==="starter"?"16%":currentSub==="pro"?"50%":"100%", height:"100%", background:`linear-gradient(90deg,#94a3b8,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1.2s ease", boxShadow:`0 0 10px ${getSubColor(currentSub)}` }} />
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, padding:"0 16px" }}>
+          {SUBSCRIPTION_PLANS.map(p=>(
+            <div key={p.id} style={{ textAlign:"center", opacity:p.id===currentSub?1:0.4 }}>
+              <div style={{ fontSize:16, marginBottom:2 }}>{p.emoji}</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:10, color:p.color, letterSpacing:1 }}>{p.label}</div>
+              {p.id===currentSub&&<div style={{ width:6, height:6, borderRadius:"50%", background:p.color, margin:"4px auto 0", boxShadow:`0 0 6px ${p.color}` }} />}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
     {/* Hero plan actuel */}
     <div style={{ position:"relative", background:`linear-gradient(135deg,${getSubColor(currentSub)}18,rgba(3,7,18,0.95))`, border:`1px solid ${getSubColor(currentSub)}35`, borderRadius:22, padding:"24px 22px", marginBottom:32, overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-40, right:-40, width:180, height:180, borderRadius:"50%", background:`radial-gradient(circle,${getSubColor(currentSub)}20,transparent 70%)`, pointerEvents:"none" }} />
@@ -1063,46 +1083,52 @@ function SubscriptionPage({ profile, onSubscribe }) {
       {SUBSCRIPTION_PLANS.map((plan,idx)=>{
         const isCurrent=currentSub===plan.id;
         const color=plan.color;
-        return <div key={plan.id} style={{ background:isCurrent?`${color}08`:"rgba(241,245,249,0.02)", border:`2px solid ${isCurrent?color:plan.popular?"rgba(59,130,246,0.15)":"rgba(241,245,249,0.05)"}`, borderRadius:20, overflow:"hidden", position:"relative" }}>
-          {plan.popular&&!isCurrent&&<div style={{ background:"linear-gradient(90deg,#3b82f6,#2563eb)", padding:"5px 0", textAlign:"center", fontSize:11, fontWeight:800, color:"#fff", letterSpacing:2 }}>⚡ LE PLUS POPULAIRE</div>}
-          {isCurrent&&<div style={{ background:`linear-gradient(90deg,${color},${color}cc)`, padding:"5px 0", textAlign:"center", fontSize:11, fontWeight:800, color:"#fff", letterSpacing:2 }}>✓ TON PLAN ACTUEL</div>}
-          <div style={{ padding:"22px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
+        return <div key={plan.id} style={{ position:"relative", borderRadius:22, overflow:"hidden", border:`1px solid ${isCurrent?color+"50":plan.popular?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.06)"}`, boxShadow:isCurrent?`0 8px 40px ${color}20`:plan.popular?"0 8px 30px rgba(59,130,246,0.1)":"none" }}>
+          {/* Gradient top band */}
+          <div style={{ height:4, background:isCurrent?`linear-gradient(90deg,${color},${color}88)`:plan.popular?"linear-gradient(90deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.06)" }} />
+          <div style={{ background:isCurrent?`linear-gradient(145deg,${color}10,rgba(3,7,18,0.98))`:"rgba(241,245,249,0.02)", padding:"20px 22px 22px" }}>
+            {/* Badge */}
+            {plan.popular&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#60a5fa", letterSpacing:1 }}>⚡ POPULAIRE</div>}
+            {isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color, letterSpacing:1 }}>✓ TON PLAN</div>}
+            {plan.id==="elite"&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.2)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#f59e0b", letterSpacing:1 }}>👑 PREMIUM</div>}
+            {plan.id==="starter"&&!isCurrent&&<div style={{ marginBottom:14 }} />}
+            {/* Header */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <div style={{ width:48, height:48, borderRadius:13, background:`${color}15`, border:`1px solid ${color}25`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{plan.emoji}</div>
+                <div style={{ width:52, height:52, borderRadius:15, background:`${color}18`, border:`1px solid ${color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, boxShadow:isCurrent?`0 0 20px ${color}30`:"none" }}>{plan.emoji}</div>
                 <div>
-                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:1, color }}>{plan.label}</div>
-                  <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginTop:1 }}>{plan.priceLabel}</div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:2, color:isCurrent?color:"#f1f5f9" }}>{plan.label.toUpperCase()}</div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:plan.id==="starter"?"rgba(241,245,249,0.3)":"#fbbf24", letterSpacing:1 }}>{plan.priceLabel}</div>
                 </div>
               </div>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginBottom:2 }}>chaque lundi</div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"#fbbf24", letterSpacing:1 }}>{plan.mcBoost} <span style={{ fontSize:14 }}>MC</span></div>
+              <div style={{ textAlign:"center", background:"rgba(251,191,36,0.06)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:12, padding:"8px 14px" }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"#fbbf24", letterSpacing:1, lineHeight:1 }}>{plan.mcBoost}</div>
+                <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", fontWeight:700, letterSpacing:1, marginTop:2 }}>MC/LUNDI</div>
               </div>
             </div>
             {/* Features */}
-            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
-              {(plan.features||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"rgba(241,245,249,0.75)" }}>
-                <div style={{ width:20, height:20, borderRadius:"50%", background:`${color}20`, border:`1px solid ${color}40`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ color, fontSize:11 }}>✓</span>
+            <div style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:20, background:"rgba(241,245,249,0.02)", borderRadius:12, padding:"14px" }}>
+              {(plan.features||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:9, fontSize:12, color:"rgba(241,245,249,0.7)" }}>
+                <div style={{ width:18, height:18, borderRadius:5, background:`${color}20`, border:`1px solid ${color}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ color, fontSize:10, fontWeight:800 }}>✓</span>
                 </div>
                 {f}
               </div>)}
-              {(plan.noFeatures||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"rgba(241,245,249,0.2)" }}>
-                <div style={{ width:20, height:20, borderRadius:"50%", background:"rgba(241,245,249,0.04)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontSize:11 }}>✗</span>
+              {(plan.noFeatures||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:9, fontSize:12, color:"rgba(241,245,249,0.18)" }}>
+                <div style={{ width:18, height:18, borderRadius:5, background:"rgba(241,245,249,0.03)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontSize:10 }}>✗</span>
                 </div>
                 {f}
               </div>)}
             </div>
             {isCurrent?(
               <div style={{ display:"flex", gap:8 }}>
-                <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>Plan actuel ✓</div>
-                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Résilier</button>}
-                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>Passer Elite 👑</button>}
+                <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>✓ Plan actuel</div>
+                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Résilier</button>}
+                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(245,158,11,0.3)" }}>Passer Elite 👑</button>}
               </div>
             ):(
-              <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.05)":`linear-gradient(135deg,${color},${color}bb)`, color:plan.id==="starter"?"rgba(241,245,249,0.3)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 8px 25px ${color}35`:"none", transition:"all 0.2s" }}>
+              <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"14px 0", borderRadius:13, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.04)":`linear-gradient(135deg,${color},${color}aa)`, color:plan.id==="starter"?"rgba(241,245,249,0.25)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 10px 30px ${color}30`:"none", letterSpacing:plan.id!=="starter"?0.5:0, transition:"all 0.2s" }}>
                 {plan.id==="starter"?"Plan gratuit par défaut":`S'abonner — ${plan.priceLabel} →`}
               </button>
             )}
@@ -1117,32 +1143,37 @@ function SubscriptionPage({ profile, onSubscribe }) {
   </div>;
 }
 
-function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
+function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe, onNavigate }) {
   const currentSub=getSubPlan(profile);
+  const subColor=getSubColor(currentSub);
 
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>STORE</div>
-    <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Échange tes StoreCoins contre des récompenses réelles.</div>
-    {/* Wallet bar */}
-    <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
-      <MCBadge amount={coins} size="lg" />
-      <SCBadge amount={sc} size="lg" />
-      <SubBadge profile={profile} size="lg" />
-    </div>
-    {/* Banner ligue actuelle */}
-    <div style={{ background:`linear-gradient(135deg,${getSubColor(currentSub)}15,rgba(3,7,18,0.95))`, border:`1px solid ${getSubColor(currentSub)}35`, borderRadius:16, padding:"14px 18px", marginBottom:28, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        <span style={{ fontSize:22 }}>{getSubEmoji(currentSub)}</span>
-        <div>
-          <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1.5 }}>LIGUE ACTUELLE</div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:getSubColor(currentSub), letterSpacing:1 }}>{getSubLabel(currentSub)}</div>
+    {/* HERO HEADER */}
+    <div style={{ position:"relative", background:`linear-gradient(135deg,${subColor}20,rgba(3,7,18,0.98))`, border:`1px solid ${subColor}30`, borderRadius:24, padding:"24px 22px", marginBottom:28, overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:-50, right:-50, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${subColor}25,transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ position:"absolute", bottom:-30, left:-30, width:140, height:140, borderRadius:"50%", background:`radial-gradient(circle,${subColor}12,transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ fontSize:10, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:2, marginBottom:12 }}>MON STORE</div>
+      <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+        <MCBadge amount={coins} size="lg" />
+        <SCBadge amount={sc} size="lg" />
+      </div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:40, height:40, borderRadius:11, background:`${subColor}20`, border:`1px solid ${subColor}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>{getSubEmoji(currentSub)}</div>
+          <div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:subColor, letterSpacing:1 }}>LIGUE {getSubLabel(currentSub).toUpperCase()}</div>
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>{getMCBoost(currentSub)} MC chaque lundi</div>
+          </div>
         </div>
-      </div>
-      <div style={{ textAlign:"right" }}>
-        <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>chaque lundi</div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#fbbf24" }}>{getMCBoost(currentSub)} MC</div>
+        <button onClick={()=>onNavigate("subscription")} style={{ padding:"7px 14px", borderRadius:10, border:`1px solid ${subColor}35`, background:`${subColor}12`, color:subColor, fontWeight:700, fontSize:11, cursor:"pointer" }}>Changer →</button>
       </div>
     </div>
+    {/* TITRE */}
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+      <div style={{ width:3, height:22, background:"linear-gradient(180deg,#10b981,#3b82f6)", borderRadius:99 }} />
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:2 }}>RÉCOMPENSES</div>
+    </div>
+    <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:24 }}>Échange tes 💎 SC contre des cadeaux réels. Les ligues supérieures débloquent de meilleures récompenses.</div>
 
     {/* RECOMPENSES PAR LIGUE */}
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, marginBottom:6 }}>RÉCOMPENSES</div>
@@ -1191,7 +1222,7 @@ function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
                 </div>
               </div>
               {/* Overlay lock - semi transparent pour voir le contenu */}
-              {!accessible&&<div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg,rgba(3,7,18,0.55),rgba(3,7,18,0.65))`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", backdropFilter:"blur(1.5px)", cursor:"pointer" }} onClick={()=>onSubscribe(planId)}>
+              {!accessible&&<div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg,rgba(3,7,18,0.55),rgba(3,7,18,0.65))`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", backdropFilter:"blur(1.5px)", cursor:"pointer" }} onClick={()=>onNavigate("subscription")}>
                 <div style={{ width:38, height:38, borderRadius:"50%", background:`${planInfo.color}20`, border:`2px solid ${planInfo.color}50`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:6, boxShadow:`0 0 16px ${planInfo.color}40` }}>
                   <span style={{ fontSize:18 }}>🔒</span>
                 </div>
@@ -1673,7 +1704,7 @@ export default function App() {
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} />}
       {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} />}
-      {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} />}
+      {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={setPage} />}
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
       {page==="howto"&&<HowItWorksPage onNavigate={setPage} />}
