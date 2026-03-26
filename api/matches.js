@@ -1,10 +1,111 @@
+const cache = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const COMPETITIONS = [
+  // Existantes
+  { id: 39,  slug: "PL",   name: "Premier League",      emoji: "🏴", color: "#3b82f6" },
+  { id: 61,  slug: "FL1",  name: "Ligue 1",             emoji: "🇫🇷", color: "#ef4444" },
+  { id: 2,   slug: "CL",   name: "Champions League",    emoji: "🏆", color: "#fbbf24" },
+  { id: 140, slug: "PD",   name: "La Liga",             emoji: "🇪🇸", color: "#f97316" },
+  { id: 78,  slug: "BL1",  name: "Bundesliga",          emoji: "🇩🇪", color: "#6b7280" },
+  { id: 135, slug: "SA",   name: "Serie A",             emoji: "🇮🇹", color: "#10b981" },
+  { id: 94,  slug: "PPL",  name: "Liga Portugal",       emoji: "🇵🇹", color: "#8b5cf6" },
+  { id: 3,   slug: "EL",   name: "Europa League",       emoji: "🔶", color: "#f59e0b" },
+  // Nouvelles
+  { id: 1,   slug: "WC",   name: "Coupe du Monde",      emoji: "🌍", color: "#fbbf24" },
+  { id: 4,   slug: "EURO", name: "Euro",                emoji: "🇪🇺", color: "#3b82f6" },
+  { id: 5,   slug: "NL",   name: "Ligue des Nations",   emoji: "🌐", color: "#10b981" },
+  { id: 10,  slug: "FR",   name: "Amicaux Internationaux", emoji: "🤝", color: "#94a3b8" },
+  { id: 71,  slug: "BSA",  name: "Brasileirao",         emoji: "🇧🇷", color: "#10b981" },
+  { id: 253, slug: "MLS",  name: "MLS",                 emoji: "🇺🇸", color: "#ef4444" },
+  { id: 88,  slug: "ERE",  name: "Eredivisie",          emoji: "🇳🇱", color: "#f97316" },
+  { id: 203, slug: "TSL",  name: "Süper Lig",           emoji: "🇹🇷", color: "#ef4444" },
+];
+
+async function fetchWithRetry(url, headers, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      if (i === retries) throw e;
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+}
+
 export default async function handler(req, res) {
-  const { competition } = req.query;
-  const response = await fetch(
-    `https://api.football-data.org/v4/competitions/${competition}/matches?status=SCHEDULED,IN_PLAY,PAUSED,FINISHED`,
-    { headers: { "X-Auth-Token": "39f143541b354376af79527e278c3149" } }
-  );
-  const data = await response.json();
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.status(200).json(data);
+
+  const { competition } = req.query;
+  const comp = COMPETITIONS.find(c => c.slug === competition);
+
+  // Si pas de compétition spécifiée, retourner la liste
+  if (!competition) {
+    return res.status(200).json({ competitions: COMPETITIONS });
+  }
+
+  if (!comp) return res.status(400).json({ error: "Compétition inconnue" });
+
+  // Cache check
+  const cacheKey = `matches_${comp.id}`;
+  if (cache[cacheKey] && Date.now() - cache[cacheKey].ts < CACHE_DURATION) {
+    return res.status(200).json(cache[cacheKey].data);
+  }
+
+  try {
+    const season = new Date().getFullYear();
+    const now = new Date();
+    const from = new Date(now - 7 * 86400000).toISOString().split("T")[0];
+    const to = new Date(now.getTime() + 30 * 86400000).toISOString().split("T")[0];
+
+    const data = await fetchWithRetry(
+      `https://v3.football.api-sports.io/fixtures?league=${comp.id}&season=${season}&from=${from}&to=${to}`,
+      {
+        "x-apisports-key": process.env.API_FOOTBALL_KEY,
+        "x-rapidapi-key": process.env.API_FOOTBALL_KEY,
+      }
+    );
+
+    if (!data?.response) throw new Error("Pas de données");
+
+    const matches = data.response.map(f => ({
+      id: f.fixture.id.toString(),
+      home_team: f.teams.home.name,
+      away_team: f.teams.away.name,
+      home_logo: f.teams.home.logo,
+      away_logo: f.teams.away.logo,
+      home_team_id: f.teams.home.id,
+      away_team_id: f.teams.away.id,
+      competition: comp.slug,
+      match_date: f.fixture.date,
+      status: mapStatus(f.fixture.status.short),
+      home_score: f.goals.home,
+      away_score: f.goals.away,
+      scorers: (f.events || [])
+        .filter(e => e.type === "Goal" && e.detail !== "Missed Penalty")
+        .map(e => ({ name: e.player.name, team: e.team.name, minute: e.time.elapsed })),
+      venue: f.fixture.venue?.name || "",
+    }));
+
+    const result = { matches, competition: comp };
+    cache[cacheKey] = { data: result, ts: Date.now() };
+    return res.status(200).json(result);
+
+  } catch (e) {
+    // Retourner le cache expiré si dispo plutôt que rien
+    if (cache[cacheKey]) return res.status(200).json(cache[cacheKey].data);
+    return res.status(500).json({ error: e.message, matches: [] });
+  }
+}
+
+function mapStatus(s) {
+  if (["1H","2H","ET","P","LIVE","HT"].includes(s)) return "IN_PLAY";
+  if (["FT","AET","PEN"].includes(s)) return "FINISHED";
+  if (["PST","CANC","ABD","AWD","WO"].includes(s)) return "POSTPONED";
+  return "SCHEDULED";
 }

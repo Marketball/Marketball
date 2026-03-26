@@ -225,16 +225,24 @@ const SPIN_SEGMENTS = [
 const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 
-const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1", "SA", "PPL"];
+const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","WC","EURO","NL","FR","BSA","MLS","ERE","TSL"];
 const COMP_INFO = {
-  "PL": { name: "Premier League", emoji: "🏴", color: "#3b82f6" },
-  "FL1": { name: "Ligue 1", emoji: "🇫🇷", color: "#ef4444" },
-  "CL": { name: "Champions League", emoji: "🏆", color: "#fbbf24" },
-  "PD": { name: "La Liga", emoji: "🇪🇸", color: "#f97316" },
-  "BL1": { name: "Bundesliga", emoji: "🇩🇪", color: "#6b7280" },
-  "SA": { name: "Serie A", emoji: "🇮🇹", color: "#10b981" },
-  "PPL": { name: "Liga Portugal", emoji: "🇵🇹", color: "#8b5cf6" },
-  "EL": { name: "Europa League", emoji: "🔶", color: "#f59e0b" },
+  "PL":   { name: "Premier League",         emoji: "🏴", color: "#3b82f6" },
+  "FL1":  { name: "Ligue 1",                emoji: "🇫🇷", color: "#ef4444" },
+  "CL":   { name: "Champions League",       emoji: "🏆", color: "#fbbf24" },
+  "PD":   { name: "La Liga",                emoji: "🇪🇸", color: "#f97316" },
+  "BL1":  { name: "Bundesliga",             emoji: "🇩🇪", color: "#6b7280" },
+  "SA":   { name: "Serie A",                emoji: "🇮🇹", color: "#10b981" },
+  "PPL":  { name: "Liga Portugal",          emoji: "🇵🇹", color: "#8b5cf6" },
+  "EL":   { name: "Europa League",          emoji: "🔶", color: "#f59e0b" },
+  "WC":   { name: "Coupe du Monde",         emoji: "🌍", color: "#fbbf24" },
+  "EURO": { name: "Euro",                   emoji: "🇪🇺", color: "#3b82f6" },
+  "NL":   { name: "Ligue des Nations",      emoji: "🌐", color: "#10b981" },
+  "FR":   { name: "Amicaux Internationaux", emoji: "🤝", color: "#94a3b8" },
+  "BSA":  { name: "Brasileirao",            emoji: "🇧🇷", color: "#10b981" },
+  "MLS":  { name: "MLS",                    emoji: "🇺🇸", color: "#ef4444" },
+  "ERE":  { name: "Eredivisie",             emoji: "🇳🇱", color: "#f97316" },
+  "TSL":  { name: "Süper Lig",              emoji: "🇹🇷", color: "#ef4444" },
 };
 
 const CLUB_COLORS = {
@@ -1561,35 +1569,23 @@ export default function App() {
       const fetchComp=async(comp)=>{
         try{
           const controller=new AbortController();
-          const timeout=setTimeout(()=>controller.abort(),8000);
+          const timeout=setTimeout(()=>controller.abort(),10000);
           const data=await fetch(`/api/matches?competition=${comp}`,{signal:controller.signal}).then(r=>r.json());
           clearTimeout(timeout);
           if(!data?.matches) return [];
-          const now=new Date();
-          return data.matches
-            .filter(m=>{const d=new Date(m.utcDate);return d>=new Date(now-7*86400000)&&d<=new Date(now.getTime()+30*86400000);})
-            .map(m=>({
-              id:m.id.toString(),
-              home_team:m.homeTeam.shortName||m.homeTeam.name,
-              away_team:m.awayTeam.shortName||m.awayTeam.name,
-              home_logo:m.homeTeam.crest,
-              away_logo:m.awayTeam.crest,
-              home_team_id:m.homeTeam.id,
-              away_team_id:m.awayTeam.id,
-              competition:comp,
-              match_date:m.utcDate,
-              status:m.status,
-              home_score:m.score?.fullTime?.home,
-              away_score:m.score?.fullTime?.away,
-              scorers:m.goals||[],
-            }));
+          return data.matches;
         }catch{return [];}
       };
-      const results=await Promise.allSettled(COMPETITIONS.map(comp=>fetchComp(comp)));
-      results.forEach(r=>{if(r.status==="fulfilled") allMatches.push(...r.value);});
+      // Charger par groupes de 4 pour eviter de surcharger l'API
+      const groups=[];
+      for(let i=0;i<COMPETITIONS.length;i+=4) groups.push(COMPETITIONS.slice(i,i+4));
+      for(const group of groups){
+        const results=await Promise.allSettled(group.map(comp=>fetchComp(comp)));
+        results.forEach(r=>{if(r.status==="fulfilled") allMatches.push(...r.value);});
+      }
       allMatches.sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
       setMatches(allMatches);
-    }catch{}
+    }catch(e){console.error("loadMatches error",e);}
     setMatchesLoading(false);
     return allMatches;
   },[]);
