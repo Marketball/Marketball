@@ -225,7 +225,7 @@ const SPIN_SEGMENTS = [
 const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 
-const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","WCQ_CONC","WCQ_CONM","WCQ_AFC","AFCON","COPA"];
+const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 const COMP_INFO = {
   "PL":       { name: "Premier League",            emoji: "🏴", color: "#3b82f6" },
   "FL1":      { name: "Ligue 1",                   emoji: "🇫🇷", color: "#ef4444" },
@@ -249,6 +249,7 @@ const COMP_INFO = {
   "WCQ_AFC":  { name: "Qualif. Mondial AFC",       emoji: "🌍", color: "#94a3b8" },
   "AFCON":    { name: "CAN",                       emoji: "🌍", color: "#f59e0b" },
   "COPA":     { name: "Copa América",              emoji: "🌎", color: "#10b981" },
+  "U21UEFA":  { name: "Euro U21 Qualif.",           emoji: "🇪🇺", color: "#60a5fa" },
 };
 
 const CLUB_COLORS = {
