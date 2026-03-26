@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     const to = new Date(now.getTime() + 30 * 86400000).toISOString().split("T")[0];
 
     const data = await fetchWithRetry(
-      `https://v3.football.api-sports.io/fixtures?league=${comp.id}&season=${season}&from=${from}&to=${to}&events=true`,
+      `https://v3.football.api-sports.io/fixtures?league=${comp.id}&season=${season}&from=${from}&to=${to}`,
       { "x-apisports-key": process.env.API_FOOTBALL_KEY }
     );
 
