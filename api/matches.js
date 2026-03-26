@@ -58,7 +58,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const season = new Date().getFullYear();
+    const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
     const now = new Date();
     const from = new Date(now - 7 * 86400000).toISOString().split("T")[0];
     const to = new Date(now.getTime() + 30 * 86400000).toISOString().split("T")[0];
