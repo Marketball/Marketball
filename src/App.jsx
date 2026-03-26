@@ -225,24 +225,30 @@ const SPIN_SEGMENTS = [
 const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
 
-const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","WC","EURO","NL","FR","BSA","MLS","ERE","TSL"];
+const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","WCQ_CONC","WCQ_CONM","WCQ_AFC","AFCON","COPA"];
 const COMP_INFO = {
-  "PL":   { name: "Premier League",         emoji: "🏴", color: "#3b82f6" },
-  "FL1":  { name: "Ligue 1",                emoji: "🇫🇷", color: "#ef4444" },
-  "CL":   { name: "Champions League",       emoji: "🏆", color: "#fbbf24" },
-  "PD":   { name: "La Liga",                emoji: "🇪🇸", color: "#f97316" },
-  "BL1":  { name: "Bundesliga",             emoji: "🇩🇪", color: "#6b7280" },
-  "SA":   { name: "Serie A",                emoji: "🇮🇹", color: "#10b981" },
-  "PPL":  { name: "Liga Portugal",          emoji: "🇵🇹", color: "#8b5cf6" },
-  "EL":   { name: "Europa League",          emoji: "🔶", color: "#f59e0b" },
-  "WC":   { name: "Coupe du Monde",         emoji: "🌍", color: "#fbbf24" },
-  "EURO": { name: "Euro",                   emoji: "🇪🇺", color: "#3b82f6" },
-  "NL":   { name: "Ligue des Nations",      emoji: "🌐", color: "#10b981" },
-  "FR":   { name: "Amicaux Internationaux", emoji: "🤝", color: "#94a3b8" },
-  "BSA":  { name: "Brasileirao",            emoji: "🇧🇷", color: "#10b981" },
-  "MLS":  { name: "MLS",                    emoji: "🇺🇸", color: "#ef4444" },
-  "ERE":  { name: "Eredivisie",             emoji: "🇳🇱", color: "#f97316" },
-  "TSL":  { name: "Süper Lig",              emoji: "🇹🇷", color: "#ef4444" },
+  "PL":       { name: "Premier League",            emoji: "🏴", color: "#3b82f6" },
+  "FL1":      { name: "Ligue 1",                   emoji: "🇫🇷", color: "#ef4444" },
+  "CL":       { name: "Champions League",          emoji: "🏆", color: "#fbbf24" },
+  "PD":       { name: "La Liga",                   emoji: "🇪🇸", color: "#f97316" },
+  "BL1":      { name: "Bundesliga",                emoji: "🇩🇪", color: "#6b7280" },
+  "SA":       { name: "Serie A",                   emoji: "🇮🇹", color: "#10b981" },
+  "PPL":      { name: "Liga Portugal",             emoji: "🇵🇹", color: "#8b5cf6" },
+  "EL":       { name: "Europa League",             emoji: "🔶", color: "#f59e0b" },
+  "WC":       { name: "Coupe du Monde",            emoji: "🌍", color: "#fbbf24" },
+  "EURO":     { name: "Euro",                      emoji: "🇪🇺", color: "#3b82f6" },
+  "NL":       { name: "Ligue des Nations",         emoji: "🌐", color: "#10b981" },
+  "FR":       { name: "Amicaux Internationaux",    emoji: "🤝", color: "#94a3b8" },
+  "BSA":      { name: "Brasileirao",               emoji: "🇧🇷", color: "#10b981" },
+  "MLS":      { name: "MLS",                       emoji: "🇺🇸", color: "#ef4444" },
+  "ERE":      { name: "Eredivisie",                emoji: "🇳🇱", color: "#f97316" },
+  "TSL":      { name: "Süper Lig",                 emoji: "🇹🇷", color: "#ef4444" },
+  "WCQ_UEFA": { name: "Qualif. Mondial UEFA",      emoji: "🌍", color: "#94a3b8" },
+  "WCQ_CONC": { name: "Qualif. Mondial CONCACAF",  emoji: "🌍", color: "#94a3b8" },
+  "WCQ_CONM": { name: "Qualif. Mondial CONMEBOL",  emoji: "🌍", color: "#94a3b8" },
+  "WCQ_AFC":  { name: "Qualif. Mondial AFC",       emoji: "🌍", color: "#94a3b8" },
+  "AFCON":    { name: "CAN",                       emoji: "🌍", color: "#f59e0b" },
+  "COPA":     { name: "Copa América",              emoji: "🌎", color: "#10b981" },
 };
 
 const CLUB_COLORS = {
