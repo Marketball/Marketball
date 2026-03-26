@@ -222,18 +222,8 @@ const SPIN_SEGMENTS = [
   { label: "200 MC", value: 200, type: "mc", color: "#fbbf24" },
 ];
 
-const BASE_MARKETS = [
-  { id: "00000000-0000-0000-0000-000000000001", title: "Mbappe rejoint Arsenal avant le 31 aout ?", q_yes: 320, q_no: 180, total_volume: 8400, participants: 142, closes_at: new Date(Date.now() + 12 * 86400000).toISOString(), category: "Transferts", source: "Fabrizio Romano" },
-  { id: "00000000-0000-0000-0000-000000000002", title: "Barcelona signe Lamine Yamal pro avant janvier ?", q_yes: 480, q_no: 120, total_volume: 12600, participants: 287, closes_at: new Date(Date.now() + 5 * 86400000).toISOString(), category: "Contrats", source: "Marca" },
-  { id: "00000000-0000-0000-0000-000000000003", title: "PSG remporte la Champions League cette saison ?", q_yes: 200, q_no: 400, total_volume: 31200, participants: 891, closes_at: new Date(Date.now() + 45 * 86400000).toISOString(), category: "Competitions", source: "L'Equipe" },
-  { id: "00000000-0000-0000-0000-000000000004", title: "Erling Haaland quitte City cet ete ?", q_yes: 150, q_no: 350, total_volume: 9800, participants: 203, closes_at: new Date(Date.now() + 28 * 86400000).toISOString(), category: "Transferts", source: "Sky Sports" },
-  { id: "00000000-0000-0000-0000-000000000005", title: "Vinicius Jr. Ballon d'Or 2025 ?", q_yes: 260, q_no: 240, total_volume: 19400, participants: 534, closes_at: new Date(Date.now() + 180 * 86400000).toISOString(), category: "Recompenses", source: "France Football" },
-  { id: "00000000-0000-0000-0000-000000000006", title: "Bellingham marque plus de 25 buts en PL ?", q_yes: 190, q_no: 310, total_volume: 7200, participants: 168, closes_at: new Date(Date.now() + 60 * 86400000).toISOString(), category: "Performances", source: "BBC Sport" },
-];
-
 const loadSavedOdds = () => { try { const s = localStorage.getItem("mb_odds"); return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const saveOdds = (ms) => { try { const o = {}; ms.forEach(m => { o[m.id] = { q_yes: m.q_yes, q_no: m.q_no, total_volume: m.total_volume, participants: m.participants }; }); localStorage.setItem("mb_odds", JSON.stringify(o)); } catch {} };
-const getSeedMarkets = () => { const saved = loadSavedOdds(); return BASE_MARKETS.map(m => ({ ...m, ...(saved[m.id] || {}), status: "open" })); };
 
 const COMPETITIONS = ["PL", "FL1", "CL", "PD", "BL1", "SA", "PPL"];
 const COMP_INFO = {
@@ -1050,13 +1040,22 @@ function SubscriptionPage({ profile, onSubscribe }) {
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>ABONNEMENTS</div>
     <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28 }}>Choisis ta ligue et débloque des avantages exclusifs.</div>
-    {/* Plan actuel */}
-    <div style={{ background:`linear-gradient(135deg,${getSubColor(currentSub)}12,rgba(3,7,18,0.8))`, border:`1px solid ${getSubColor(currentSub)}30`, borderRadius:18, padding:"18px 22px", marginBottom:28, display:"flex", alignItems:"center", gap:14 }}>
-      <div style={{ width:52, height:52, borderRadius:14, background:`${getSubColor(currentSub)}20`, border:`1px solid ${getSubColor(currentSub)}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{getSubEmoji(currentSub)}</div>
-      <div>
-        <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1.5, marginBottom:3 }}>TON PLAN ACTUEL</div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:getSubColor(currentSub), letterSpacing:1 }}>{getSubLabel(currentSub)}</div>
-        <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)", marginTop:2 }}>{getMCBoost(currentSub)} MC offerts chaque lundi</div>
+    {/* Hero plan actuel */}
+    <div style={{ position:"relative", background:`linear-gradient(135deg,${getSubColor(currentSub)}18,rgba(3,7,18,0.95))`, border:`1px solid ${getSubColor(currentSub)}35`, borderRadius:22, padding:"24px 22px", marginBottom:32, overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:-40, right:-40, width:180, height:180, borderRadius:"50%", background:`radial-gradient(circle,${getSubColor(currentSub)}20,transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:2, marginBottom:10 }}>TON ABONNEMENT ACTUEL</div>
+      <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
+        <div style={{ width:56, height:56, borderRadius:16, background:`${getSubColor(currentSub)}20`, border:`2px solid ${getSubColor(currentSub)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, boxShadow:`0 0 20px ${getSubColor(currentSub)}25` }}>{getSubEmoji(currentSub)}</div>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:getSubColor(currentSub), letterSpacing:2 }}>{getSubLabel(currentSub)}</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.45)", marginTop:2 }}>{getMCBoost(currentSub)} MarketCoins offerts chaque lundi</div>
+        </div>
+      </div>
+      <div style={{ height:3, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden" }}>
+        <div style={{ width:currentSub==="starter"?"33%":currentSub==="pro"?"66%":"100%", height:"100%", background:`linear-gradient(90deg,${getSubColor(currentSub)}88,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1s ease", boxShadow:`0 0 8px ${getSubColor(currentSub)}` }} />
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
+        {["Starter","Pro","Elite"].map((l,i)=><span key={l} style={{ fontSize:9, fontWeight:700, color:["#94a3b8","#3b82f6","#f59e0b"][i], opacity:["starter","pro","elite"][i]===currentSub?1:0.35 }}>{l}</span>)}
       </div>
     </div>
     {/* Comparatif */}
@@ -1119,17 +1118,30 @@ function SubscriptionPage({ profile, onSubscribe }) {
 }
 
 function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
-  const level=getLevel(profile?.xp||0), userBadge=getBadge(level);
-  const badgeOrder=["rookie","scout","analyst","pro","legend"];
-  const canAccess=(req)=>badgeOrder.indexOf(req)<=badgeOrder.indexOf(userBadge.id);
   const currentSub=getSubPlan(profile);
 
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>STORE</div>
-    <div style={{ display:"flex", gap:10, marginBottom:10, flexWrap:"wrap" }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /><SubBadge profile={profile} size="lg" /></div>
-    <div style={{ background:`${getSubColor(currentSub)}08`, border:`1px solid ${getSubColor(currentSub)}20`, borderRadius:12, padding:"10px 16px", marginBottom:24, display:"flex", alignItems:"center", gap:10 }}>
-      <span style={{ fontSize:18 }}>{getSubEmoji(currentSub)}</span>
-      <span style={{ fontSize:13, color:"rgba(241,245,249,0.6)" }}>Ligue <strong style={{ color:getSubColor(currentSub) }}>{getSubLabel(currentSub)}</strong> · {getMCBoost(currentSub)} MC chaque lundi</span>
+    <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Échange tes StoreCoins contre des récompenses réelles.</div>
+    {/* Wallet bar */}
+    <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+      <MCBadge amount={coins} size="lg" />
+      <SCBadge amount={sc} size="lg" />
+      <SubBadge profile={profile} size="lg" />
+    </div>
+    {/* Banner ligue actuelle */}
+    <div style={{ background:`linear-gradient(135deg,${getSubColor(currentSub)}15,rgba(3,7,18,0.95))`, border:`1px solid ${getSubColor(currentSub)}35`, borderRadius:16, padding:"14px 18px", marginBottom:28, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <span style={{ fontSize:22 }}>{getSubEmoji(currentSub)}</span>
+        <div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1.5 }}>LIGUE ACTUELLE</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:getSubColor(currentSub), letterSpacing:1 }}>{getSubLabel(currentSub)}</div>
+        </div>
+      </div>
+      <div style={{ textAlign:"right" }}>
+        <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>chaque lundi</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#fbbf24" }}>{getMCBoost(currentSub)} MC</div>
+      </div>
     </div>
 
     {/* RECOMPENSES PAR LIGUE */}
@@ -1142,37 +1154,50 @@ function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe }) {
       const userOrder=planOrder.indexOf(currentSub);
       const planOrderIdx=planOrder.indexOf(planId);
       const accessible=userOrder>=planOrderIdx;
-      return <div key={planId} style={{ marginBottom:24 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-          <span style={{ fontSize:18 }}>{planInfo.emoji}</span>
-          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:planInfo.color }}>{planInfo.label}</span>
-          {!accessible&&<span style={{ fontSize:11, color:planInfo.color, background:`${planInfo.color}12`, border:`1px solid ${planInfo.color}25`, borderRadius:20, padding:"2px 10px", fontWeight:700 }}>🔒 Abonnement requis</span>}
+      return <div key={planId} style={{ marginBottom:28 }}>
+        {/* Section header */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, paddingBottom:10, borderBottom:`1px solid ${planInfo.color}20` }}>
+          <div style={{ width:32, height:32, borderRadius:9, background:`${planInfo.color}15`, border:`1px solid ${planInfo.color}25`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>{planInfo.emoji}</div>
+          <div>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, letterSpacing:1, color:planInfo.color }}>{planInfo.label}</span>
+            {!accessible&&<span style={{ marginLeft:8, fontSize:10, color:planInfo.color, background:`${planInfo.color}12`, border:`1px solid ${planInfo.color}25`, borderRadius:20, padding:"2px 9px", fontWeight:700 }}>🔒 Débloquer</span>}
+            {accessible&&<span style={{ marginLeft:8, fontSize:10, color:"#10b981", fontWeight:700 }}>✓ Débloqué</span>}
+          </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))", gap:10 }}>
           {items.map(r=>{
             const affordable=sc>=r.cost;
-            return <div key={r.id} className="card-hover" style={{ background:accessible?"rgba(241,245,249,0.02)":"rgba(241,245,249,0.01)", border:`2px solid ${accessible?planInfo.color+"20":"rgba(241,245,249,0.04)"}`, borderRadius:16, padding:"18px", display:"flex", flexDirection:"column", gap:8, position:"relative", overflow:"hidden" }}>
-              {!accessible&&<div style={{ position:"absolute", inset:0, background:"rgba(3,7,18,0.7)", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", zIndex:2, backdropFilter:"blur(2px)" }}>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:28, marginBottom:6 }}>🔒</div>
-                  <div style={{ fontSize:11, fontWeight:700, color:planInfo.color }}>Ligue {planInfo.label}</div>
-                  <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", marginTop:2 }}>requise</div>
+            return <div key={r.id} className="card-hover" style={{ background:accessible?`${planInfo.color}05`:"rgba(241,245,249,0.015)", border:`1px solid ${accessible?planInfo.color+"25":"rgba(241,245,249,0.06)"}`, borderRadius:16, overflow:"hidden", position:"relative", transition:"all 0.2s" }}>
+              {/* Contenu visible même si locked */}
+              <div style={{ padding:"16px 16px 12px", filter:accessible?"none":"blur(0px)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                  <div style={{ fontSize:34 }}>{r.emoji}</div>
+                  <div style={{ background:`${planInfo.color}15`, border:`1px solid ${planInfo.color}25`, borderRadius:8, padding:"3px 8px", textAlign:"right" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:planInfo.color }}>{r.value}</div>
+                  </div>
                 </div>
+                <div style={{ fontWeight:800, fontSize:13, color:accessible?"#f1f5f9":"rgba(241,245,249,0.5)", marginBottom:3 }}>{r.name}</div>
+                <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginBottom:10, lineHeight:1.4 }}>{r.description}</div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#10b981" }}>💎 {r.cost} SC</div>
+                  {accessible?(
+                    <button onClick={()=>affordable&&onRedeemSC(r)} disabled={!affordable}
+                      style={{ padding:"6px 12px", borderRadius:8, border:"none", background:affordable?`linear-gradient(135deg,${planInfo.color},${planInfo.color}cc)`:"rgba(241,245,249,0.06)", color:affordable?"#fff":"rgba(241,245,249,0.25)", fontWeight:800, fontSize:11, cursor:affordable?"pointer":"not-allowed", transition:"all 0.2s" }}>
+                      {affordable?"OBTENIR":"Insuf."}
+                    </button>
+                  ):(
+                    <div style={{ fontSize:11, color:planInfo.color, fontWeight:700 }}>🔒</div>
+                  )}
+                </div>
+              </div>
+              {/* Overlay lock - semi transparent pour voir le contenu */}
+              {!accessible&&<div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg,rgba(3,7,18,0.55),rgba(3,7,18,0.65))`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", backdropFilter:"blur(1.5px)", cursor:"pointer" }} onClick={()=>onSubscribe(planId)}>
+                <div style={{ width:38, height:38, borderRadius:"50%", background:`${planInfo.color}20`, border:`2px solid ${planInfo.color}50`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:6, boxShadow:`0 0 16px ${planInfo.color}40` }}>
+                  <span style={{ fontSize:18 }}>🔒</span>
+                </div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:12, color:planInfo.color, letterSpacing:1, textAlign:"center" }}>LIGUE {planInfo.label.toUpperCase()}</div>
+                <div style={{ fontSize:10, color:"rgba(241,245,249,0.5)", marginTop:2 }}>Tap pour s'abonner</div>
               </div>}
-              <div style={{ fontSize:30 }}>{r.emoji}</div>
-              <div>
-                <div style={{ fontWeight:800, fontSize:13, marginBottom:2 }}>{r.name}</div>
-                <div style={{ fontSize:11, color:planInfo.color, fontWeight:700, marginBottom:4 }}>{r.value}</div>
-                <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)" }}>{r.description}</div>
-              </div>
-              <div style={{ flex:1 }} />
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
-                <SCBadge amount={r.cost} />
-                <button onClick={()=>accessible&&affordable&&onRedeemSC(r)} disabled={!accessible||!affordable}
-                  style={{ padding:"7px 12px", borderRadius:9, border:"none", background:accessible&&affordable?`linear-gradient(135deg,${planInfo.color},${planInfo.color}cc)`:"rgba(241,245,249,0.04)", color:accessible&&affordable?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:11, cursor:accessible&&affordable?"pointer":"not-allowed" }}>
-                  {!affordable?"Insuffisant":"OBTENIR"}
-                </button>
-              </div>
             </div>;
           })}
         </div>
@@ -1246,7 +1271,7 @@ export default function App() {
   const [session,setSession]=useState(null);
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
-  const [markets,setMarkets]=useState(getSeedMarkets());
+  const [markets,setMarkets]=useState([]);
   const [matches,setMatches]=useState([]);
   const [matchesLoading,setMatchesLoading]=useState(false);
   const [leaderboard,setLeaderboard]=useState([]);
@@ -1360,7 +1385,6 @@ export default function App() {
 
   const loadMarkets=useCallback(async()=>{
     try{
-      const seeds=BASE_MARKETS.map(m=>({...m,...(loadSavedOdds()[m.id]||{}),status:"open"}));
       const [rumors,customs]=await Promise.all([
         req("rumors?select=*&status=eq.open&order=created_at.desc").catch(()=>[]),
         req("custom_markets?status=eq.open&order=created_at.desc").catch(()=>[]),
@@ -1368,7 +1392,7 @@ export default function App() {
       const rumorMarkets=(rumors||[]).map(r=>({id:r.rumor_id,title:r.event_question||`${r.player_name} → ${r.to_club} ?`,q_yes:100,q_no:100,total_volume:500,participants:10,closes_at:r.expires_at||new Date(Date.now()+14*86400000).toISOString(),category:"Transferts",source:r.source_name||"Source",status:"open"}));
       const savedOdds=loadSavedOdds();
       const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:savedOdds[c.id]?.q_yes||c.q_yes||100,q_no:savedOdds[c.id]?.q_no||c.q_no||100,total_volume:savedOdds[c.id]?.total_volume||c.total_volume||0,participants:savedOdds[c.id]?.participants||c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open"}));
-      setMarkets([...customMarkets,...rumorMarkets,...seeds]);
+      setMarkets([...customMarkets,...rumorMarkets]);
     }catch{}
   },[]);
 
