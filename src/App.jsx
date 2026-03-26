@@ -931,7 +931,8 @@ function HowItWorksPage({ onNavigate }) {
 // PAGES
 // ============================================================
 function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard }) {
-  const upcoming=matches.filter(m=>m.status!=="FINISHED").slice(0,3);
+  const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
+  const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
   const badge=getBadge(level);
   const topMarket=markets.length>0?markets.reduce((a,b)=>(b.total_volume||0)>(a.total_volume||0)?b:a,markets[0]):null;
@@ -989,9 +990,16 @@ function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, on
     </div>}
 
     {/* MATCHS A VENIR */}
+    {live.length>0&&<>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:"#ef4444", animation:"pulse 1s infinite", boxShadow:"0 0 8px #ef4444" }} />
+        <span style={{ color:"#ef4444" }}>EN DIRECT</span>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{live.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
+    </>}
     {upcoming.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
-        <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />MATCHS A VENIR
+        <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />MATCHS À VENIR
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
       <button className="btn-animated" onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les matchs →</button>
@@ -1016,22 +1024,73 @@ function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, on
   </div>;
 }
 
+const INTL_SLUGS = ["WC","EURO","NL","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
+const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL"];
+
 function MatchesPage({ matches, onBet, loading }) {
-  const [comp,setComp]=useState("Tous");
-  const allComps=["Tous",...new Set(matches.map(m=>m.competition))];
-  const filtered=comp==="Tous"?matches:matches.filter(m=>m.competition===comp);
-  const upcoming=filtered.filter(m=>m.status!=="FINISHED");
-  const finished=filtered.filter(m=>m.status==="FINISHED");
+  const [tab,setTab]=useState("clubs"); // "clubs" | "intl"
+  const [subComp,setSubComp]=useState("Tous");
+
+  const clubMatches=matches.filter(m=>CLUB_SLUGS.includes(m.competition));
+  const intlMatches=matches.filter(m=>INTL_SLUGS.includes(m.competition));
+  const activeMatches=tab==="clubs"?clubMatches:intlMatches;
+
+  const subComps=tab==="intl"
+    ? ["Tous",...new Set(intlMatches.map(m=>m.competition))]
+    : ["Tous",...new Set(clubMatches.map(m=>m.competition))];
+
+  const filtered=subComp==="Tous"?activeMatches:activeMatches.filter(m=>m.competition===subComp);
+  const live=filtered.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED");
+  const upcoming=filtered.filter(m=>m.status==="SCHEDULED");
+
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>MATCHS</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:20 }}></div>
-    <div style={{ display:"flex", gap:7, marginBottom:22, flexWrap:"wrap" }}>
-      {allComps.map(c=><button key={c} onClick={()=>setComp(c)} style={{ padding:"6px 13px", borderRadius:20, border:`1px solid ${comp===c?compColor(c):"rgba(241,245,249,0.07)"}`, background:comp===c?`${compColor(c)}12`:"transparent", color:comp===c?compColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:12, cursor:"pointer", transition:"all 0.2s" }}>{c==="Tous"?"Tous":`${compEmoji(c)} ${compLabel(c)}`}</button>)}
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:16 }}>MATCHS</div>
+
+    {/* Tabs principaux */}
+    <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+      {[{id:"clubs",label:"🏟️ Clubs",count:clubMatches.length},{id:"intl",label:"🌍 Internationaux",count:intlMatches.length}].map(t=>(
+        <button key={t.id} onClick={()=>{setTab(t.id);setSubComp("Tous");}} className="btn-animated"
+          style={{ flex:1, padding:"12px 0", borderRadius:14, border:`2px solid ${tab===t.id?"#10b981":"rgba(241,245,249,0.07)"}`, background:tab===t.id?"rgba(16,185,129,0.08)":"transparent", color:tab===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
+          {t.label} <span style={{ fontSize:11, opacity:0.6 }}>({t.count})</span>
+        </button>
+      ))}
     </div>
+
+    {/* Sous-catégories */}
+    <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+      {subComps.map(c=>(
+        <button key={c} onClick={()=>setSubComp(c)} style={{ padding:"5px 12px", borderRadius:20, border:`1px solid ${subComp===c?compColor(c):"rgba(241,245,249,0.07)"}`, background:subComp===c?`${compColor(c)}12`:"transparent", color:subComp===c?compColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer", transition:"all 0.2s" }}>
+          {c==="Tous"?"🔵 Tous":`${compEmoji(c)} ${compLabel(c)}`}
+        </button>
+      ))}
+    </div>
+
     {loading&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2, fontSize:16 }}>CHARGEMENT...</div>}
-    {!loading&&upcoming.length===0&&finished.length===0&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)" }}>Aucun match disponible</div>}
-    {upcoming.length>0&&<><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"#10b981" }}>A VENIR ET EN DIRECT</div><div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:28 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}</div></>}
-    {finished.length>0&&<><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"rgba(241,245,249,0.3)" }}>TERMINES</div><div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>{finished.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}</div></>}
+
+    {!loading&&live.length===0&&upcoming.length===0&&(
+      <div style={{ textAlign:"center", padding:60 }}>
+        <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.25)", letterSpacing:2 }}>AUCUN MATCH À VENIR</div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.15)", marginTop:6 }}>Reviens bientôt !</div>
+      </div>
+    )}
+
+    {live.length>0&&<>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:"#ef4444", animation:"pulse 1s infinite", boxShadow:"0 0 8px #ef4444" }} />
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#ef4444" }}>EN DIRECT</div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:24 }}>
+        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}
+      </div>
+    </>}
+
+    {upcoming.length>0&&<>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"#10b981" }}>À VENIR</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
+        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}
+      </div>
+    </>}
   </div>;
 }
 
