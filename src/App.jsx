@@ -280,9 +280,21 @@ const GLOBAL_CSS = `
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
   @keyframes floatOrb { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-25px)} }
   @keyframes winPop { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
-  .page-enter { animation: fadeInUp 0.35s ease forwards; }
+  @keyframes slideInRight { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
+  @keyframes slideInLeft { from{transform:translateX(-40px);opacity:0} to{transform:translateX(0);opacity:1} }
+  @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes confetti-fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+  @keyframes market-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 50%{box-shadow:0 0 0 8px rgba(16,185,129,0)} }
+  @keyframes btn-press { 0%,100%{transform:scale(1)} 50%{transform:scale(0.96)} }
+  .page-enter { animation: fadeInUp 0.3s ease forwards; }
+  .page-slide-right { animation: slideInRight 0.3s ease forwards; }
+  .page-slide-left { animation: slideInLeft 0.3s ease forwards; }
   .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
-  .card-hover:hover { transform: translateY(-2px); }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+  .btn-animated { transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+  .btn-animated:hover:not(:disabled) { transform: translateY(-1px) scale(1.02); }
+  .btn-animated:active:not(:disabled) { transform: scale(0.97); }
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 99px; }
 `;
@@ -330,6 +342,35 @@ function XPBar({ xp }) {
     </div>
   </div>;
 }
+
+// ============================================================
+// CONFETTI
+// ============================================================
+function Confetti({ onDone }) {
+  const pieces = Array.from({length: 32}, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    delay: Math.random() * 0.8,
+    duration: 1.8 + Math.random() * 1.2,
+    color: ["#10b981","#3b82f6","#fbbf24","#f59e0b","#a78bfa","#ec4899","#34d399"][Math.floor(Math.random()*7)],
+    size: 6 + Math.random() * 8,
+    shape: Math.random() > 0.5 ? "50%" : "2px",
+  }));
+  useEffect(() => { const t = setTimeout(onDone, 3500); return () => clearTimeout(t); }, []);
+  return <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9998, overflow:"hidden" }}>
+    {pieces.map(p => (
+      <div key={p.id} style={{
+        position:"absolute", left:`${p.x}%`, top:"-20px",
+        width:p.size, height:p.size,
+        borderRadius:p.shape,
+        background:p.color,
+        animation:`confetti-fall ${p.duration}s ${p.delay}s ease-in forwards`,
+        boxShadow:`0 0 4px ${p.color}88`,
+      }} />
+    ))}
+  </div>;
+}
+
 function Toast({ msg, type, onDone }) {
   useEffect(() => { const t = setTimeout(onDone, 4500); return () => clearTimeout(t); }, []);
   const bg = { error:"#ef4444", warning:"#f59e0b", win:"linear-gradient(135deg,#fbbf24,#f59e0b)", success:"linear-gradient(135deg,#10b981,#059669)" }[type]||"linear-gradient(135deg,#10b981,#059669)";
@@ -495,7 +536,7 @@ function MarketCard({ market, onBet }) {
       <div><div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", marginBottom:2, letterSpacing:1 }}>VOLUME</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#fbbf24", letterSpacing:1 }}>🪙 {fmt(market.total_volume)}</div></div>
       <div><div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", marginBottom:2, letterSpacing:1 }}>JOUEURS</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1 }}>{fmt(market.participants)}</div></div>
     </div>
-    <button onClick={()=>onBet(market)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PREDIRE →</button>
+    <button className="btn-animated" onClick={()=>onBet(market)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PREDIRE →</button>
   </div>;
 }
 
@@ -540,7 +581,7 @@ function MatchCard({ match, onBet }) {
         </div>
       ))}
     </div>}
-    {!isFinished&&<button onClick={()=>onBet(match)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PARIER →</button>}
+    {!isFinished&&<button className="btn-animated" onClick={()=>onBet(match)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PARIER →</button>}
   </div>;
 }
 
@@ -698,6 +739,94 @@ function MatchBetModal({ match, onClose, onConfirm, coins }) {
 // ============================================================
 // PAGE COMMENT CA MARCHE
 // ============================================================
+
+// ============================================================
+// BET SIMULATOR (pour le guide)
+// ============================================================
+function BetSimulator() {
+  const [step,setStep]=useState(0);
+  const [choice,setChoice]=useState(null);
+  const [amount,setAmount]=useState(100);
+  const [done,setDone]=useState(false);
+  const DEMO_MARKET={title:"PSG remporte la Champions League ?",q_yes:260,q_no:140};
+  const pYes=Math.round(AMM.probYes(DEMO_MARKET.q_yes,DEMO_MARKET.q_no)*100);
+  const gain=choice==="yes"?Math.round(amount/AMM.probYes(DEMO_MARKET.q_yes,DEMO_MARKET.q_no)):Math.round(amount/(1-AMM.probYes(DEMO_MARKET.q_yes,DEMO_MARKET.q_no)));
+
+  const reset=()=>{setStep(0);setChoice(null);setAmount(100);setDone(false);};
+
+  return <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:18, overflow:"hidden", marginBottom:20 }}>
+    {/* Header */}
+    <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.12),rgba(59,130,246,0.08))", padding:"14px 18px", borderBottom:"1px solid rgba(241,245,249,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"#10b981" }}>SIMULATION INTERACTIVE</div>
+      <div style={{ display:"flex", gap:6 }}>
+        {[0,1,2,3].map(i=><div key={i} style={{ width:i<=step?22:7, height:7, borderRadius:99, background:i<=step?"#10b981":"rgba(241,245,249,0.1)", transition:"all 0.3s" }} />)}
+      </div>
+    </div>
+    <div style={{ padding:"18px" }}>
+      {/* STEP 0 - Choisir un marché */}
+      {step===0&&<div style={{ animation:"fadeInUp 0.3s ease" }}>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.5)", marginBottom:10, fontWeight:700, letterSpacing:1 }}>ÉTAPE 1 — CHOISIS UN MARCHÉ</div>
+        <div onClick={()=>setStep(1)} className="card-hover" style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(16,185,129,0.2)", borderRadius:14, padding:"16px", cursor:"pointer", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#10b981,#3b82f6)" }} />
+          <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:"#f59e0b", background:"rgba(245,158,11,0.12)", padding:"2px 8px", borderRadius:20, border:"1px solid rgba(245,158,11,0.2)" }}>Compétitions</span>
+          </div>
+          <div style={{ fontWeight:800, fontSize:14, marginBottom:10 }}>{DEMO_MARKET.title}</div>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+            <span style={{ fontSize:11, fontWeight:800, color:"#10b981" }}>OUI {pYes}%</span>
+            <span style={{ fontSize:11, fontWeight:800, color:"#ef4444" }}>NON {100-pYes}%</span>
+          </div>
+          <div style={{ height:4, borderRadius:99, background:"rgba(239,68,68,0.15)", overflow:"hidden" }}>
+            <div style={{ width:`${pYes}%`, height:"100%", background:"linear-gradient(90deg,#10b981,#34d399)", borderRadius:99 }} />
+          </div>
+          <div style={{ marginTop:12, textAlign:"center", fontSize:12, color:"#10b981", fontWeight:700 }}>👆 Clique pour parier →</div>
+        </div>
+      </div>}
+
+      {/* STEP 1 - Choisir OUI/NON */}
+      {step===1&&<div style={{ animation:"fadeInUp 0.3s ease" }}>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.5)", marginBottom:10, fontWeight:700, letterSpacing:1 }}>ÉTAPE 2 — OUI OU NON ?</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.6)", marginBottom:14, fontStyle:"italic" }}>"{DEMO_MARKET.title}"</div>
+        <div style={{ display:"flex", gap:10 }}>
+          {["yes","no"].map(s=>(
+            <button key={s} className="btn-animated" onClick={()=>{setChoice(s);setStep(2);}}
+              style={{ flex:1, padding:"16px 0", borderRadius:14, border:`2px solid ${choice===s?(s==="yes"?"#10b981":"#ef4444"):"rgba(241,245,249,0.08)"}`, background:choice===s?(s==="yes"?"rgba(16,185,129,0.12)":"rgba(239,68,68,0.12)"):"rgba(241,245,249,0.03)", color:s==="yes"?"#10b981":"#ef4444", fontWeight:800, fontSize:15, cursor:"pointer", transition:"all 0.2s" }}>
+              {s==="yes"?`✅ OUI — ${pYes}%`:`❌ NON — ${100-pYes}%`}
+            </button>
+          ))}
+        </div>
+      </div>}
+
+      {/* STEP 2 - Montant */}
+      {step===2&&<div style={{ animation:"fadeInUp 0.3s ease" }}>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.5)", marginBottom:10, fontWeight:700, letterSpacing:1 }}>ÉTAPE 3 — COMBIEN DE MC ?</div>
+        <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+          {[50,100,200,500].map(v=>(
+            <button key={v} className="btn-animated" onClick={()=>setAmount(v)} style={{ flex:1, padding:"10px 0", borderRadius:10, border:`1px solid ${amount===v?"#10b981":"rgba(241,245,249,0.07)"}`, background:amount===v?"rgba(16,185,129,0.1)":"transparent", color:amount===v?"#10b981":"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>{v}</button>
+          ))}
+        </div>
+        <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.4)" }}>Mise</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:16 }}>{amount} MC</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.4)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:20 }}>+{gain} MC 🏆</span></div>
+        </div>
+        <button className="btn-animated" onClick={()=>setStep(3)} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", boxShadow:"0 8px 25px rgba(16,185,129,0.3)" }}>CONFIRMER MA PRÉDICTION →</button>
+      </div>}
+
+      {/* STEP 3 - Résultat */}
+      {step===3&&<div style={{ animation:"winPop 0.5s ease", textAlign:"center", padding:"10px 0" }}>
+        <div style={{ fontSize:48, marginBottom:10 }}>🎉</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:2, marginBottom:6 }}>PRÉDICTION PLACÉE !</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.5)", marginBottom:6 }}>Tu as misé <strong style={{color:"#fbbf24"}}>{amount} MC</strong> sur <strong style={{color:choice==="yes"?"#10b981":"#ef4444"}}>{choice==="yes"?"OUI":"NON"}</strong></div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.5)", marginBottom:16 }}>Gain potentiel : <strong style={{color:"#10b981"}}>+{gain} MC</strong></div>
+        <div style={{ background:"rgba(16,185,129,0.06)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:12, color:"rgba(241,245,249,0.45)", lineHeight:1.6 }}>
+          Dans la vraie app, les gains sont crédités automatiquement quand le résultat est connu. Tu gagnes aussi +5 XP par pari !
+        </div>
+        <button className="btn-animated" onClick={reset} style={{ padding:"10px 24px", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"rgba(16,185,129,0.06)", color:"#10b981", fontWeight:700, fontSize:13, cursor:"pointer" }}>🔄 Rejouer la démo</button>
+      </div>}
+    </div>
+  </div>;
+}
+
 function HowItWorksPage({ onNavigate }) {
   const [activeStep,setActiveStep]=useState(-1);
   const [videoFrame,setVideoFrame]=useState(0);
@@ -736,7 +865,9 @@ function HowItWorksPage({ onNavigate }) {
         {VIDEO_FRAMES.map((_,i)=><button key={i} onClick={()=>setVideoFrame(i)} style={{ width:i===videoFrame?22:7, height:7, borderRadius:99, background:i===videoFrame?"#10b981":"rgba(241,245,249,0.15)", border:"none", cursor:"pointer", transition:"all 0.3s ease", padding:0 }} />)}
       </div>
     </div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>LES 6 ETAPES</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>ESSAIE TOI-MÊME</div>
+    <BetSimulator />
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>LES ÉTAPES</div>
     <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
       {STEPS.map((step,i)=>(
         <div key={i} onClick={()=>setActiveStep(activeStep===i?-1:i)} style={{ background:activeStep===i?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${activeStep===i?step.color+"30":"rgba(241,245,249,0.06)"}`, borderRadius:14, overflow:"hidden", cursor:"pointer", transition:"all 0.2s" }}>
@@ -784,36 +915,82 @@ function HowItWorksPage({ onNavigate }) {
 // ============================================================
 // PAGES
 // ============================================================
-function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile }) {
+function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard }) {
   const upcoming=matches.filter(m=>m.status!=="FINISHED").slice(0,3);
   const level=getLevel(profile?.xp||0);
+  const badge=getBadge(level);
+  const topMarket=markets.length>0?markets.reduce((a,b)=>(b.total_volume||0)>(a.total_volume||0)?b:a,markets[0]):null;
+  const myRank=leaderboard?.findIndex(p=>p.id===profile?.id);
+  const rankDisplay=myRank>=0?myRank+1:null;
+  const [pulse,setPulse]=useState(false);
+  useEffect(()=>{const t=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(t);},[]);
+
   return <div className="page-enter">
-    <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.04))", border:"1px solid rgba(16,185,129,0.1)", borderRadius:22, padding:"26px", marginBottom:22, position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${getBadge(level).glow},transparent 70%)`, pointerEvents:"none" }} />
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+    {/* HERO WELCOME */}
+    <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(59,130,246,0.04))`, border:`1px solid ${badge.color}20`, borderRadius:22, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)`, pointerEvents:"none" }} />
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
         <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>BIENVENUE, {username?.toUpperCase()}</div>
-        {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:5, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
-          <span style={{ fontSize:14 }}>🔥</span>
-          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#f59e0b", letterSpacing:1 }}>{profile.streak} JOUR{profile.streak>1?"S":""}</span>
-        </div>}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
+            <span style={{ fontSize:11 }}>🏆</span>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} CE MOIS</span>
+          </div>}
+          {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
+            <span style={{ fontSize:12 }}>🔥</span>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#f59e0b", letterSpacing:1 }}>{profile.streak}J</span>
+          </div>}
+        </div>
       </div>
-      <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Niv. {level} · {profile?.xp||0} XP</span></div>
+      <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Niv. {level} · {profile?.xp||0} XP</span></div>
       <XPBar xp={profile?.xp||0} />
-      <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:16 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
+      <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
     </div>
+
+    {/* MARCHE DU MOMENT */}
+    {topMarket&&<div onClick={()=>onBet(topMarket)} style={{ position:"relative", background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.06))", border:"1px solid rgba(16,185,129,0.2)", borderRadius:20, padding:"18px 20px", marginBottom:20, cursor:"pointer", overflow:"hidden", animation:pulse?"market-pulse 2s ease":"none", transition:"all 0.3s" }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#10b981,#3b82f6,#10b981)", backgroundSize:"200% 100%", animation:"shimmer 2s linear infinite" }} />
+      <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%)", pointerEvents:"none" }} />
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", boxShadow:"0 0 8px #10b981", animation:"pulse 1s infinite" }} />
+        <span style={{ fontSize:10, fontWeight:800, color:"#10b981", letterSpacing:2 }}>MARCHÉ DU MOMENT</span>
+        <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(241,245,249,0.4)" }}>🔥 {fmt(topMarket.total_volume)} MC misés</span>
+      </div>
+      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4 }}>{topMarket.title}</div>
+      <div style={{ display:"flex", gap:8 }}>
+        {["OUI","NON"].map((s,i)=>{
+          const pct=i===0?Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100):100-Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100);
+          const c=i===0?"#10b981":"#ef4444";
+          return <div key={s} style={{ flex:1, background:`${c}10`, border:`1px solid ${c}25`, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:c, letterSpacing:1 }}>{pct}%</div>
+            <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>{s}</div>
+          </div>;
+        })}
+        <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#f1f5f9", letterSpacing:1 }}>{topMarket.participants||0}</div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>JOUEURS</div>
+        </div>
+      </div>
+    </div>}
+
+    {/* MATCHS A VENIR */}
     {upcoming.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />MATCHS A VENIR
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
-      <button onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13, transition:"all 0.2s" }}>Voir tous les matchs →</button>
+      <button className="btn-animated" onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les matchs →</button>
     </>}
+
+    {/* MARCHES EN VEDETTE */}
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
       <span style={{ width:3, height:18, background:"#3b82f6", borderRadius:99, display:"inline-block" }} />MARCHES EN VEDETTE
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,4).map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
-    <button onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les marches →</button>
-    <div onClick={()=>onNavigate("howto")} style={{ marginTop:26, background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:16, padding:"18px 20px", display:"flex", alignItems:"center", gap:14, cursor:"pointer", transition:"all 0.2s" }}>
+    <button className="btn-animated" onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les marches →</button>
+
+    {/* GUIDE CTA */}
+    <div onClick={()=>onNavigate("howto")} className="card-hover" style={{ marginTop:26, background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:16, padding:"18px 20px", display:"flex", alignItems:"center", gap:14, cursor:"pointer", transition:"all 0.2s" }}>
       <div style={{ width:44, height:44, borderRadius:12, background:"rgba(16,185,129,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>❓</div>
       <div>
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>COMMENT CA MARCHE ?</div>
@@ -1302,6 +1479,8 @@ export default function App() {
   const [session,setSession]=useState(null);
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
+  const [prevPage,setPrevPage]=useState("home");
+  const navigateTo=(p)=>{setPrevPage(page);setPage(p);};
   const [markets,setMarkets]=useState([]);
   const [matches,setMatches]=useState([]);
   const [matchesLoading,setMatchesLoading]=useState(false);
@@ -1311,9 +1490,10 @@ export default function App() {
   const [betModal,setBetModal]=useState(null);
   const [matchBetModal,setMatchBetModal]=useState(null);
   const [toast,setToast]=useState(null);
+  const [showConfetti,setShowConfetti]=useState(false);
   const profileRef=useRef(null);
 
-  const showToast=(msg,type="success")=>setToast({msg,type});
+  const showToast=(msg,type="success")=>{setToast({msg,type});if(type==="win")setShowConfetti(true);};
 
   const loadLeaderboard=useCallback(async(token)=>{
     try{
@@ -1678,14 +1858,14 @@ export default function App() {
         </div>
         <nav style={{ display:"flex", gap:1 }}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setPage(n.id)}
+            <button key={n.id} onClick={()=>navigateTo(n.id)}
               style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
               {n.icon} {n.label}
             </button>
           ))}
         </nav>
         <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-          <button onClick={()=>setPage("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
+          <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
           {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
           <div style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
@@ -1698,22 +1878,22 @@ export default function App() {
     </div>
 
     {/* Content */}
-    <div style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 90px", position:"relative", zIndex:1 }}>
-      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={setPage} matches={matches} onMatchBet={setMatchBetModal} profile={profile} />}
+    <div key={page} className="page-slide-right" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 90px", position:"relative", zIndex:1 }}>
+      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} />}
       {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} />}
-      {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={setPage} />}
+      {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={navigateTo} />}
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
-      {page==="howto"&&<HowItWorksPage onNavigate={setPage} />}
+      {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
     </div>
 
     {/* Bottom nav */}
     <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", zIndex:200 }}>
       {NAV.map(n=>(
-        <button key={n.id} onClick={()=>setPage(n.id)}
+        <button key={n.id} onClick={()=>navigateTo(n.id)}
           style={{ flex:1, padding:"9px 0", background:"transparent", border:"none", color:page===n.id?"#10b981":"rgba(241,245,249,0.25)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, transition:"all 0.2s", borderTop:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
           <span style={{ fontSize:14 }}>{n.icon}</span>
           <span style={{ fontSize:7, fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>{n.label}</span>
@@ -1724,5 +1904,6 @@ export default function App() {
     {betModal&&<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />}
     {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
+    {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
   </div>;
 }
