@@ -956,7 +956,7 @@ function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, on
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
           {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
             <span style={{ fontSize:11 }}>🏆</span>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} CE MOIS</span>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} CETTE SEMAINE</span>
           </div>}
           {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
             <span style={{ fontSize:12 }}>🔥</span>
@@ -1211,7 +1211,7 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
   const mcFromConvert=convertAmount*10; // 1 SC = 10 MC
-  const allBets=[...(matchBets||[]),...(bets||[])];
+  const allBets=[...(matchBets||[]).map(b=>({...b,isMatch:true})),...(bets||[]).map(b=>({...b,isMatch:false}))];
 
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>WALLET</div>
@@ -1256,26 +1256,43 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
     {allBets.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>MES PARIS</div>
       {allBets.slice(0,15).map((b,i)=>{
-        const canCashout=isPro(profile)&&b.status==="pending"&&b.market_id&&b.side&&b.amount;
+        // Cashout marché AMM
+        const isMarketBet=!b.isMatch&&!!b.market_id;
+        const isMatchBet=!!b.isMatch;
+        const canCashoutMarket=isPro(profile)&&b.status==="pending"&&isMarketBet&&b.side&&b.amount&&b.id;
+        const canCashoutMatch=isPro(profile)&&b.status==="pending"&&isMatchBet&&b.id;
         const market=markets?.find(m=>m.id===b.market_id);
-        const cashoutVal=canCashout&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
-        return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>
+        const cashoutMarketVal=canCashoutMarket&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
+        const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0; // 75% remboursé
+        const canCashout=canCashoutMarket||canCashoutMatch;
+        const cashoutVal=isMarketBet?cashoutMarketVal:cashoutMatchVal;
+        const statusLabel=b.status==="cashed_out"?"CASHOUT":b.status;
+        return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":b.status==="cashed_out"?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":b.status==="cashed_out"?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <div>
+            <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontWeight:700, fontSize:13, marginBottom:3 }}>{b.market_title||b.match_title||"Paris"}</div>
-              <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}><span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>{" · "}{fmt(b.cost)} MC</div>
+              <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>
+                <span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>
+                {" · "}{fmt(b.cost)} MC
+                {isMatchBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>⚽ Match</span>}
+                {isMarketBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>📊 Marché</span>}
+              </div>
             </div>
-            <div style={{ textAlign:"right" }}>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
               {b.status==="won"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:16, letterSpacing:1 }}>+{fmt(b.potential_gain)} 🏆</div>
                 :b.status==="lost"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#ef4444", fontSize:14, letterSpacing:1 }}>PERDU</div>
+                :b.status==="cashed_out"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#3b82f6", fontSize:14, letterSpacing:1 }}>CASHÉ 💰</div>
                 :<><div style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(251,191,36,0.1)", color:"#fbbf24", fontWeight:700, marginBottom:3, display:"inline-block" }}>En cours</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:15, letterSpacing:1 }}>+{fmt(b.potential_gain)}</div></>}
             </div>
           </div>
           {canCashout&&cashoutVal>0&&<div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Cashout disponible <span style={{ color:"#3b82f6", fontWeight:700 }}>⚡ Pro</span></div>
-            <button className="btn-animated" onClick={()=>onCashout(b,cashoutVal)}
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>
+              {isMarketBet?"Cashout selon cotes actuelles":"Cashout anticipé · 75% remboursé"}
+              <span style={{ color:"#3b82f6", fontWeight:700, marginLeft:6 }}>⚡ Pro</span>
+            </div>
+            <button className="btn-animated" onClick={()=>onCashout(b,cashoutVal,b.isMatch)}
               style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(59,130,246,0.3)" }}>
-              Cashout +{fmt(cashoutVal)} MC
+              +{fmt(cashoutVal)} MC
             </button>
           </div>}
         </div>;
@@ -1785,7 +1802,7 @@ export default function App() {
     }catch{}
   },[]);
 
-  const loadBets=useCallback(async(t,u)=>{try{const d=await req(`user_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=20`,{_token:t});if(d)setBets(d);}catch{}},[]);
+  const loadBets=useCallback(async(t,u)=>{try{const d=await req(`user_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=50`,{_token:t});if(d)setBets(d);}catch{}},[]);
   const loadMatchBets=useCallback(async(t,u)=>{
     try{
       // Charger tous les paris pour affichage
@@ -1882,7 +1899,7 @@ export default function App() {
         const newQNo=side==="no"?updMarket.q_no+amount:updMarket.q_no;
         try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch{}
       }
-      setBets(prev=>[{market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:gain,status:"pending"},...prev]);
+      await loadBets(session.token,session.user.id); // Reload pour avoir les vrais IDs (cashout)
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prediction placee ! +5 XP");
@@ -1986,18 +2003,18 @@ export default function App() {
     }catch(e){showToast("Erreur : "+e.message,"error");}
   };
 
-  const handleCashout=async(bet,cashoutValue)=>{
+  const handleCashout=async(bet,cashoutValue,isMatchBet=false)=>{
     if(!session||!isPro(profile)) return;
     try{
-      // Marquer le pari comme cashouté
-      await req(`user_bets?id=eq.${bet.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({status:"cashed_out"})});
-      // Créditer les MC
+      const table=isMatchBet?"match_bets":"user_bets";
+      await req(`${table}?id=eq.${bet.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({status:"cashed_out"})});
       const newCoins=(profile?.coins||0)+cashoutValue;
       await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({coins:newCoins,updated_at:new Date().toISOString()})});
       setProfile(p=>({...p,coins:newCoins}));
       profileRef.current={...profileRef.current,coins:newCoins};
-      setBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
-      showToast(`💰 Cashout réussi ! +${fmt(cashoutValue)} MC récupérés`);
+      if(isMatchBet) setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
+      else setBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
+      showToast(`💰 Cashout ! +${fmt(cashoutValue)} MC récupérés`,"win");
     }catch(e){showToast("Erreur cashout : "+e.message,"error");}
   };
 
