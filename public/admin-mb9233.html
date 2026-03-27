@@ -20,14 +20,15 @@
     .btn-primary { width: 100%; padding: 13px 0; border-radius: 12px; border: none; background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 8px 25px rgba(16,185,129,0.3); }
     .error { color: #f87171; font-size: 13px; margin-top: 10px; }
 
-    .admin { display: none; max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+    .admin { display: none; max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
     .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
     .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
     .header-title span { color: #10b981; }
     .logout-btn { padding: 7px 14px; border-radius: 9px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); color: #f87171; font-weight: 700; font-size: 12px; cursor: pointer; }
 
     .card { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.07); border-radius: 18px; padding: 24px; margin-bottom: 24px; }
-    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; color: #10b981; }
+    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; color: #10b981; display: flex; align-items: center; gap: 8px; }
+    .card-title .badge-count { font-size: 13px; background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 2px 10px; font-family: 'DM Sans', sans-serif; font-weight: 700; }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -53,7 +54,7 @@
     .toast.error { background: #ef4444; color: #fff; }
     @keyframes slideUp { from { transform: translateX(-50%) translateY(16px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
 
-    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
     .stat-card { background: rgba(241,245,249,0.02); border: 1px solid rgba(241,245,249,0.06); border-radius: 14px; padding: 16px; text-align: center; }
     .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; }
     .stat-label { font-size: 10px; color: rgba(241,245,249,0.3); font-weight: 700; letter-spacing: 1px; margin-top: 3px; }
@@ -63,17 +64,36 @@
     .market-item-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
     .market-item-meta { font-size: 12px; color: rgba(241,245,249,0.35); }
     .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-right: 6px; }
-    .actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
     .close-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(251,191,36,0.2); background: rgba(251,191,36,0.06); color: #fbbf24; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .close-btn:hover { background: rgba(251,191,36,0.15); }
     .reopen-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.2); background: rgba(16,185,129,0.06); color: #10b981; font-size: 12px; font-weight: 700; cursor: pointer; }
     .delete-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); color: #f87171; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .delete-btn:hover { background: rgba(239,68,68,0.15); }
+    .approve-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.1); color: #10b981; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .approve-btn:hover { background: rgba(16,185,129,0.2); }
+    .reject-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); color: #f87171; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .edit-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(59,130,246,0.2); background: rgba(59,130,246,0.06); color: #60a5fa; font-size: 12px; font-weight: 700; cursor: pointer; }
     .empty { text-align: center; padding: 30px; color: rgba(241,245,249,0.25); font-size: 14px; }
 
-    .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .filter-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(241,245,249,0.08); background: transparent; color: rgba(241,245,249,0.35); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .filter-tab.active { border-color: #10b981; background: rgba(16,185,129,0.1); color: #10b981; }
+
+    /* Proposed market item */
+    .proposed-item { background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.15); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+    .proposed-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .proposed-title { font-weight: 800; font-size: 14px; color: #f1f5f9; flex: 1; margin-right: 12px; line-height: 1.4; }
+    .proposed-meta { font-size: 12px; color: rgba(241,245,249,0.4); margin-bottom: 10px; }
+    .proposed-status { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+    .proposed-status.pending { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .proposed-status.approved { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+    .proposed-status.rejected { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.15); }
+
+    .edit-modal { display: none; position: fixed; inset: 0; background: rgba(3,7,18,0.88); z-index: 500; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(16px); }
+    .edit-modal.open { display: flex; }
+    .edit-modal-box { background: #0f172a; border: 1px solid rgba(241,245,249,0.1); border-radius: 20px; padding: 28px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+    .edit-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 20px; color: #60a5fa; }
 
     @media (max-width: 600px) {
       .form-grid { grid-template-columns: 1fr; }
@@ -116,6 +136,28 @@
       <div class="stat-val" id="statClosed" style="color:#6b7280">—</div>
       <div class="stat-label">FERMES</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statProposed" style="color:#f59e0b">—</div>
+      <div class="stat-label">EN ATTENTE</div>
+    </div>
+  </div>
+
+  <!-- Marchés proposés par les Elites -->
+  <div class="card" style="border-color:rgba(245,158,11,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="color:#f59e0b;margin-bottom:0">
+        👑 MARCHÉS PROPOSÉS PAR LES ÉLITES
+        <span class="badge-count" id="pendingCount">0 en attente</span>
+      </div>
+      <button onclick="loadProposed()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">↻ Rafraichir</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setProposedFilter('pending',this)">⏳ En attente</button>
+      <button class="filter-tab" onclick="setProposedFilter('approved',this)">✅ Approuvés</button>
+      <button class="filter-tab" onclick="setProposedFilter('rejected',this)">❌ Refusés</button>
+      <button class="filter-tab" onclick="setProposedFilter('all',this)">Tous</button>
+    </div>
+    <div id="proposedList"><div class="empty">Chargement...</div></div>
   </div>
 
   <!-- Créer un marché -->
@@ -178,31 +220,58 @@
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="edit-modal" id="editModal">
+  <div class="edit-modal-box">
+    <div class="edit-modal-title">✏️ MODIFIER LE MARCHÉ</div>
+    <input type="hidden" id="editId" />
+    <div class="form-group" style="margin-bottom:14px">
+      <label>TITRE</label>
+      <textarea class="form-inp" id="editTitle" rows="3" style="resize:none;line-height:1.5"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>CATÉGORIE</label>
+      <select class="form-inp" id="editCategory">
+        <option value="Rumeurs">🔥 Rumeurs</option>
+        <option value="Transferts">💸 Transferts</option>
+        <option value="Competitions">🏆 Competitions</option>
+        <option value="Performances">📈 Performances</option>
+        <option value="Contrats">📝 Contrats</option>
+        <option value="Recompenses">🎖️ Recompenses</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>SOURCE</label>
+      <input class="form-inp" id="editSource" />
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button onclick="saveEdit()" style="flex:1;padding:12px 0;border-radius:11px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:800;font-size:14px;cursor:pointer">SAUVEGARDER →</button>
+      <button onclick="closeEditModal()" style="padding:12px 20px;border-radius:11px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK";
 const ADMIN_PASSWORD = "adminmarketball9233005";
 
 const CAT_COLORS = {
-  "Rumeurs": "#f59e0b",
-  "Transferts": "#3b82f6",
-  "Competitions": "#fbbf24",
-  "Performances": "#10b981",
-  "Contrats": "#8b5cf6",
-  "Recompenses": "#ec4899",
+  "Rumeurs": "#f59e0b", "Transferts": "#3b82f6", "Competitions": "#fbbf24",
+  "Performances": "#10b981", "Contrats": "#8b5cf6", "Recompenses": "#ec4899",
 };
 
 let currentFilter = "open";
 let allMarkets = [];
+let allProposed = [];
+let currentProposedFilter = "pending";
 
 async function sbReq(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...opts,
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json", Prefer: "return=representation",
       ...opts.headers,
     },
   });
@@ -217,7 +286,7 @@ function doLogin() {
     document.getElementById("adminPage").style.display = "block";
     const d = new Date(Date.now() + 14 * 86400000);
     document.getElementById("mCloses").value = d.toISOString().slice(0, 16);
-    loadMarkets();
+    loadAll();
   } else {
     document.getElementById("loginError").textContent = "Mot de passe incorrect ❌";
     document.getElementById("pwdInput").value = "";
@@ -230,6 +299,8 @@ function doLogout() {
   document.getElementById("adminPage").style.display = "none";
   document.getElementById("pwdInput").value = "";
 }
+
+function loadAll() { loadMarkets(); loadProposed(); }
 
 function showToast(msg, type = "success") {
   const t = document.createElement("div");
@@ -259,11 +330,183 @@ function updateProbPreview() {
 
 function setFilter(filter, btn) {
   currentFilter = filter;
-  document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".filter-tabs")[1].querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   renderMarkets();
 }
 
+function setProposedFilter(filter, btn) {
+  currentProposedFilter = filter;
+  document.querySelectorAll(".filter-tabs")[0].querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderProposed();
+}
+
+// ============================================================
+// MARCHÉS PROPOSÉS
+// ============================================================
+async function loadProposed() {
+  document.getElementById("proposedList").innerHTML = '<div class="empty">Chargement...</div>';
+  try {
+    const data = await sbReq("proposed_markets?order=created_at.desc&limit=100");
+    allProposed = data || [];
+    const pending = allProposed.filter(p => p.status === "pending").length;
+    document.getElementById("statProposed").textContent = pending;
+    document.getElementById("pendingCount").textContent = `${pending} en attente`;
+    renderProposed();
+  } catch (e) {
+    document.getElementById("proposedList").innerHTML = `<div class="empty" style="color:#f87171">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderProposed() {
+  const list = document.getElementById("proposedList");
+  const filtered = currentProposedFilter === "all" ? allProposed : allProposed.filter(p => p.status === currentProposedFilter);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">Aucune proposition ${currentProposedFilter === "pending" ? "en attente" : ""}</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const date = new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const cc = CAT_COLORS[p.category] || "#6b7280";
+    const statusHtml = {
+      pending: '<span class="proposed-status pending">⏳ En attente</span>',
+      approved: '<span class="proposed-status approved">✅ Approuvé</span>',
+      rejected: '<span class="proposed-status rejected">❌ Refusé</span>',
+    }[p.status] || "";
+
+    return `
+      <div class="proposed-item">
+        <div class="proposed-header">
+          <div class="proposed-title">${p.title}</div>
+          ${statusHtml}
+        </div>
+        <div class="proposed-meta">
+          <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${p.category}</span>
+          Proposé par <strong style="color:#f59e0b">👑 ${p.proposed_by || "Inconnu"}</strong> · ${date}
+          ${p.admin_note ? `<div style="margin-top:6px;padding:6px 10px;background:rgba(241,245,249,0.03);border-radius:8px;font-style:italic">Note admin: ${p.admin_note}</div>` : ""}
+        </div>
+        ${p.status === "pending" ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="approve-btn" onclick="approveProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}')">✅ Approuver & Publier</button>
+          <button class="edit-btn" onclick="editProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}')">✏️ Modifier & Publier</button>
+          <button class="reject-btn" onclick="rejectProposed('${p.id}')">❌ Refuser</button>
+        </div>` : `
+        <div style="display:flex;gap:8px">
+          <button class="delete-btn" onclick="deleteProposed('${p.id}')">🗑 Supprimer</button>
+        </div>`}
+      </div>
+    `;
+  }).join("");
+}
+
+async function approveProposed(id, title, category) {
+  if (!confirm(`Approuver et publier ce marché ?\n\n"${title}"`)) return;
+  try {
+    // Créer dans custom_markets
+    const ratio = 1; const q_no = 100; const q_yes = 100;
+    await sbReq("custom_markets", {
+      method: "POST",
+      body: JSON.stringify({
+        title, category, source: "MarketBall — Elite",
+        closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
+        q_yes, q_no, total_volume: 0, participants: 0,
+        status: "open", created_by: "elite_proposed",
+      }),
+    });
+    // Mettre à jour le statut
+    await sbReq(`proposed_markets?id=eq.${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "approved" }),
+    });
+    showToast("✅ Marché approuvé et publié !");
+    loadAll();
+  } catch (e) { showToast("Erreur : " + e.message, "error"); }
+}
+
+let editProposedId = null;
+function editProposed(id, title, category) {
+  editProposedId = id;
+  document.getElementById("editId").value = id;
+  document.getElementById("editTitle").value = title;
+  document.getElementById("editCategory").value = category;
+  document.getElementById("editSource").value = "MarketBall — Elite";
+  document.getElementById("editModal").classList.add("open");
+}
+
+async function saveEdit() {
+  const id = document.getElementById("editId").value;
+  const title = document.getElementById("editTitle").value.trim();
+  const category = document.getElementById("editCategory").value;
+  const source = document.getElementById("editSource").value.trim();
+  if (!title) { showToast("Titre obligatoire", "error"); return; }
+
+  // Si c'est une proposition
+  if (editProposedId) {
+    try {
+      await sbReq("custom_markets", {
+        method: "POST",
+        body: JSON.stringify({
+          title, category, source,
+          closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
+          q_yes: 100, q_no: 100, total_volume: 0, participants: 0,
+          status: "open", created_by: "elite_proposed",
+        }),
+      });
+      await sbReq(`proposed_markets?id=eq.${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "approved", admin_note: "Modifié avant publication" }),
+      });
+      showToast("✅ Marché modifié et publié !");
+      editProposedId = null;
+      closeEditModal();
+      loadAll();
+    } catch (e) { showToast("Erreur : " + e.message, "error"); }
+  } else {
+    // Edit marché existant
+    try {
+      await sbReq(`custom_markets?id=eq.${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title, category, source }),
+      });
+      showToast("✅ Marché modifié !");
+      closeEditModal();
+      loadMarkets();
+    } catch (e) { showToast("Erreur : " + e.message, "error"); }
+  }
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").classList.remove("open");
+  editProposedId = null;
+}
+
+async function rejectProposed(id) {
+  const note = prompt("Raison du refus (optionnel) :");
+  try {
+    await sbReq(`proposed_markets?id=eq.${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "rejected", admin_note: note || null }),
+    });
+    showToast("Proposition refusée");
+    loadProposed();
+  } catch (e) { showToast("Erreur", "error"); }
+}
+
+async function deleteProposed(id) {
+  if (!confirm("Supprimer cette proposition ?")) return;
+  try {
+    await sbReq(`proposed_markets?id=eq.${id}`, { method: "DELETE" });
+    showToast("Proposition supprimée");
+    loadProposed();
+  } catch (e) { showToast("Erreur", "error"); }
+}
+
+// ============================================================
+// MARCHÉS STANDARD
+// ============================================================
 async function createMarket() {
   const title = document.getElementById("mTitle").value.trim();
   const category = document.getElementById("mCategory").value;
@@ -275,7 +518,6 @@ async function createMarket() {
   if (!title) { showToast("Le titre est obligatoire !", "error"); return; }
   if (!noDate && !closes) { showToast("Choisis une date de clôture ou coche 'Sans date limite'", "error"); return; }
 
-  // Convertir probabilité en q_yes/q_no
   const ratio = prob / (100 - prob);
   const q_no = 100;
   const q_yes = Math.round(q_no * ratio);
@@ -288,20 +530,13 @@ async function createMarket() {
     await sbReq("custom_markets", {
       method: "POST",
       body: JSON.stringify({
-        title,
-        category,
-        source,
+        title, category, source,
         closes_at: noDate ? null : new Date(closes).toISOString(),
-        q_yes,
-        q_no,
-        total_volume: 0,
-        participants: 0,
-        status: "open",
-        created_by: "admin",
+        q_yes, q_no, total_volume: 0, participants: 0,
+        status: "open", created_by: "admin",
       }),
     });
     showToast("✅ Marché publié !");
-    // Reset form
     document.getElementById("mTitle").value = "";
     document.getElementById("mSource").value = "MarketBall";
     document.getElementById("mProb").value = "50";
@@ -313,9 +548,7 @@ async function createMarket() {
     document.getElementById("mCloses").value = d.toISOString().slice(0, 16);
     updateProbPreview();
     loadMarkets();
-  } catch (e) {
-    showToast("Erreur : " + e.message, "error");
-  }
+  } catch (e) { showToast("Erreur : " + e.message, "error"); }
 
   btn.disabled = false;
   btn.textContent = "PUBLIER LE MARCHE →";
@@ -336,6 +569,15 @@ async function reopenMarket(id) {
     showToast("Marché réouvert !");
     loadMarkets();
   } catch { showToast("Erreur", "error"); }
+}
+
+function openEditMarket(id, title, category, source) {
+  editProposedId = null;
+  document.getElementById("editId").value = id;
+  document.getElementById("editTitle").value = title;
+  document.getElementById("editCategory").value = category;
+  document.getElementById("editSource").value = source || "MarketBall";
+  document.getElementById("editModal").classList.add("open");
 }
 
 async function deleteMarket(id) {
@@ -368,11 +610,13 @@ function renderMarkets() {
           <div class="market-item-title">${m.title}</div>
           <div class="market-item-meta">
             <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
-            ${m.source} · Clôture: ${closes} · OUI: ${prob}%
+            ${m.source || "MarketBall"} · Clôture: ${closes} · OUI: ${prob}%
             ${isClosed ? ' · <span style="color:#6b7280;font-weight:700">FERMÉ</span>' : ''}
+            ${m.created_by === "elite_proposed" ? ' · <span style="color:#f59e0b;font-weight:700">👑 Elite</span>' : ''}
           </div>
         </div>
         <div class="actions">
+          <button class="edit-btn" onclick="openEditMarket('${m.id}','${m.title.replace(/'/g,"\\'")}','${m.category}','${(m.source||'').replace(/'/g,"\\'")}')">✏️</button>
           ${!isClosed
             ? `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`
             : `<button class="reopen-btn" onclick="reopenMarket('${m.id}')">Rouvrir</button>`
@@ -399,6 +643,11 @@ async function loadMarkets() {
     document.getElementById("marketsList").innerHTML = `<div class="empty" style="color:#f87171">Erreur de chargement</div>`;
   }
 }
+
+// Fermer modal en cliquant dehors
+document.getElementById("editModal").addEventListener("click", function(e) {
+  if (e.target === this) closeEditModal();
+});
 </script>
 </body>
 </html>
