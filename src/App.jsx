@@ -33,10 +33,12 @@ const squadReq = async (teamId) => { const res = await fetch(`/api/squad?teamId=
 // AMM
 // ============================================================
 const AMM = {
-  probYes: (qY, qN) => { const eY = Math.exp(qY / 100), eN = Math.exp(qN / 100); return eY / (eY + eN); },
+  probYes: (qY, qN) => { const eY = Math.exp(Math.min(qY,500) / 100), eN = Math.exp(Math.min(qN,500) / 100); return Math.max(0.02, Math.min(0.98, eY / (eY + eN))); },
   costToBuy: (qY, qN, shares, side) => {
-    const b = 100, before = b * Math.log(Math.exp(qY / b) + Math.exp(qN / b));
-    const after = side === "yes" ? b * Math.log(Math.exp((qY + shares) / b) + Math.exp(qN / b)) : b * Math.log(Math.exp(qY / b) + Math.exp((qN + shares) / b));
+    const b = 100;
+    const qYc=Math.min(qY,500), qNc=Math.min(qN,500);
+    const before = b * Math.log(Math.exp(qYc / b) + Math.exp(qNc / b));
+    const after = side === "yes" ? b * Math.log(Math.exp((qYc + shares) / b) + Math.exp(qNc / b)) : b * Math.log(Math.exp(qYc / b) + Math.exp((qNc + shares) / b));
     return Math.max(1, Math.round(after - before));
   },
   // Cashout : valeur actuelle des parts selon les cotes du moment
@@ -614,7 +616,7 @@ function BetModal({ market, onClose, onConfirm, coins }) {
   const pYes=AMM.probYes(market.q_yes,market.q_no);
   const amtNum=parseInt(amount)||0;
   const cost=amtNum>0?AMM.costToBuy(market.q_yes,market.q_no,amtNum,side):0;
-  const gain=amtNum>0?(side==="yes"?Math.round(amtNum/pYes):Math.round(amtNum/(1-pYes))):0;
+  const gain=amtNum>0?Math.min(amtNum*50,(side==="yes"?Math.round(amtNum/pYes):Math.round(amtNum/(1-pYes)))):0;
   const canBet=amtNum>=1&&cost>=1&&cost<=coins;
   return <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease" }}>
     <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:28, width:380, maxWidth:"95vw", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
@@ -1899,10 +1901,10 @@ export default function App() {
         const newQNo=side==="no"?updMarket.q_no+amount:updMarket.q_no;
         try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch{}
       }
-      await loadBets(session.token,session.user.id); // Reload pour avoir les vrais IDs (cashout)
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prediction placee ! +5 XP");
+      await loadBets(session.token,session.user.id); // Après fermeture modale pour avoir les vrais IDs
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
   };
