@@ -616,7 +616,8 @@ function BetModal({ market, onClose, onConfirm, coins }) {
   const pYes=AMM.probYes(market.q_yes,market.q_no);
   const amtNum=parseInt(amount)||0;
   const cost=amtNum>0?AMM.costToBuy(market.q_yes,market.q_no,amtNum,side):0;
-  const gain=amtNum>0?Math.min(amtNum*50,(side==="yes"?Math.round(amtNum/pYes):Math.round(amtNum/(1-pYes)))):0;
+  const rawGain=amtNum>0?(side==="yes"?Math.round(amtNum/Math.max(pYes,0.02)):Math.round(amtNum/Math.max(1-pYes,0.02))):0;
+  const gain=Math.max(amtNum+1, Math.min(amtNum*50, rawGain||0));
   const canBet=amtNum>=1&&cost>=1&&cost<=coins;
   return <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease" }}>
     <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:28, width:380, maxWidth:"95vw", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
@@ -1891,7 +1892,8 @@ export default function App() {
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
-      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:gain,status:"pending"})});
+      const safeGain=Math.max(cost+1, gain||cost+1);
+      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending"})});
       const updMarket=markets.find(m=>m.id===betModal.id);
       const upd=markets.map(m=>m.id===betModal.id?{...m,q_yes:side==="yes"?m.q_yes+amount:m.q_yes,q_no:side==="no"?m.q_no+amount:m.q_no,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
@@ -1904,7 +1906,7 @@ export default function App() {
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prediction placee ! +5 XP");
-      await loadBets(session.token,session.user.id); // Après fermeture modale pour avoir les vrais IDs
+      setTimeout(()=>loadBets(session.token,session.user.id),500); // Délai pour laisser Supabase écrire
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
   };
