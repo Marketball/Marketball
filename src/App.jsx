@@ -39,6 +39,12 @@ const AMM = {
     const after = side === "yes" ? b * Math.log(Math.exp((qY + shares) / b) + Math.exp(qN / b)) : b * Math.log(Math.exp(qY / b) + Math.exp((qN + shares) / b));
     return Math.max(1, Math.round(after - before));
   },
+  // Cashout : valeur actuelle des parts selon les cotes du moment
+  cashoutValue: (qY, qN, shares, side) => {
+    const p = AMM.probYes(qY, qN);
+    const currentProb = side === "yes" ? p : 1 - p;
+    return Math.max(1, Math.round(shares * currentProb * 0.95)); // 5% frais cashout
+  },
 };
 
 // ============================================================
@@ -1094,21 +1100,107 @@ function MatchesPage({ matches, onBet, loading }) {
   </div>;
 }
 
-function MarketsPage({ markets, onBet, profile }) {
+function ProposeMarketModal({ profile, onClose, onSubmit }) {
+  const [title,setTitle]=useState("");
+  const [category,setCategory]=useState("Transferts");
+  const [loading,setLoading]=useState(false);
+  const cats=["Transferts","Contrats","Competitions","Performances","Rumeurs"];
+  const canSubmit=title.trim().length>=10;
+  const submit=async()=>{
+    if(!canSubmit) return;
+    setLoading(true);
+    await onSubmit({title:title.trim(),category,proposed_by:profile?.username||"Elite"});
+    setLoading(false);
+    onClose();
+  };
+  return <div onClick={onClose} style={{ position:"fixed",inset:0,background:"rgba(3,7,18,0.88)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(16px)",padding:16,animation:"fadeIn 0.2s ease" }}>
+    <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(241,245,249,0.03)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:22,padding:28,width:420,maxWidth:"95vw",boxShadow:"0 50px 100px rgba(0,0,0,0.6)",backdropFilter:"blur(20px)",animation:"fadeInUp 0.3s ease" }}>
+      <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:6 }}>
+        <div style={{ width:36,height:36,borderRadius:10,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>👑</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2 }}>PROPOSER UN MARCHÉ</div>
+      </div>
+      <div style={{ fontSize:12,color:"rgba(241,245,249,0.35)",marginBottom:20 }}>Tu proposes, l'admin valide. Si accepté, tu gagnes +50 XP et 2 SC !</div>
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>QUESTION DE PRÉDICTION</div>
+        <textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex: Mbappé signera à Arsenal avant le 31 août ?" rows={3}
+          style={{ width:"100%",padding:"12px 14px",background:"rgba(241,245,249,0.04)",border:`1px solid ${canSubmit?"rgba(245,158,11,0.3)":"rgba(241,245,249,0.08)"}`,borderRadius:11,color:"#f1f5f9",fontSize:13,outline:"none",resize:"none",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif",lineHeight:1.5 }} />
+        <div style={{ fontSize:11,color:"rgba(241,245,249,0.25)",marginTop:4 }}>{title.length}/200 · minimum 10 caractères</div>
+      </div>
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>CATÉGORIE</div>
+        <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+          {cats.map(c=><button key={c} onClick={()=>setCategory(c)} style={{ padding:"6px 12px",borderRadius:20,border:`1px solid ${category===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:category===c?`${catColor(c)}12`:"transparent",color:category===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:11,cursor:"pointer" }}>{c}</button>)}
+        </div>
+      </div>
+      <button className="btn-animated" onClick={submit} disabled={!canSubmit||loading}
+        style={{ width:"100%",padding:"13px 0",borderRadius:12,border:"none",background:canSubmit?"linear-gradient(135deg,#f59e0b,#d97706)":"rgba(241,245,249,0.04)",color:canSubmit?"#fff":"rgba(241,245,249,0.2)",fontWeight:800,fontSize:14,cursor:canSubmit?"pointer":"not-allowed",boxShadow:canSubmit?"0 8px 25px rgba(245,158,11,0.3)":"none" }}>
+        {loading?"...":"SOUMETTRE MA PROPOSITION →"}
+      </button>
+    </div>
+  </div>;
+}
+
+function MarketsPage({ markets, onBet, profile, session, showToast }) {
   const [cat,setCat]=useState("Tous");
+  const [showPropose,setShowPropose]=useState(false);
   const userIsElite=isElite(profile);
   const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
   const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
   const filtered=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
+
+  const handlePropose=async({title,category,proposed_by})=>{
+    try{
+      await req("proposed_markets",{method:"POST",_token:session?.token,body:JSON.stringify({
+        title,category,proposed_by,
+        proposer_id:session?.user?.id,
+        status:"pending",
+        created_at:new Date().toISOString()
+      })});
+      showToast("✅ Proposition envoyée ! L'admin va l'examiner. +50 XP si accepté 👑");
+    }catch(e){showToast("Erreur : "+e.message,"error");}
+  };
+
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>MARCHES DE PREDICTION</div>
-    <div style={{ display:"flex", gap:7, marginBottom:22, flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px", borderRadius:20, border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`, background:cat===c?`${catColor(c)}12`:"transparent", color:cat===c?catColor(c):"rgba(241,245,249,0.35)", fontWeight:700, fontSize:12, cursor:"pointer", transition:"all 0.2s" }}>{c}</button>)}</div>
-    {filtered.length===0&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
+    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:30,letterSpacing:2 }}>MARCHÉS</div>
+    </div>
+
+    {/* Section proposer un marché */}
+    {userIsElite?(
+      <div onClick={()=>setShowPropose(true)} className="card-hover" style={{ background:"linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))",border:"1px solid rgba(245,158,11,0.2)",borderRadius:16,padding:"16px 20px",marginBottom:20,cursor:"pointer",display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,158,11,0.1),transparent 70%)" }} />
+        <div style={{ width:44,height:44,borderRadius:12,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>👑</div>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"#f59e0b",marginBottom:2 }}>PROPOSER UN MARCHÉ</div>
+          <div style={{ fontSize:12,color:"rgba(241,245,249,0.4)" }}>Avantage Elite — propose ta propre question de prédiction</div>
+        </div>
+        <div style={{ marginLeft:"auto",fontSize:18,color:"rgba(245,158,11,0.5)" }}>→</div>
+      </div>
+    ):(
+      <div style={{ background:"rgba(241,245,249,0.02)",border:"1px solid rgba(241,245,249,0.06)",borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",inset:0,backdropFilter:"blur(1px)",background:"rgba(3,7,18,0.4)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",zIndex:2 }}>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:24,marginBottom:4 }}>🔒</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#f59e0b",letterSpacing:1 }}>LIGUE ELITE</div>
+            <div style={{ fontSize:11,color:"rgba(241,245,249,0.4)",marginTop:2 }}>Requis pour proposer un marché</div>
+          </div>
+        </div>
+        <div style={{ width:44,height:44,borderRadius:12,background:"rgba(241,245,249,0.05)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>👑</div>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"rgba(241,245,249,0.3)",marginBottom:2 }}>PROPOSER UN MARCHÉ</div>
+          <div style={{ fontSize:12,color:"rgba(241,245,249,0.25)" }}>Avantage Elite — propose ta propre question</div>
+        </div>
+      </div>
+    )}
+
+    <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c}</button>)}</div>
+    {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
+    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
+    {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
 }
 
-function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC }) {
+function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets }) {
   const [convertAmount,setConvertAmount]=useState(1);
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
   const canSpin=Date.now()-lastSpin>86400000;
@@ -1163,19 +1255,31 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
     </div>
     {allBets.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>MES PARIS</div>
-      {allBets.slice(0,15).map((b,i)=>(
-        <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div>
-            <div style={{ fontWeight:700, fontSize:13, marginBottom:3 }}>{b.market_title||b.match_title||"Paris"}</div>
-            <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}><span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>{" · "}{fmt(b.cost)} MC</div>
+      {allBets.slice(0,15).map((b,i)=>{
+        const canCashout=isPro(profile)&&b.status==="pending"&&b.market_id&&b.side&&b.amount;
+        const market=markets?.find(m=>m.id===b.market_id);
+        const cashoutVal=canCashout&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
+        return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontWeight:700, fontSize:13, marginBottom:3 }}>{b.market_title||b.match_title||"Paris"}</div>
+              <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}><span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>{" · "}{fmt(b.cost)} MC</div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              {b.status==="won"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:16, letterSpacing:1 }}>+{fmt(b.potential_gain)} 🏆</div>
+                :b.status==="lost"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#ef4444", fontSize:14, letterSpacing:1 }}>PERDU</div>
+                :<><div style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(251,191,36,0.1)", color:"#fbbf24", fontWeight:700, marginBottom:3, display:"inline-block" }}>En cours</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:15, letterSpacing:1 }}>+{fmt(b.potential_gain)}</div></>}
+            </div>
           </div>
-          <div style={{ textAlign:"right" }}>
-            {b.status==="won"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:16, letterSpacing:1 }}>+{fmt(b.potential_gain)} 🏆</div>
-              :b.status==="lost"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#ef4444", fontSize:14, letterSpacing:1 }}>PERDU</div>
-              :<><div style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(251,191,36,0.1)", color:"#fbbf24", fontWeight:700, marginBottom:3, display:"inline-block" }}>En cours</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:15, letterSpacing:1 }}>+{fmt(b.potential_gain)}</div></>}
-          </div>
-        </div>
-      ))}
+          {canCashout&&cashoutVal>0&&<div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Cashout disponible <span style={{ color:"#3b82f6", fontWeight:700 }}>⚡ Pro</span></div>
+            <button className="btn-animated" onClick={()=>onCashout(b,cashoutVal)}
+              style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(59,130,246,0.3)" }}>
+              Cashout +{fmt(cashoutVal)} MC
+            </button>
+          </div>}
+        </div>;
+      })}
     </>}
   </div>;
 }
@@ -1882,6 +1986,21 @@ export default function App() {
     }catch(e){showToast("Erreur : "+e.message,"error");}
   };
 
+  const handleCashout=async(bet,cashoutValue)=>{
+    if(!session||!isPro(profile)) return;
+    try{
+      // Marquer le pari comme cashouté
+      await req(`user_bets?id=eq.${bet.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({status:"cashed_out"})});
+      // Créditer les MC
+      const newCoins=(profile?.coins||0)+cashoutValue;
+      await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({coins:newCoins,updated_at:new Date().toISOString()})});
+      setProfile(p=>({...p,coins:newCoins}));
+      profileRef.current={...profileRef.current,coins:newCoins};
+      setBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
+      showToast(`💰 Cashout réussi ! +${fmt(cashoutValue)} MC récupérés`);
+    }catch(e){showToast("Erreur cashout : "+e.message,"error");}
+  };
+
   const handleLogout=async()=>{
     try{await authReq("logout",{});}catch{}
     setSession(null);setProfile(null);setBets([]);setMatchBets([]);profileRef.current=null;
@@ -1943,8 +2062,8 @@ export default function App() {
     <div key={page} className="page-slide-right" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 90px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
-      {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} />}
-      {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} />}
+      {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
+      {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onCashout={handleCashout} markets={markets} />}
       {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} />}
       {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={navigateTo} />}
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
