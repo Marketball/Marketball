@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     const season = getSeason(comp);
     const now = new Date();
     // Fenêtre réduite : 2 jours en arrière, 30 jours en avant
-    const from = now.toISOString().split("T")[0]; // Aujourd'hui uniquement, pas de matchs passés
+    const from = new Date(now - 3 * 86400000).toISOString().split("T")[0]; // 3 jours en arrière pour résolution paris
     const to = new Date(now.getTime() + 30 * 86400000).toISOString().split("T")[0];
 
     const data = await fetchWithRetry(
