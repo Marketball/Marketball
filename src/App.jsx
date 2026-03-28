@@ -1727,7 +1727,17 @@ export default function App() {
           bet.match_title.includes(m.home_team)&&bet.match_title.includes(m.away_team)
         );
         if(!match) continue;
-        const matchResult={homeScore:match.home_score,awayScore:match.away_score,homeTeam:match.home_team,awayTeam:match.away_team,scorers:match.scorers||[]};
+        // Si scorers vide et pari buteur, fetcher les events via /api/fixtures
+        let scorers=match.scorers||[];
+        const needsScorers=["first_scorer","scorer"].includes(bet.bet_type)&&scorers.length===0&&match.id;
+        if(needsScorers){
+          try{
+            const fr=await fetch(`/api/fixtures?id=${match.id}`);
+            const fd=await fr.json();
+            if(fd.scorers?.length) scorers=fd.scorers;
+          }catch{}
+        }
+        const matchResult={homeScore:match.home_score,awayScore:match.away_score,homeTeam:match.home_team,awayTeam:match.away_team,scorers};
         const won=resolveBet(bet,matchResult);
         const newStatus=won?"won":"lost";
         try{await req(`match_bets?id=eq.${bet.id}`,{method:"PATCH",_token:token,body:JSON.stringify({status:newStatus})});}catch{}
