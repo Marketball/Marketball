@@ -1214,7 +1214,10 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
   const mcFromConvert=convertAmount*10; // 1 SC = 10 MC
-  const allBets=[...(matchBets||[]).map(b=>({...b,isMatch:true})),...(bets||[]).map(b=>({...b,isMatch:false}))];
+  const allBets=[
+    ...(matchBets||[]).map(b=>({...b,isMatch:true})),
+    ...(bets||[]).map(b=>({...b,isMatch:false}))
+  ].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
 
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>WALLET</div>
@@ -1258,7 +1261,7 @@ function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, on
     </div>
     {allBets.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>MES PARIS</div>
-      {allBets.slice(0,15).map((b,i)=>{
+      {allBets.map((b,i)=>{
         // Cashout marché AMM
         const isMarketBet=!b.isMatch&&!!b.market_id;
         const isMatchBet=!!b.isMatch;
@@ -1805,11 +1808,11 @@ export default function App() {
     }catch{}
   },[]);
 
-  const loadBets=useCallback(async(t,u)=>{try{const d=await req(`user_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=50`,{_token:t});if(d)setBets(d);}catch{}},[]);
+  const loadBets=useCallback(async(t,u)=>{try{const d=await req(`user_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=200`,{_token:t});if(d)setBets(d);}catch{}},[]);
   const loadMatchBets=useCallback(async(t,u)=>{
     try{
       // Charger tous les paris pour affichage
-      const d=await req(`match_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=30`,{_token:t});
+      const d=await req(`match_bets?user_id=eq.${u}&select=*&order=created_at.desc&limit=200`,{_token:t});
       if(d) setMatchBets(d);
       // Retourner uniquement les pending pour la resolution
       return (d||[]).filter(b=>b.status==="pending");
