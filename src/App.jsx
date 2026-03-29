@@ -534,10 +534,44 @@ function AuthPage({ onAuth }) {
 // ============================================================
 // MARKET CARD
 // ============================================================
+
+// ============================================================
+// SHARE MENU
+// ============================================================
+function ShareMenu({ market, onClose }) {
+  const url = `https://market-ball.com`;
+  const text = `🔮 "${market.title}" — Parie sur MarketBall, la bourse de prédiction foot ! `;
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url + "?m=" + market.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { setCopied(true); setTimeout(() => setCopied(false), 2000); }
+  };
+
+  const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`, "_blank");
+
+  return <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", bottom:"100%", right:0, marginBottom:6, background:"rgba(15,23,42,0.98)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:14, padding:"8px", zIndex:100, display:"flex", gap:6, boxShadow:"0 8px 32px rgba(0,0,0,0.5)", animation:"fadeInUp 0.2s ease" }}>
+    <button onClick={copyLink} style={{ padding:"8px 12px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:copied?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.04)", color:copied?"#10b981":"rgba(241,245,249,0.7)", fontWeight:700, fontSize:11, cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.2s" }}>
+      {copied?"✓ Copié !":"📋 Copier"}
+    </button>
+    <button onClick={shareTwitter} style={{ padding:"8px 12px", borderRadius:10, border:"1px solid rgba(29,161,242,0.2)", background:"rgba(29,161,242,0.08)", color:"#1da1f2", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+      𝕏 Twitter
+    </button>
+    <button onClick={shareWhatsApp} style={{ padding:"8px 12px", borderRadius:10, border:"1px solid rgba(37,211,102,0.2)", background:"rgba(37,211,102,0.08)", color:"#25d366", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+      💬 WhatsApp
+    </button>
+  </div>;
+}
+
 function MarketCard({ market, onBet }) {
   const [hover,setHover]=useState(false);
+  const [showShare,setShowShare]=useState(false);
   const p=AMM.probYes(market.q_yes,market.q_no), cc=catColor(market.category);
-  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onClick={()=>onBet(market)}
+  return <div className="card-hover" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} onClick={()=>{if(showShare)setShowShare(false);else onBet(market);}}
     style={{ background:hover?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${hover?"rgba(16,185,129,0.15)":"rgba(241,245,249,0.06)"}`, borderRadius:18, padding:"20px 22px", position:"relative", overflow:"hidden", boxShadow:hover?"0 16px 40px rgba(0,0,0,0.3)":"0 4px 15px rgba(0,0,0,0.15)", cursor:"pointer" }}>
     <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${cc},transparent)` }} />
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
@@ -562,7 +596,11 @@ function MarketCard({ market, onBet }) {
       <div><div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", marginBottom:2, letterSpacing:1 }}>VOLUME</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#fbbf24", letterSpacing:1 }}>🪙 {fmt(market.total_volume)}</div></div>
       <div><div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", marginBottom:2, letterSpacing:1 }}>JOUEURS</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1 }}>{fmt(market.participants)}</div></div>
     </div>
-    <button className="btn-animated" onClick={()=>onBet(market)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PREDIRE →</button>
+    <div style={{ display:"flex", gap:6, position:"relative" }}>
+      <button className="btn-animated" onClick={(e)=>{e.stopPropagation();setShowShare(!showShare);}} style={{ padding:"10px 12px", borderRadius:11, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>↗</button>
+      <button className="btn-animated" onClick={()=>onBet(market)} style={{ flex:1, padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PREDIRE →</button>
+      {showShare&&<ShareMenu market={market} onClose={()=>setShowShare(false)} />}
+    </div>
   </div>;
 }
 
