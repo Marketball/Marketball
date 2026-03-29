@@ -1811,7 +1811,7 @@ export default function App() {
 
   const loadLeaderboard=useCallback(async(token)=>{
     try{
-      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,subscription&order=total_profit.desc&limit=10",{_token:token||SUPABASE_KEY});
+      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,subscription&order=total_profit.desc&limit=100",{_token:token||SUPABASE_KEY});
       if(data?.length) setLeaderboard(data.map((p,i)=>({...p,rank:i+1})));
     }catch{}
   },[]);
