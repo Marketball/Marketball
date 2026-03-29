@@ -244,6 +244,22 @@
       <label>SOURCE</label>
       <input class="form-inp" id="editSource" />
     </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>PROBABILITÉ INITIALE OUI (%)</label>
+      <input class="form-inp" type="number" id="editProb" value="50" min="5" max="95" oninput="updateEditProbPreview()" />
+      <div class="prob-preview">
+        <span class="prob-badge" id="editProbOui" style="background:rgba(16,185,129,0.12);color:#10b981">OUI 50%</span>
+        <span class="prob-badge" id="editProbNon" style="background:rgba(239,68,68,0.12);color:#ef4444">NON 50%</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>DATE DE CLÔTURE</label>
+      <div class="toggle-row" onclick="toggleEditNoDate()" style="margin-bottom:8px">
+        <input type="checkbox" id="editNoDateCheck" onclick="event.stopPropagation();toggleEditNoDate()" />
+        <span>Sans date limite</span>
+      </div>
+      <input class="form-inp" type="datetime-local" id="editCloses" />
+    </div>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button onclick="saveEdit()" style="flex:1;padding:12px 0;border-radius:11px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:800;font-size:14px;cursor:pointer">SAUVEGARDER →</button>
       <button onclick="closeEditModal()" style="padding:12px 20px;border-radius:11px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>
@@ -410,7 +426,7 @@ async function approveProposed(id, title, category) {
     await sbReq("custom_markets", {
       method: "POST",
       body: JSON.stringify({
-        title, category, source: "MarketBall — Elite", proposed_by: p.proposed_by,
+        title, category, source: "MarketBall — Elite",
         closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
         q_yes, q_no, total_volume: 0, participants: 0,
         status: "open", created_by: "elite_proposed",
@@ -426,6 +442,20 @@ async function approveProposed(id, title, category) {
   } catch (e) { showToast("Erreur : " + e.message, "error"); }
 }
 
+function updateEditProbPreview() {
+  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
+  document.getElementById("editProbOui").textContent = `OUI ${prob}%`;
+  document.getElementById("editProbNon").textContent = `NON ${100 - prob}%`;
+}
+
+function toggleEditNoDate() {
+  const cb = document.getElementById("editNoDateCheck");
+  const inp = document.getElementById("editCloses");
+  cb.checked = !cb.checked;
+  inp.disabled = cb.checked;
+  inp.style.opacity = cb.checked ? "0.3" : "1";
+}
+
 let editProposedId = null;
 function editProposed(id, title, category) {
   editProposedId = id;
@@ -433,6 +463,13 @@ function editProposed(id, title, category) {
   document.getElementById("editTitle").value = title;
   document.getElementById("editCategory").value = category;
   document.getElementById("editSource").value = "MarketBall — Elite";
+  document.getElementById("editProb").value = "50";
+  document.getElementById("editNoDateCheck").checked = false;
+  const d = new Date(Date.now() + 14 * 86400000);
+  document.getElementById("editCloses").value = d.toISOString().slice(0, 16);
+  document.getElementById("editCloses").disabled = false;
+  document.getElementById("editCloses").style.opacity = "1";
+  updateEditProbPreview();
   document.getElementById("editModal").classList.add("open");
 }
 
@@ -441,17 +478,21 @@ async function saveEdit() {
   const title = document.getElementById("editTitle").value.trim();
   const category = document.getElementById("editCategory").value;
   const source = document.getElementById("editSource").value.trim();
+  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
+  const noDate = document.getElementById("editNoDateCheck").checked;
+  const closes = document.getElementById("editCloses").value;
+  const q_yes = Math.round(100 * prob / (100 - prob));
+  const q_no = 100;
   if (!title) { showToast("Titre obligatoire", "error"); return; }
 
-  // Si c'est une proposition
   if (editProposedId) {
     try {
       await sbReq("custom_markets", {
         method: "POST",
         body: JSON.stringify({
           title, category, source,
-          closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
-          q_yes: 100, q_no: 100, total_volume: 0, participants: 0,
+          closes_at: noDate ? null : new Date(closes).toISOString(),
+          q_yes, q_no, total_volume: 0, participants: 0,
           status: "open", created_by: "elite_proposed",
         }),
       });
@@ -465,11 +506,10 @@ async function saveEdit() {
       loadAll();
     } catch (e) { showToast("Erreur : " + e.message, "error"); }
   } else {
-    // Edit marché existant
     try {
       await sbReq(`custom_markets?id=eq.${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ title, category, source }),
+        body: JSON.stringify({ title, category, source, q_yes, q_no, closes_at: noDate ? null : new Date(closes).toISOString() }),
       });
       showToast("✅ Marché modifié !");
       closeEditModal();
@@ -571,22 +611,43 @@ async function reopenMarket(id) {
   } catch { showToast("Erreur", "error"); }
 }
 
-function openEditMarket(id, title, category, source) {
+function openEditMarket(id, title, category, source, closesAt, prob) {
   editProposedId = null;
   document.getElementById("editId").value = id;
   document.getElementById("editTitle").value = title;
   document.getElementById("editCategory").value = category;
   document.getElementById("editSource").value = source || "MarketBall";
+  document.getElementById("editProb").value = prob || 50;
+  if (closesAt) {
+    document.getElementById("editNoDateCheck").checked = false;
+    document.getElementById("editCloses").value = new Date(closesAt).toISOString().slice(0, 16);
+    document.getElementById("editCloses").disabled = false;
+    document.getElementById("editCloses").style.opacity = "1";
+  } else {
+    document.getElementById("editNoDateCheck").checked = true;
+    document.getElementById("editCloses").disabled = true;
+    document.getElementById("editCloses").style.opacity = "0.3";
+  }
+  updateEditProbPreview();
   document.getElementById("editModal").classList.add("open");
 }
 
 async function deleteMarket(id) {
   if (!confirm("Supprimer définitivement ce marché ? Cette action est irréversible.")) return;
   try {
-    await sbReq(`custom_markets?id=eq.${id}`, { method: "DELETE" });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/custom_markets?id=eq.${id}`, {
+      method: "DELETE",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+    });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
     showToast("Marché supprimé !");
     loadMarkets();
-  } catch { showToast("Erreur", "error"); }
+  } catch (e) { showToast("Erreur : " + e.message, "error"); }
 }
 
 function renderMarkets() {
