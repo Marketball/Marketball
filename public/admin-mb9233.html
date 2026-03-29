@@ -538,10 +538,13 @@ async function rejectProposed(id) {
 async function deleteProposed(id) {
   if (!confirm("Supprimer cette proposition ?")) return;
   try {
-    await sbReq(`proposed_markets?id=eq.${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin-delete?table=proposed_markets&id=${id}&pwd=${ADMIN_PASSWORD}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
     showToast("Proposition supprimée");
     loadProposed();
-  } catch (e) { showToast("Erreur", "error"); }
+  } catch (e) { showToast("Erreur : " + e.message, "error"); }
 }
 
 // ============================================================
