@@ -426,7 +426,7 @@ async function approveProposed(id, title, category) {
     await sbReq("custom_markets", {
       method: "POST",
       body: JSON.stringify({
-        title, category, source: "MarketBall — Elite",
+        title, category, source: "Proposé par " + (proposedItem?.proposed_by || "Elite"),
         closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
         q_yes, q_no, total_volume: 0, participants: 0,
         status: "open", created_by: "elite_proposed",
