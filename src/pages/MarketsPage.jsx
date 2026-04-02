@@ -1,0 +1,65 @@
+import { useState } from "react";
+import { req } from "../lib/supabase.js";
+import { isElite, catColor } from "../lib/helpers.js";
+import MarketCard from "../components/MarketCard.jsx";
+import ProposeMarketModal from "../components/ProposeMarketModal.jsx";
+
+export default function MarketsPage({ markets, onBet, profile, session, showToast }) {
+  const [cat,setCat]=useState("Tous");
+  const [showPropose,setShowPropose]=useState(false);
+  const userIsElite=isElite(profile);
+  const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
+  const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
+  const filtered=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
+
+  const handlePropose=async({title,category,proposed_by})=>{
+    try{
+      await req("proposed_markets",{method:"POST",_token:session?.token,body:JSON.stringify({
+        title,category,proposed_by,
+        proposer_id:session?.user?.id,
+        status:"pending",
+        created_at:new Date().toISOString()
+      })});
+      showToast("✅ Proposition envoyée ! L'admin va l'examiner. +50 XP si accepté 👑");
+    }catch(e){showToast("Erreur : "+e.message,"error");}
+  };
+
+  return <div className="page-enter">
+    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:30,letterSpacing:2 }}>MARCHÉS</div>
+    </div>
+
+    {/* Section proposer un marché */}
+    {userIsElite?(
+      <div onClick={()=>setShowPropose(true)} className="card-hover" style={{ background:"linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))",border:"1px solid rgba(245,158,11,0.2)",borderRadius:16,padding:"16px 20px",marginBottom:20,cursor:"pointer",display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,158,11,0.1),transparent 70%)" }} />
+        <div style={{ width:44,height:44,borderRadius:12,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>👑</div>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"#f59e0b",marginBottom:2 }}>PROPOSER UN MARCHÉ</div>
+          <div style={{ fontSize:12,color:"rgba(241,245,249,0.4)" }}>Avantage Elite — propose ta propre question de prédiction</div>
+        </div>
+        <div style={{ marginLeft:"auto",fontSize:18,color:"rgba(245,158,11,0.5)" }}>→</div>
+      </div>
+    ):(
+      <div style={{ background:"rgba(241,245,249,0.02)",border:"1px solid rgba(241,245,249,0.06)",borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",inset:0,backdropFilter:"blur(1px)",background:"rgba(3,7,18,0.4)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",zIndex:2 }}>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:24,marginBottom:4 }}>🔒</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#f59e0b",letterSpacing:1 }}>LIGUE ELITE</div>
+            <div style={{ fontSize:11,color:"rgba(241,245,249,0.4)",marginTop:2 }}>Requis pour proposer un marché</div>
+          </div>
+        </div>
+        <div style={{ width:44,height:44,borderRadius:12,background:"rgba(241,245,249,0.05)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>👑</div>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"rgba(241,245,249,0.3)",marginBottom:2 }}>PROPOSER UN MARCHÉ</div>
+          <div style={{ fontSize:12,color:"rgba(241,245,249,0.25)" }}>Avantage Elite — propose ta propre question</div>
+        </div>
+      </div>
+    )}
+
+    <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c}</button>)}</div>
+    {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
+    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
+    {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
+  </div>;
+}

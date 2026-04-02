@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (!allowed.includes(table)) return res.status(400).json({ error: "Table non autorisée" });
 
   const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK";
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
   const res2 = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: "DELETE",

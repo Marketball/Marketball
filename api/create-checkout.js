@@ -27,8 +27,8 @@ export default async function handler(req, res) {
         quantity: 1 
       }],
       mode: 'payment',
-      success_url: `https://marketball.vercel.app?payment=success&sc=${selected.sc}&userId=${userId}`,
-      cancel_url: `https://marketball.vercel.app?payment=cancel`,
+      success_url: `https://market-ball.com?payment=success`,
+      cancel_url: `https://market-ball.com?payment=cancel`,
       metadata: { userId, sc: String(selected.sc) },
     });
     res.json({ url: session.url });
