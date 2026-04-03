@@ -13,13 +13,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const season = new Date().getFullYear();
     const res2 = await fetch(
       `https://v3.football.api-sports.io/players/squads?team=${teamId}`,
       {
         headers: {
           "x-apisports-key": process.env.API_FOOTBALL_KEY,
-          "x-rapidapi-key": process.env.API_FOOTBALL_KEY,
         }
       }
     );

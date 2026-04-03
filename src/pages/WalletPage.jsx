@@ -6,6 +6,7 @@ import SpinWheel from "../components/ui/SpinWheel.jsx";
 
 export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets }) {
   const [convertAmount,setConvertAmount]=useState(1);
+  const [cashoutConfirm,setCashoutConfirm]=useState(null); // { bet, value, isMatch }
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
   const canSpin=Date.now()-lastSpin>86400000;
   const today=new Date().toISOString().split("T")[0];
@@ -73,7 +74,6 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0; // 75% remboursé
         const canCashout=canCashoutMarket||canCashoutMatch;
         const cashoutVal=isMarketBet?cashoutMarketVal:cashoutMatchVal;
-        const statusLabel=b.status==="cashed_out"?"CASHOUT":b.status;
         return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":b.status==="cashed_out"?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":b.status==="cashed_out"?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ flex:1, minWidth:0 }}>
@@ -97,7 +97,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
               {isMarketBet?"Cashout selon cotes actuelles":"Cashout anticipé · 75% remboursé"}
               <span style={{ color:"#3b82f6", fontWeight:700, marginLeft:6 }}>⚡ Pro</span>
             </div>
-            <button className="btn-animated" onClick={()=>onCashout(b,cashoutVal,b.isMatch)}
+            <button className="btn-animated" onClick={()=>setCashoutConfirm({bet:b,value:cashoutVal,isMatch:b.isMatch})}
               style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(59,130,246,0.3)" }}>
               +{fmt(cashoutVal)} MC
             </button>
@@ -105,5 +105,27 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         </div>;
       })}
     </>}
+
+    {/* Modale confirmation cashout */}
+    {cashoutConfirm&&<div onClick={()=>setCashoutConfirm(null)} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.85)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(12px)", padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(15,23,42,0.98)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:20, padding:"28px 24px", width:340, maxWidth:"100%", boxShadow:"0 40px 80px rgba(0,0,0,0.6)" }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:8 }}>CONFIRMER LE CASHOUT</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.45)", marginBottom:20, lineHeight:1.6 }}>
+          {cashoutConfirm.isMatch?"75% de ta mise te sera remboursée.":"Valeur calculée selon les cotes actuelles du marché."}<br/>
+          Cette action est <strong style={{color:"#f87171"}}>irréversible</strong>.
+        </div>
+        <div style={{ background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:12, padding:"14px", marginBottom:20, textAlign:"center" }}>
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>TU RÉCUPÈRES</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, color:"#3b82f6", letterSpacing:2 }}>+{fmt(cashoutConfirm.value)} 🪙</div>
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={()=>setCashoutConfirm(null)} style={{ flex:1, padding:"12px 0", borderRadius:11, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>Annuler</button>
+          <button onClick={()=>{onCashout(cashoutConfirm.bet,cashoutConfirm.value,cashoutConfirm.isMatch);setCashoutConfirm(null);}}
+            style={{ flex:2, padding:"12px 0", borderRadius:11, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(59,130,246,0.3)" }}>
+            Confirmer +{fmt(cashoutConfirm.value)} MC
+          </button>
+        </div>
+      </div>
+    </div>}
   </div>;
 }

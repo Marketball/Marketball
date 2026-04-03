@@ -61,6 +61,12 @@ export default async function handler(req, res) {
         console.warn('[webhook] checkout.session.completed: metadata manquante', obj.metadata);
         break;
       }
+      // Whitelist : seuls ces plans sont acceptés
+      const VALID_PLANS = ['pro', 'elite'];
+      if (!VALID_PLANS.includes(plan)) {
+        console.warn(`[webhook] Plan invalide reçu dans metadata: "${plan}"`);
+        break;
+      }
       console.log(`[webhook] Activation abonnement ${plan} pour user ${userId}`);
       await updateProfile(userId, {
         subscription: plan,

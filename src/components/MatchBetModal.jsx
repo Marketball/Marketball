@@ -12,11 +12,14 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
   useEffect(()=>{
     if(!match.home_team_id&&!match.away_team_id) return;
     setLoadingPlayers(true);
-    Promise.all([match.home_team_id?squadReq(match.home_team_id):Promise.resolve(null),match.away_team_id?squadReq(match.away_team_id):Promise.resolve(null)])
-      .then(([hD,aD])=>{
-        if(hD?.squad) setHomePlayers(filterScorers(hD.squad));
-        if(aD?.squad) setAwayPlayers(filterScorers(aD.squad));
-      }).catch(()=>{}).finally(()=>setLoadingPlayers(false));
+    const timeout=(ms)=>new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),ms));
+    Promise.all([
+      match.home_team_id?Promise.race([squadReq(match.home_team_id),timeout(5000)]):Promise.resolve(null),
+      match.away_team_id?Promise.race([squadReq(match.away_team_id),timeout(5000)]):Promise.resolve(null),
+    ]).then(([hD,aD])=>{
+      if(hD?.squad) setHomePlayers(filterScorers(hD.squad));
+      if(aD?.squad) setAwayPlayers(filterScorers(aD.squad));
+    }).catch(()=>{}).finally(()=>setLoadingPlayers(false));
   },[match.home_team_id,match.away_team_id]);
 
   const currentPlayers=scorerTeam==="home"?homePlayers:awayPlayers;

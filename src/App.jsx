@@ -41,6 +41,8 @@ export default function App() {
   const [leaderboard,setLeaderboard]=useState([]);
   const [bets,setBets]=useState([]);
   const [matchBets,setMatchBets]=useState([]);
+  // Refs pour stocker les intervals et pouvoir les nettoyer au logout
+  const intervalsRef=useRef([]);
   const [betModal,setBetModal]=useState(null);
   const [matchBetModal,setMatchBetModal]=useState(null);
   const [toast,setToast]=useState(null);
@@ -237,7 +239,8 @@ export default function App() {
       const hasLive=matches.some(m=>m.status==="IN_PLAY"||m.status==="PAUSED");
       if(hasLive) await loadMatches();
     },60*1000);
-    return()=>{clearInterval(interval);clearInterval(liveInterval);};
+    // Stocker les intervals pour les nettoyer au logout
+    intervalsRef.current=[interval,liveInterval];
   };
 
   const updateProfile=async(updates,token,userId)=>{
@@ -365,6 +368,9 @@ export default function App() {
   };
 
   const handleLogout=async()=>{
+    // Nettoyer les intervals pour éviter les fuites mémoire
+    intervalsRef.current.forEach(clearInterval);
+    intervalsRef.current=[];
     try{await authReq("logout",{});}catch{}
     setSession(null);setProfile(null);setBets([]);setMatchBets([]);profileRef.current=null;
   };
@@ -428,7 +434,7 @@ export default function App() {
       {page==="leaderboard"&&publicProfileUser&&<PublicProfilePage username={publicProfileUser} onBack={()=>setPublicProfileUser(null)} leaderboard={leaderboard} />}
       {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={navigateTo} />}
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
-      {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} />}
+      {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} />}
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
     </div>
 

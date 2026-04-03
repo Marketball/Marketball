@@ -6,7 +6,7 @@ import BadgeTag from "../components/ui/BadgeTag.jsx";
 import SubBadge from "../components/ui/SubBadge.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
 
-export default function ProfilePage({ profile, username, onLogout }) {
+export default function ProfilePage({ profile, username, onLogout, onNavigate }) {
   const level=getLevel(profile?.xp||0), badge=getBadge(level);
   const wr=profile?.total_bets>0?Math.round((profile.total_wins/profile.total_bets)*100):0;
   const sub=getSubPlan(profile);
@@ -37,7 +37,7 @@ export default function ProfilePage({ profile, username, onLogout }) {
         </div>
         <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:3 }}>{getMCBoost(sub)} MC chaque lundi</div>
       </div>
-      {sub==="starter"&&<div style={{ fontSize:11, color:"#3b82f6", fontWeight:700, cursor:"pointer" }} onClick={()=>{}}>Passer Pro →</div>}
+      {sub==="starter"&&<div style={{ fontSize:11, color:"#3b82f6", fontWeight:700, cursor:"pointer" }} onClick={()=>onNavigate("subscription")}>Passer Pro →</div>}
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
       {[{label:"PARIS",val:profile?.total_bets||0,color:"#3b82f6"},{label:"WINS",val:profile?.total_wins||0,color:"#10b981"},{label:"PRECISION",val:`${wr}%`,color:"#a78bfa"}].map(s=>(
