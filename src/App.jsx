@@ -403,32 +403,44 @@ export default function App() {
 
     <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
       <div style={{ maxWidth:980, margin:"0 auto", padding:"0 16px", display:"flex", alignItems:"center", justifyContent:"space-between", height:54 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        {/* Logo */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
           <div style={{ width:32, height:32, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
           <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
         </div>
-        <nav className="nav-scroll" style={{ display:"flex", gap:1, flex:1, margin:"0 8px" }}>
+        {/* Nav desktop (caché sur mobile) */}
+        <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 8px" }}>
           {NAV.map(n=>(
             <button key={n.id} onClick={()=>navigateTo(n.id)}
-              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap", flexShrink:0 }}>
-              {n.icon}<span className="nav-label"> {n.label}</span>
+              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap" }}>
+              {n.icon} {n.label}
             </button>
           ))}
         </nav>
-        <div style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
-          <button className="hide-mobile" onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
-          {profile?.subscription && profile.subscription !== "starter" && <span className="hide-mobile"><SubBadge profile={profile} /></span>}
-          <div onClick={()=>navigateTo("profile")} className="coin-badge" style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
+        {/* Droite desktop */}
+        <div className="hide-mobile" style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
+          <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
+          {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
+          <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
           </div>
-          <div className="coin-badge" style={{ background:"rgba(16,185,129,0.07)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:7, padding:"3px 9px" }}>
+          <div style={{ background:"rgba(16,185,129,0.07)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:7, padding:"3px 9px" }}>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
+          </div>
+        </div>
+        {/* Droite mobile : coins compacts */}
+        <div className="show-mobile" style={{ display:"none", gap:6, alignItems:"center" }}>
+          <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.18)", borderRadius:8, padding:"4px 10px", cursor:"pointer" }}>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
+          </div>
+          <div style={{ background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.18)", borderRadius:8, padding:"4px 10px" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div key={page} className="page-slide-right" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
+    <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
@@ -439,6 +451,24 @@ export default function App() {
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} />}
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
+    </div>
+
+    {/* Bottom nav mobile */}
+    <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,7,18,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(241,245,249,0.07)", paddingBottom:"env(safe-area-inset-bottom)" }}>
+      {[
+        {id:"home",icon:"⚡",label:"Accueil"},
+        {id:"matches",icon:"⚽",label:"Matchs"},
+        {id:"markets",icon:"📊",label:"Marchés"},
+        {id:"wallet",icon:"💰",label:"Wallet"},
+        {id:"leaderboard",icon:"🏆",label:"Top"},
+        {id:"profile",icon:"👤",label:"Profil"},
+      ].map(n=>(
+        <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
+          {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
+          <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>
+          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{n.label}</span>
+        </button>
+      ))}
     </div>
 
 {betModal&&<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />}
