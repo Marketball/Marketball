@@ -98,6 +98,7 @@ export default async function handler(req, res) {
       competition_name: comp.name,
       match_date: f.fixture.date,
       status: mapStatus(f.fixture.status.short),
+      elapsed: f.fixture.status.elapsed || null,
       home_score: f.goals.home,
       away_score: f.goals.away,
       scorers: (f.events || [])

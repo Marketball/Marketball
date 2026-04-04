@@ -20,7 +20,11 @@ export default function MatchCard({ match, onBet }) {
     <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${isLive?"#ef4444":cc},transparent)` }} />
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
       <span style={{ fontSize:10, fontWeight:700, color:cc, background:`${cc}12`, padding:"2px 8px", borderRadius:20, border:`1px solid ${cc}20` }}>{compEmoji(match.competition)} {compLabel(match.competition)}</span>
-      {isLive?<span style={{ fontSize:10, fontWeight:800, color:"#ef4444", display:"flex", alignItems:"center", gap:4 }}><span style={{ width:6,height:6,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite" }} />EN DIRECT</span>
+      {isLive?<span style={{ fontSize:10, fontWeight:800, color:"#ef4444", display:"flex", alignItems:"center", gap:4 }}>
+          <span style={{ width:6,height:6,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite" }} />
+          EN DIRECT
+          {match.elapsed&&<span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:12, letterSpacing:1, marginLeft:2 }}>{match.elapsed}'</span>}
+        </span>
         :isFinished?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>Termine</span>
         :<span style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>{formatMatchDate(match.match_date)}</span>}
     </div>
