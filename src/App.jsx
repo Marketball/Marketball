@@ -147,8 +147,7 @@ export default function App() {
         req("custom_markets?status=eq.open&order=created_at.desc").catch(()=>[]),
       ]);
       const rumorMarkets=(rumors||[]).map(r=>({id:r.rumor_id,title:r.event_question||`${r.player_name} → ${r.to_club} ?`,q_yes:100,q_no:100,total_volume:500,participants:10,closes_at:r.expires_at||new Date(Date.now()+14*86400000).toISOString(),category:"Transferts",source:r.source_name||"Source",status:"open"}));
-      const savedOdds=loadSavedOdds();
-      const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:savedOdds[c.id]?.q_yes||c.q_yes||100,q_no:savedOdds[c.id]?.q_no||c.q_no||100,total_volume:savedOdds[c.id]?.total_volume||c.total_volume||0,participants:savedOdds[c.id]?.participants||c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null}));
+      const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:c.q_yes||100,q_no:c.q_no||100,total_volume:c.total_volume||0,participants:c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null}));
       setMarkets([...customMarkets,...rumorMarkets]);
     }catch{}
   },[]);
@@ -408,21 +407,21 @@ export default function App() {
           <div style={{ width:32, height:32, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
           <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
         </div>
-        <nav style={{ display:"flex", gap:1 }}>
+        <nav className="nav-scroll" style={{ display:"flex", gap:1, flex:1, margin:"0 8px" }}>
           {NAV.map(n=>(
             <button key={n.id} onClick={()=>navigateTo(n.id)}
-              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
-              {n.icon} {n.label}
+              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap", flexShrink:0 }}>
+              {n.icon}<span className="nav-label"> {n.label}</span>
             </button>
           ))}
         </nav>
-        <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-          <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
-          {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
-          <div style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px" }}>
+        <div style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
+          <button className="hide-mobile" onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
+          {profile?.subscription && profile.subscription !== "starter" && <span className="hide-mobile"><SubBadge profile={profile} /></span>}
+          <div onClick={()=>navigateTo("profile")} className="coin-badge" style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
           </div>
-          <div style={{ background:"rgba(16,185,129,0.07)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:7, padding:"3px 9px" }}>
+          <div className="coin-badge" style={{ background:"rgba(16,185,129,0.07)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:7, padding:"3px 9px" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
           </div>
         </div>

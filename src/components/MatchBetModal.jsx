@@ -96,8 +96,8 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
     </div>;
   };
 
-  return <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", padding:16, animation:"fadeIn 0.2s ease" }}>
-    <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:24, width:430, maxWidth:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
+  return <div onClick={onClose} className="modal-overlay" style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", padding:16, animation:"fadeIn 0.2s ease" }}>
+    <div onClick={e=>e.stopPropagation()} className="modal-inner" style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:24, width:430, maxWidth:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
       <div style={{ display:"flex", alignItems:"center", marginBottom:16, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 16px" }}>
         <div style={{ textAlign:"center", flex:1 }}><div style={{ fontWeight:800, fontSize:13 }}>{match.home_team}</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"#10b981", letterSpacing:1, marginTop:2 }}>x{odds.oddsHome}</div></div>
         <div style={{ padding:"0 12px", textAlign:"center" }}><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.2)", letterSpacing:2 }}>VS</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:12, color:"#94a3b8", letterSpacing:1 }}>x{odds.oddsDraw}</div></div>

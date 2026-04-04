@@ -147,4 +147,14 @@ export const GLOBAL_CSS = `
   .btn-animated:active:not(:disabled) { transform: scale(0.97); }
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 99px; }
+  .nav-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+  @media (max-width: 640px) {
+    .nav-label { display: none; }
+    .hide-mobile { display: none !important; }
+    .coin-badge { padding: 3px 7px !important; }
+    .coin-badge span { font-size: 11px !important; }
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; padding-bottom: max(24px, env(safe-area-inset-bottom)) !important; }
+  }
 `;
