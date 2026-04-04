@@ -59,16 +59,6 @@ export default function App() {
     }catch{}
   },[]);
 
-  // Rafraîchissement classement + marchés toutes les 10s (cotes en temps réel)
-  useEffect(()=>{
-    if(!session) return;
-    const interval=setInterval(()=>{
-      loadLeaderboard(session.token);
-      loadMarkets();
-    },10000);
-    return()=>clearInterval(interval);
-  },[session,loadLeaderboard,loadMarkets]);
-
   const checkAndResolveBets=useCallback(async(token,userId,currentMatches,pendingBets)=>{
     if(!token||!pendingBets?.length||!currentMatches?.length) return;
     const pending=pendingBets.filter(b=>b.status==="pending"&&b.id);
@@ -162,6 +152,16 @@ export default function App() {
       setMarkets([...customMarkets,...rumorMarkets]);
     }catch{}
   },[]);
+
+  // Rafraîchissement classement + marchés toutes les 10s (cotes en temps réel)
+  useEffect(()=>{
+    if(!session) return;
+    const interval=setInterval(()=>{
+      loadLeaderboard(session.token);
+      loadMarkets();
+    },10000);
+    return()=>clearInterval(interval);
+  },[session]);
 
   const loadProfile=useCallback(async(token,userId)=>{
     try{
