@@ -59,11 +59,15 @@ export default function App() {
     }catch{}
   },[]);
 
+  // Rafraîchissement classement + marchés toutes les 10s (cotes en temps réel)
   useEffect(()=>{
     if(!session) return;
-    const interval=setInterval(()=>loadLeaderboard(session.token),30000);
+    const interval=setInterval(()=>{
+      loadLeaderboard(session.token);
+      loadMarkets();
+    },10000);
     return()=>clearInterval(interval);
-  },[session,loadLeaderboard]);
+  },[session,loadLeaderboard,loadMarkets]);
 
   const checkAndResolveBets=useCallback(async(token,userId,currentMatches,pendingBets)=>{
     if(!token||!pendingBets?.length||!currentMatches?.length) return;
@@ -407,7 +411,7 @@ export default function App() {
         <nav style={{ display:"flex", gap:1 }}>
           {NAV.map(n=>(
             <button key={n.id} onClick={()=>navigateTo(n.id)}
-              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
+              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
               {n.icon} {n.label}
             </button>
           ))}
@@ -425,7 +429,7 @@ export default function App() {
       </div>
     </div>
 
-    <div key={page} className="page-slide-right" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 90px", position:"relative", zIndex:1 }}>
+    <div key={page} className="page-slide-right" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
@@ -438,17 +442,7 @@ export default function App() {
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
     </div>
 
-    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", zIndex:200 }}>
-      {NAV.map(n=>(
-        <button key={n.id} onClick={()=>navigateTo(n.id)}
-          style={{ flex:1, padding:"9px 0", background:"transparent", border:"none", color:page===n.id?"#10b981":"rgba(241,245,249,0.25)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, transition:"all 0.2s", borderTop:page===n.id?"2px solid #10b981":"2px solid transparent" }}>
-          <span style={{ fontSize:14 }}>{n.icon}</span>
-          <span style={{ fontSize:7, fontWeight:700, letterSpacing:0.5, textTransform:"uppercase" }}>{n.label}</span>
-        </button>
-      ))}
-    </div>
-
-    {betModal&&<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />}
+{betModal&&<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />}
     {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
