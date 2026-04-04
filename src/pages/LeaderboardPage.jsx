@@ -106,9 +106,11 @@ export function PublicProfilePage({ username, onBack, leaderboard }) {
 }
 
 export default function LeaderboardPage({ leaderboard, username, onViewProfile }) {
+  const [showAll,setShowAll]=useState(false);
   const topColors=["#94a3b8","#fbbf24","#cd7f32"];
   const medals=["🥈","🥇","🥉"];
   const countdown = useCountdown();
+  const visibleList=showAll?leaderboard:leaderboard.slice(0,10);
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>CLASSEMENT</div>
     <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Classe par gains MC des paris uniquement</div>
@@ -154,11 +156,11 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile }
         </div>;
       })}
     </div>
-    {leaderboard.map((p,i)=>(
+    {visibleList.map((p,i)=>(
       <div key={p.username} style={{ background:p.username===username?"rgba(16,185,129,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${p.username===username?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.04)"}`, borderRadius:12, padding:"12px 16px", marginBottom:6, display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:28, height:28, borderRadius:"50%", background:i<3?`linear-gradient(135deg,${topColors[i]},${topColors[i]}88)`:"rgba(241,245,249,0.06)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, flexShrink:0, color:i<3?"#000":"rgba(241,245,249,0.4)" }}>{i+1}</div>
-        <div style={{ flex:1 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2, flexWrap:"wrap" }}>
             <span onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, color:p.username===username?"#10b981":"#f1f5f9", fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{p.username}</span>
             <BadgeTag level={getLevel(p.xp||0)} />
             {p.subscription&&p.subscription!=="starter"&&<SubBadge profile={p} />}
@@ -166,12 +168,17 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile }
           </div>
           <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} paris · Niv. {getLevel(p.xp||0)}</div>
         </div>
-        <div style={{ textAlign:"right" }}>
+        <div style={{ textAlign:"right", flexShrink:0 }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>gain total</div>
           {i<5&&<div style={{ fontSize:10, color:WEEKLY_REWARDS[i]?.color||"#6b7280", fontWeight:700 }}>+{WEEKLY_REWARDS[i]?.sc} SC lundi</div>}
         </div>
       </div>
     ))}
+    {!showAll&&leaderboard.length>10&&(
+      <button onClick={()=>setShowAll(true)} className="btn-animated" style={{ width:"100%", marginTop:8, padding:"12px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+        Voir les {leaderboard.length-10} autres joueurs →
+      </button>
+    )}
   </div>;
 }

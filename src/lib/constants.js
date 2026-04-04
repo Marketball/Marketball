@@ -119,7 +119,8 @@ export const CLUB_COLORS = {
 export const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #030712; color: #f1f5f9; font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  body { background: #030712; color: #f1f5f9; font-family: 'DM Sans', sans-serif; touch-action: pan-y; }
   body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events: none; z-index: 999; opacity: 0.35; }
   input::placeholder { color: rgba(241,245,249,0.2); }
   input:focus { border-color: rgba(16,185,129,0.5) !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
@@ -151,8 +152,9 @@ export const GLOBAL_CSS = `
     .hide-mobile { display: none !important; }
     .show-mobile { display: flex !important; }
     .mobile-bottom-nav { display: flex !important; }
-    .page-content { padding-bottom: 84px !important; }
+    .page-content { padding: 16px 14px 88px !important; }
     .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
-    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; padding-bottom: max(24px, env(safe-area-inset-bottom)) !important; }
+    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; padding: 20px 18px max(20px, env(safe-area-inset-bottom)) !important; }
+    .card-hover:hover { transform: none; }
   }
 `;

@@ -54,7 +54,7 @@ export default function App() {
 
   const loadLeaderboard=useCallback(async(token)=>{
     try{
-      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,subscription&order=total_profit.desc&limit=10",{_token:token});
+      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,subscription&order=total_profit.desc&limit=50",{_token:token});
       if(data?.length) setLeaderboard(data.map((p,i)=>({...p,rank:i+1})));
     }catch{}
   },[]);
@@ -233,17 +233,13 @@ export default function App() {
     const loadedMatches=await loadMatches();
     if(mb?.length) await checkAndResolveBets(token,user.id,loadedMatches,mb);
     await handleDailyStreak(token,user.id);
+    // Interval unique 60s : recharge matchs + résout les paris terminés
     const interval=setInterval(async()=>{
       const lm=await loadMatches();
       const pendingMB=await loadMatchBets(token,user.id);
-      await checkAndResolveBets(token,user.id,lm,pendingMB);
-    },5*60*1000);
-    const liveInterval=setInterval(async()=>{
-      const hasLive=matches.some(m=>m.status==="IN_PLAY"||m.status==="PAUSED");
-      if(hasLive) await loadMatches();
+      if(pendingMB?.some(b=>b.status==="pending")) await checkAndResolveBets(token,user.id,lm,pendingMB);
     },60*1000);
-    // Stocker les intervals pour les nettoyer au logout
-    intervalsRef.current=[interval,liveInterval];
+    intervalsRef.current=[interval];
   };
 
   const updateProfile=async(updates,token,userId)=>{
@@ -404,7 +400,7 @@ export default function App() {
     <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
       <div style={{ maxWidth:980, margin:"0 auto", padding:"0 16px", display:"flex", alignItems:"center", justifyContent:"space-between", height:54 }}>
         {/* Logo */}
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+        <div onClick={()=>navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, cursor:"pointer" }}>
           <div style={{ width:32, height:32, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
           <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
         </div>
