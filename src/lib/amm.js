@@ -65,17 +65,59 @@ export const calcLiveMatchOdds = (match) => {
   };
 };
 
+// Force par équipe (sur 100) — basé sur palmarès, niveau actuel, ELO approximatif
+const TEAM_STRENGTH = {
+  // Elite mondiale (90-95)
+  "Man City": 93, "Real Madrid": 92, "Bayern": 92, "Liverpool": 90,
+  "Arsenal": 88, "Barcelona": 87, "Inter": 86, "Atletico": 85,
+  "Dortmund": 84, "Leverkusen": 86, "PSG": 85, "Chelsea": 83,
+  "RB Leipzig": 82, "Napoli": 82, "Man United": 81, "Tottenham": 80,
+  "Juventus": 81, "Newcastle": 80, "Aston Villa": 79, "Milan": 80,
+  // Niveau européen (72-79)
+  "Roma": 78, "Lazio": 76, "Sevilla": 76, "Villarreal": 75,
+  "Porto": 77, "Benfica": 76, "Ajax": 75, "Celtic": 73, "Feyenoord": 76,
+  "Monaco": 78, "Lyon": 74, "Marseille": 75, "Lens": 73, "Lille": 76,
+  "West Ham": 76, "Brighton": 75, "Brentford": 73,
+  "Sociedad": 74, "Bilbao": 74, "Betis": 73,
+  "Atalanta": 79, "Fiorentina": 74, "Bologna": 73,
+  "Salzburg": 72, "Club Brugge": 72, "Shakhtar": 73,
+};
+
+const getStrength = (teamName) => {
+  if (!teamName) return 65;
+  const key = Object.keys(TEAM_STRENGTH).find(k => teamName.includes(k));
+  return key ? TEAM_STRENGTH[key] : 65;
+};
+
 export const calcMatchOdds = (match) => {
-  const BIG = ["Real Madrid","Barcelona","Bayern","Man City","PSG","Liverpool","Arsenal","Chelsea","Inter","Juventus","Atletico","Dortmund","Man United","Tottenham","Newcastle"];
-  const MED = ["Monaco","Lyon","Marseille","Sevilla","Villarreal","Napoli","Roma","Lazio","Leverkusen","RB Leipzig","Aston Villa","West Ham","Benfica","Porto","Ajax","Celtic","Feyenoord"];
-  const hS = BIG.some(c => match.home_team?.includes(c)) ? 3 : MED.some(c => match.home_team?.includes(c)) ? 2 : 1;
-  const aS = BIG.some(c => match.away_team?.includes(c)) ? 3 : MED.some(c => match.away_team?.includes(c)) ? 2 : 1;
-  const total = hS + aS + 1.5;
-  const pHome = Math.min(0.75, Math.max(0.15, hS / total + 0.1));
-  const pAway = Math.min(0.65, Math.max(0.10, aS / total));
-  const pDraw = Math.max(0.10, 1 - pHome - pAway);
-  const m = 1.05;
-  return { pHome, pAway, pDraw, oddsHome: +(m / pHome).toFixed(2), oddsDraw: +(m / pDraw).toFixed(2), oddsAway: +(m / pAway).toFixed(2) };
+  const sH = getStrength(match.home_team);
+  const sA = getStrength(match.away_team);
+
+  // Avantage domicile : réduit quand les deux équipes sont d'élite
+  const avgStr = (sH + sA) / 2;
+  const homeAdv = avgStr >= 85 ? 3 : avgStr >= 78 ? 5 : 8;
+
+  // Formule ELO : probabilité basée sur l'écart de force
+  const diff = (sH + homeAdv) - sA;
+  const pHome = 1 / (1 + Math.pow(10, -diff / 40));
+  const pAway = 1 / (1 + Math.pow(10, diff / 40));
+
+  // Probabilité de nul : plus élevée quand les équipes sont proches
+  const gap = Math.abs(diff);
+  const drawBase = gap < 5 ? 0.28 : gap < 10 ? 0.24 : gap < 20 ? 0.20 : 0.14;
+  const pDraw = Math.min(0.32, Math.max(0.08, drawBase));
+
+  // Normaliser pour que la somme = 1
+  const total = pHome + pAway + pDraw;
+  const pH = pHome / total, pA = pAway / total, pD = pDraw / total;
+
+  const m = 1.05; // marge bookmaker 5%
+  return {
+    pHome: pH, pAway: pA, pDraw: pD,
+    oddsHome: +(m / pH).toFixed(2),
+    oddsDraw: +(m / pD).toFixed(2),
+    oddsAway: +(m / pA).toFixed(2),
+  };
 };
 
 export const calcExactScoreOdds = (hG, aG, odds) => {
@@ -142,17 +184,23 @@ export const resolveBet = (bet, matchResult) => {
   return false;
 };
 
-// Filtre joueurs : uniquement attaquants et milieux offensifs
+// Filtre joueurs : attaquants et milieux offensifs, triés par priorité buteur
 export const filterScorers = (squad) => {
   if (!squad?.length) return [];
-  const INCLUDE = ["Forward","Midfielder","Centre-Forward","Left Winger","Right Winger","Attacking Midfield","Central Midfield","Left Midfield","Right Midfield","Second Striker","Attacker"];
   const EXCLUDE = ["Goalkeeper","Centre-Back","Left-Back","Right-Back","Defensive Midfield","Sweeper","Keeper","Goalie"];
+  // Priorité : attaquants d'abord, milieux ensuite
+  const priority = (pos) => {
+    if (["Centre-Forward","Second Striker","Attacker","Forward"].some(p => pos.includes(p))) return 0;
+    if (["Left Winger","Right Winger","Attacking Midfield","Winger"].some(p => pos.includes(p))) return 1;
+    if (["Central Midfield","Left Midfield","Right Midfield","Midfielder"].some(p => pos.includes(p))) return 2;
+    return 3;
+  };
   return squad
     .filter(p => {
       const pos = p.position || "";
-      if (EXCLUDE.some(e => pos.includes(e))) return false;
-      return INCLUDE.some(i => pos.includes(i)) || pos === "Midfielder" || pos === "Forward" || pos === "Attacker";
+      return !EXCLUDE.some(e => pos.includes(e)) && priority(pos) < 3;
     })
+    .sort((a, b) => priority(a.position || "") - priority(b.position || ""))
     .map(p => ({ name: p.name, position: p.position || "" }))
-    .slice(0, 14);
+    .slice(0, 20);
 };

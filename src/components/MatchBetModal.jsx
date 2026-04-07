@@ -14,8 +14,8 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
     setLoadingPlayers(true);
     const timeout=(ms)=>new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),ms));
     Promise.all([
-      match.home_team_id?Promise.race([squadReq(match.home_team_id),timeout(5000)]):Promise.resolve(null),
-      match.away_team_id?Promise.race([squadReq(match.away_team_id),timeout(5000)]):Promise.resolve(null),
+      match.home_team_id?Promise.race([squadReq(match.home_team_id),timeout(9000)]):Promise.resolve(null),
+      match.away_team_id?Promise.race([squadReq(match.away_team_id),timeout(9000)]):Promise.resolve(null),
     ]).then(([hD,aD])=>{
       if(hD?.squad) setHomePlayers(filterScorers(hD.squad));
       if(aD?.squad) setAwayPlayers(filterScorers(aD.squad));
