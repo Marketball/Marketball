@@ -24,7 +24,7 @@ export default function MarketCard({ market, onBet }) {
         </div>
       </div>
       <div style={{ textAlign:"right", flexShrink:0 }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, lineHeight:1, color:p>0.5?"#10b981":"#ef4444", letterSpacing:1 }}>{Math.round(p*100)}<span style={{ fontSize:18 }}>%</span></div>
+        <div className="prob-pct" style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, lineHeight:1, color:p>0.5?"#10b981":"#ef4444", letterSpacing:1 }}>{Math.round(p*100)}<span style={{ fontSize:18 }}>%</span></div>
         <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", letterSpacing:1 }}>OUI</div>
       </div>
     </div>

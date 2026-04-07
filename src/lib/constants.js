@@ -201,9 +201,31 @@ export const GLOBAL_CSS = `
     .show-mobile { display: flex !important; }
     .mobile-header-nav { display: flex !important; }
     .mobile-bottom-nav { display: none !important; }
-    .page-content { padding: 14px 13px 28px !important; }
+    .page-content { padding: 10px 11px 24px !important; }
+
+    /* iOS : empêche le zoom auto sur focus input (déclenché si font-size < 16px) */
+    input, select, textarea { font-size: 16px !important; }
+
+    /* Header ligne 1 plus basse */
+    .header-row1 { height: 42px !important; }
+
+    /* Nav ligne 2 plus compacte */
+    .mobile-header-nav button { padding: 5px 10px !important; font-size: 16px !important; }
+    .mobile-header-nav button span:last-child { font-size: 8px !important; }
+
+    /* Cartes plus compactes */
+    .card-hover { padding: 13px 14px !important; border-radius: 14px !important; }
+
+    /* Modales bottom-sheet */
     .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
-    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; padding: 20px 18px max(20px, env(safe-area-inset-bottom)) !important; }
+    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 20px 20px 0 0 !important; max-height: 92vh !important; padding: 18px 16px max(18px, env(safe-area-inset-bottom)) !important; }
+
+    /* Réduire les grands chiffres dans les cartes */
+    .prob-pct { font-size: 26px !important; }
+    .prob-pct span { font-size: 14px !important; }
+
+    /* Désactiver hover transform sur tactile */
     .card-hover:hover { transform: none; }
+    .btn-animated:hover:not(:disabled) { transform: none; }
   }
 `;
