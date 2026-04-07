@@ -397,23 +397,22 @@ export default function App() {
       <div style={{ position:"absolute", bottom:"10%", right:"10%", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(59,130,246,0.025),transparent 65%)", animation:"floatOrb 15s ease-in-out infinite reverse" }} />
     </div>
 
-    <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.88)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
-      <div style={{ maxWidth:980, margin:"0 auto", padding:"0 16px", display:"flex", alignItems:"center", justifyContent:"space-between", height:54 }}>
-        {/* Logo */}
-        <div onClick={()=>navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, cursor:"pointer" }}>
-          <div style={{ width:32, height:32, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
-          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
+    <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
+      {/* Ligne 1 : logo + droite */}
+      <div style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
+        <div onClick={()=>navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
+          <div style={{ width:28, height:28, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
+          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
         </div>
-        {/* Nav desktop (caché sur mobile) */}
-        <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 8px" }}>
+        {/* Desktop : nav centrale */}
+        <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 10px" }}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>navigateTo(n.id)}
-              style={{ padding:"5px 9px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap" }}>
+            <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ padding:"5px 8px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap" }}>
               {n.icon} {n.label}
             </button>
           ))}
         </nav>
-        {/* Droite desktop */}
+        {/* Desktop : coins + profil */}
         <div className="hide-mobile" style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
           <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
           {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
@@ -424,15 +423,32 @@ export default function App() {
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
           </div>
         </div>
-        {/* Droite mobile : coins compacts */}
-        <div className="show-mobile" style={{ display:"none", gap:6, alignItems:"center" }}>
-          <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.18)", borderRadius:8, padding:"4px 10px", cursor:"pointer" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
+        {/* Mobile : coins compacts */}
+        <div className="show-mobile" style={{ display:"none", gap:5, alignItems:"center" }}>
+          <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.18)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:12, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
           </div>
-          <div style={{ background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.18)", borderRadius:8, padding:"4px 10px" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
+          <div style={{ background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.18)", borderRadius:7, padding:"3px 9px" }}>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:12, letterSpacing:1 }}>💎 {fmt(sc)}</span>
           </div>
         </div>
+      </div>
+      {/* Ligne 2 mobile : nav horizontale scrollable */}
+      <div className="mobile-header-nav" style={{ display:"none", overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px" }}>
+        {[
+          {id:"home",icon:"⚡",label:"Accueil"},
+          {id:"matches",icon:"⚽",label:"Matchs"},
+          {id:"markets",icon:"📊",label:"Marchés"},
+          {id:"wallet",icon:"💰",label:"Wallet"},
+          {id:"leaderboard",icon:"🏆",label:"Top"},
+          {id:"store",icon:"🎁",label:"Store"},
+          {id:"profile",icon:"👤",label:"Profil"},
+        ].map(n=>(
+          <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2, transition:"all 0.15s" }}>
+            <span>{n.icon}</span>
+            <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{n.label}</span>
+          </button>
+        ))}
       </div>
     </div>
 

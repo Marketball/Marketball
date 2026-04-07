@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { calcMatchOdds } from "../lib/amm.js";
+import { calcLiveMatchOdds } from "../lib/amm.js";
 import { compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 
 export default function MatchCard({ match, onBet }) {
@@ -8,7 +8,7 @@ export default function MatchCard({ match, onBet }) {
   const cc=compColor(match.competition);
   const isLive=match.status==="IN_PLAY"||match.status==="PAUSED";
   const isFinished=match.status==="FINISHED";
-  const odds=calcMatchOdds(match);
+  const odds=calcLiveMatchOdds(match);
   const Logo=({logo,name,side})=>{
     const clubColor=getClubColor(name);
     if(logo&&!imgErr[side]) return <img src={logo} alt={name} style={{ width:38,height:38,objectFit:"contain",display:"block",margin:"0 auto 7px",filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.4))" }} onError={()=>setImgErr(e=>({...e,[side]:true}))} />;

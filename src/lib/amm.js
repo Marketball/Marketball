@@ -15,6 +15,56 @@ export const AMM = {
   },
 };
 
+// Cotes live : recalculées en temps réel selon score + minute
+export const calcLiveMatchOdds = (match) => {
+  const base = calcMatchOdds(match);
+  const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
+  if (!isLive || match.elapsed == null) return base;
+
+  const elapsed = Math.max(1, Math.min(90, match.elapsed));
+  const remaining = Math.max(2, 92 - elapsed);
+  const homeScore = match.home_score ?? 0;
+  const awayScore = match.away_score ?? 0;
+  const scoreDiff = homeScore - awayScore;
+
+  let pHome, pAway, pDraw;
+
+  if (scoreDiff === 0) {
+    // Match nul : probabilité de match nul croît avec le temps
+    const tightness = 1 - remaining / 90;
+    pDraw = Math.min(0.78, base.pDraw * (1 + tightness * 2.2));
+    const remProb = 1 - pDraw;
+    const baseSum = base.pHome + base.pAway;
+    pHome = remProb * (base.pHome / baseSum);
+    pAway = remProb * (base.pAway / baseSum);
+  } else {
+    // Écart au score : le retard devient exponentiellemement improbable
+    const gap = Math.abs(scoreDiff);
+    const timePressure = 1 - remaining / 92; // 0 au début → 1 à la fin
+    const comebackProb = Math.exp(-gap * 2.2 * timePressure);
+    if (scoreDiff > 0) {
+      pHome = Math.min(0.97, base.pHome + (1 - base.pHome) * (1 - comebackProb));
+      pDraw  = Math.max(0.005, base.pDraw * comebackProb);
+      pAway  = Math.max(0.005, 1 - pHome - pDraw);
+    } else {
+      pAway = Math.min(0.97, base.pAway + (1 - base.pAway) * (1 - comebackProb));
+      pDraw  = Math.max(0.005, base.pDraw * comebackProb);
+      pHome  = Math.max(0.005, 1 - pAway - pDraw);
+    }
+  }
+
+  const total = pHome + pDraw + pAway;
+  pHome /= total; pDraw /= total; pAway /= total;
+  const m = 1.05;
+  return {
+    pHome, pAway, pDraw,
+    oddsHome: +(m / pHome).toFixed(2),
+    oddsDraw: +(m / pDraw).toFixed(2),
+    oddsAway: +(m / pAway).toFixed(2),
+    isLive: true,
+  };
+};
+
 export const calcMatchOdds = (match) => {
   const BIG = ["Real Madrid","Barcelona","Bayern","Man City","PSG","Liverpool","Arsenal","Chelsea","Inter","Juventus","Atletico","Dortmund","Man United","Tottenham","Newcastle"];
   const MED = ["Monaco","Lyon","Marseille","Sevilla","Villarreal","Napoli","Roma","Lazio","Leverkusen","RB Leipzig","Aston Villa","West Ham","Benfica","Porto","Ajax","Celtic","Feyenoord"];

@@ -148,11 +148,14 @@ export const GLOBAL_CSS = `
   .btn-animated:active:not(:disabled) { transform: scale(0.97); }
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 99px; }
+  .mobile-header-nav { -webkit-overflow-scrolling: touch; }
+  .mobile-header-nav::-webkit-scrollbar { display: none; }
   @media (max-width: 640px) {
     .hide-mobile { display: none !important; }
     .show-mobile { display: flex !important; }
-    .mobile-bottom-nav { display: flex !important; }
-    .page-content { padding: 16px 14px 88px !important; }
+    .mobile-header-nav { display: flex !important; }
+    .mobile-bottom-nav { display: none !important; }
+    .page-content { padding: 14px 13px 28px !important; }
     .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
     .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 22px 22px 0 0 !important; max-height: 92vh !important; padding: 20px 18px max(20px, env(safe-area-inset-bottom)) !important; }
     .card-hover:hover { transform: none; }

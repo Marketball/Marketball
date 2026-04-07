@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { calcMatchOdds, calcExactScoreOdds, calcScorerOdds, calcOverUnderOdds, filterScorers } from "../lib/amm.js";
+import { calcLiveMatchOdds, calcExactScoreOdds, calcScorerOdds, calcOverUnderOdds, filterScorers } from "../lib/amm.js";
 import { fmt } from "../lib/helpers.js";
 import { squadReq } from "../lib/supabase.js";
 
@@ -7,7 +7,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(""),[amount,setAmount]=useState("");
   const [scorerTeam,setScorerTeam]=useState("home"),[homePlayers,setHomePlayers]=useState([]),[awayPlayers,setAwayPlayers]=useState([]),[loadingPlayers,setLoadingPlayers]=useState(false);
   const [homeGoals,setHomeGoals]=useState(1),[awayGoals,setAwayGoals]=useState(1);
-  const odds=calcMatchOdds(match);
+  const odds=calcLiveMatchOdds(match);
 
   useEffect(()=>{
     if(!match.home_team_id&&!match.away_team_id) return;
