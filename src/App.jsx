@@ -162,12 +162,12 @@ export default function App() {
     return()=>clearInterval(interval);
   },[session]);
 
-  const loadProfile=useCallback(async(token,userId)=>{
+  const loadProfile=useCallback(async(token,userId,favoriteClub=null)=>{
     try{
       const data=await req(`profiles?id=eq.${userId}&select=*`,{_token:token});
       if(data?.[0]){setProfile(data[0]);profileRef.current=data[0];}
       else{
-        const np={id:userId,coins:500,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const np={id:userId,coins:500,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
       }
@@ -226,7 +226,8 @@ export default function App() {
 
   const handleAuth=async(token,user)=>{
     setSession({token,user});
-    await loadProfile(token,user.id);
+    const favClub=user.user_metadata?.favorite_club||null;
+    await loadProfile(token,user.id,favClub);
     await loadBets(token,user.id);
     const mb=await loadMatchBets(token,user.id);
     await loadLeaderboard(token);

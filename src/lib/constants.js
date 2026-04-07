@@ -101,6 +101,52 @@ export const COMP_INFO = {
   "U21UEFA":  { name: "Euro U21 Qualif.",           emoji: "🇪🇺", color: "#60a5fa" },
 };
 
+export const POPULAR_CLUBS = [
+  // 🇫🇷 Ligue 1
+  { name:"Paris Saint-Germain", flag:"🇫🇷" },
+  { name:"Marseille",           flag:"🇫🇷" },
+  { name:"Lyon",                flag:"🇫🇷" },
+  { name:"Monaco",              flag:"🇫🇷" },
+  { name:"Lens",                flag:"🇫🇷" },
+  { name:"Lille",               flag:"🇫🇷" },
+  { name:"Nice",                flag:"🇫🇷" },
+  { name:"Rennes",              flag:"🇫🇷" },
+  { name:"Strasbourg",          flag:"🇫🇷" },
+  // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League
+  { name:"Arsenal",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Chelsea",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Liverpool",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Manchester City",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Manchester United",   flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Tottenham",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Newcastle",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Aston Villa",         flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  // 🇪🇸 Liga
+  { name:"Real Madrid",         flag:"🇪🇸" },
+  { name:"Barcelona",           flag:"🇪🇸" },
+  { name:"Atletico Madrid",     flag:"🇪🇸" },
+  { name:"Sevilla",             flag:"🇪🇸" },
+  { name:"Villarreal",          flag:"🇪🇸" },
+  // 🇩🇪 Bundesliga
+  { name:"Bayern Munich",       flag:"🇩🇪" },
+  { name:"Borussia Dortmund",   flag:"🇩🇪" },
+  { name:"Bayer Leverkusen",    flag:"🇩🇪" },
+  { name:"RB Leipzig",          flag:"🇩🇪" },
+  // 🇮🇹 Serie A
+  { name:"Juventus",            flag:"🇮🇹" },
+  { name:"Inter Milan",         flag:"🇮🇹" },
+  { name:"AC Milan",            flag:"🇮🇹" },
+  { name:"Napoli",              flag:"🇮🇹" },
+  { name:"Roma",                flag:"🇮🇹" },
+  { name:"Lazio",               flag:"🇮🇹" },
+  // 🌍 Autres
+  { name:"Ajax",                flag:"🇳🇱" },
+  { name:"Porto",               flag:"🇵🇹" },
+  { name:"Benfica",             flag:"🇵🇹" },
+  { name:"Celtic",              flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
+  { name:"Feyenoord",           flag:"🇳🇱" },
+];
+
 export const CLUB_COLORS = {
   "Arsenal": "#EF0107", "Chelsea": "#034694", "Liverpool": "#C8102E", "Man City": "#6CABDD",
   "Man United": "#DA291C", "Tottenham": "#132257", "Newcastle": "#000000", "Aston Villa": "#670E36",

@@ -39,6 +39,16 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate })
       </div>
       {sub==="starter"&&<div style={{ fontSize:11, color:"#3b82f6", fontWeight:700, cursor:"pointer" }} onClick={()=>onNavigate("subscription")}>Passer Pro →</div>}
     </div>
+    {/* Club favori */}
+    {profile?.favorite_club&&(
+      <div style={{ background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:14, padding:"12px 18px", marginBottom:18, display:"flex", alignItems:"center", gap:12 }}>
+        <span style={{ fontSize:26 }}>⚽</span>
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:1.5, marginBottom:3 }}>CLUB FAVORI</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, color:"#10b981" }}>{profile.favorite_club}</div>
+        </div>
+      </div>
+    )}
     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
       {[{label:"PARIS",val:profile?.total_bets||0,color:"#3b82f6"},{label:"WINS",val:profile?.total_wins||0,color:"#10b981"},{label:"PRECISION",val:`${wr}%`,color:"#a78bfa"}].map(s=>(
         <div key={s.label} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, padding:"16px 10px", textAlign:"center" }}>
