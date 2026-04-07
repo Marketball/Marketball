@@ -65,28 +65,74 @@ export const calcLiveMatchOdds = (match) => {
   };
 };
 
-// Force par équipe (sur 100) — basé sur palmarès, niveau actuel, ELO approximatif
+// Force par équipe (sur 100) — noms exacts API-Football, saison 2024-25
+// IMPORTANT : les clés doivent correspondre aux noms renvoyés par l'API
 const TEAM_STRENGTH = {
-  // Elite mondiale (90-95)
-  "Man City": 93, "Real Madrid": 92, "Bayern": 92, "Liverpool": 90,
-  "Arsenal": 88, "Barcelona": 87, "Inter": 86, "Atletico": 85,
-  "Dortmund": 84, "Leverkusen": 86, "PSG": 85, "Chelsea": 83,
-  "RB Leipzig": 82, "Napoli": 82, "Man United": 81, "Tottenham": 80,
-  "Juventus": 81, "Newcastle": 80, "Aston Villa": 79, "Milan": 80,
-  // Niveau européen (72-79)
-  "Roma": 78, "Lazio": 76, "Sevilla": 76, "Villarreal": 75,
-  "Porto": 77, "Benfica": 76, "Ajax": 75, "Celtic": 73, "Feyenoord": 76,
-  "Monaco": 78, "Lyon": 74, "Marseille": 75, "Lens": 73, "Lille": 76,
-  "West Ham": 76, "Brighton": 75, "Brentford": 73,
-  "Sociedad": 74, "Bilbao": 74, "Betis": 73,
-  "Atalanta": 79, "Fiorentina": 74, "Bologna": 73,
-  "Salzburg": 72, "Club Brugge": 72, "Shakhtar": 73,
+  // ⚽ Elite mondiale
+  "Manchester City":    91,
+  "Bayern Munich":      94,
+  "Liverpool":          93,
+  "Paris Saint-Germain":92,
+  "Arsenal":            90,
+  "Real Madrid":        89,
+  "Internazionale":     88,  // Inter Milan
+  "Inter":              88,
+  "Bayer Leverkusen":   87,
+  "Barcelona":          87,
+  "Atletico Madrid":    85,
+  "Borussia Dortmund":  84,
+  "RB Leipzig":         83,
+  "Chelsea":            83,
+  "AC Milan":           82,
+  "Napoli":             82,
+  "Newcastle":          81,
+  "Juventus":           81,
+  "Aston Villa":        80,
+  "Manchester United":  79,
+  "Tottenham":          79,
+  // 🌍 Niveau européen
+  "Atalanta":           80,
+  "Roma":               78,
+  "Monaco":             78,
+  "Lille":              76,
+  "Porto":              77,
+  "Benfica":            76,
+  "Feyenoord":          76,
+  "Marseille":          75,
+  "Lazio":              75,
+  "Sevilla":            75,
+  "Villarreal":         75,
+  "West Ham":           75,
+  "Brighton":           75,
+  "Fiorentina":         74,
+  "Real Sociedad":      74,
+  "Athletic Club":      74,
+  "Ajax":               74,
+  "Lyon":               74,
+  "Lens":               73,
+  "Celtic":             73,
+  "Brentford":          73,
+  "Betis":              73,
+  "Bologna":            73,
+  "Shakhtar":           73,
+  "Salzburg":           72,
+  "Club Brugge":        72,
+  "Rennes":             70,
+  "Nice":               70,
+  "Strasbourg":         68,
+  "Reims":              67,
 };
 
 const getStrength = (teamName) => {
   if (!teamName) return 65;
+  // 1. Correspondance exacte
+  if (TEAM_STRENGTH[teamName] != null) return TEAM_STRENGTH[teamName];
+  // 2. Le nom de l'équipe CONTIENT une clé (ex: "Paris Saint-Germain" contient "Paris Saint-Germain" ✓)
   const key = Object.keys(TEAM_STRENGTH).find(k => teamName.includes(k));
-  return key ? TEAM_STRENGTH[key] : 65;
+  if (key) return TEAM_STRENGTH[key];
+  // 3. Une clé CONTIENT le nom (sécurité)
+  const key2 = Object.keys(TEAM_STRENGTH).find(k => k.includes(teamName));
+  return key2 ? TEAM_STRENGTH[key2] : 65;
 };
 
 export const calcMatchOdds = (match) => {
