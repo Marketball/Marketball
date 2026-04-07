@@ -69,27 +69,26 @@ export const calcLiveMatchOdds = (match) => {
 // IMPORTANT : les clés doivent correspondre aux noms renvoyés par l'API
 const TEAM_STRENGTH = {
   // ⚽ Elite mondiale
-  "Manchester City":    91,
-  "Bayern Munich":      94,
+  "Manchester City":    91, "Man City":91,
+  "Bayern Munich":      94, "Bayern":94, "FC Bayern":94, "FC Bayern München":94,
   "Liverpool":          93,
-  "Paris Saint-Germain":92,
+  "Paris Saint-Germain":92, "PSG":92, "Paris SG":92, "Paris":92,
   "Arsenal":            90,
   "Real Madrid":        89,
-  "Internazionale":     88,  // Inter Milan
-  "Inter":              88,
+  "Internazionale":     88, "Inter Milan":88, "Inter":88, "FC Internazionale":88,
   "Bayer Leverkusen":   87,
   "Barcelona":          87,
-  "Atletico Madrid":    85,
-  "Borussia Dortmund":  84,
+  "Atletico Madrid":    85, "Atletico de Madrid":85, "Atlético Madrid":85,
+  "Borussia Dortmund":  84, "Dortmund":84, "BVB":84,
   "RB Leipzig":         83,
   "Chelsea":            83,
-  "AC Milan":           82,
+  "AC Milan":           82, "Milan":82,
   "Napoli":             82,
   "Newcastle":          81,
   "Juventus":           81,
   "Aston Villa":        80,
-  "Manchester United":  79,
-  "Tottenham":          79,
+  "Manchester United":  79, "Man United":79, "Man Utd":79,
+  "Tottenham":          79, "Tottenham Hotspur":79, "Spurs":79,
   // 🌍 Niveau européen
   "Atalanta":           80,
   "Roma":               78,
@@ -125,14 +124,18 @@ const TEAM_STRENGTH = {
 
 const getStrength = (teamName) => {
   if (!teamName) return 65;
-  // 1. Correspondance exacte
-  if (TEAM_STRENGTH[teamName] != null) return TEAM_STRENGTH[teamName];
-  // 2. Le nom de l'équipe CONTIENT une clé (ex: "Paris Saint-Germain" contient "Paris Saint-Germain" ✓)
-  const key = Object.keys(TEAM_STRENGTH).find(k => teamName.includes(k));
-  if (key) return TEAM_STRENGTH[key];
-  // 3. Une clé CONTIENT le nom (sécurité)
-  const key2 = Object.keys(TEAM_STRENGTH).find(k => k.includes(teamName));
-  return key2 ? TEAM_STRENGTH[key2] : 65;
+  const n = teamName.toLowerCase();
+  // 1. Correspondance exacte (insensible à la casse)
+  const exactKey = Object.keys(TEAM_STRENGTH).find(k => k.toLowerCase() === n);
+  if (exactKey) return TEAM_STRENGTH[exactKey];
+  // 2. Le nom reçu CONTIENT une clé (insensible à la casse)
+  const containsKey = Object.keys(TEAM_STRENGTH).find(k => n.includes(k.toLowerCase()));
+  if (containsKey) return TEAM_STRENGTH[containsKey];
+  // 3. Une clé CONTIENT le nom reçu
+  const reverseKey = Object.keys(TEAM_STRENGTH).find(k => k.toLowerCase().includes(n));
+  if (reverseKey) return TEAM_STRENGTH[reverseKey];
+  console.warn(`[amm] équipe inconnue: "${teamName}" → force par défaut 65`);
+  return 65;
 };
 
 export const calcMatchOdds = (match) => {
