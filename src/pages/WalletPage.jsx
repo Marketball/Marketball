@@ -67,8 +67,9 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         // Cashout marché AMM
         const isMarketBet=!b.isMatch&&!!b.market_id;
         const isMatchBet=!!b.isMatch;
-        const canCashoutMarket=isPro(profile)&&b.status==="pending"&&isMarketBet&&b.side&&b.amount&&b.id;
-        const canCashoutMatch=isPro(profile)&&b.status==="pending"&&isMatchBet&&b.id;
+        const hasFreeCashout=(profile?.free_cashouts||0)>0;
+        const canCashoutMarket=(isPro(profile)||hasFreeCashout)&&b.status==="pending"&&isMarketBet&&b.side&&b.amount&&b.id;
+        const canCashoutMatch=(isPro(profile)||hasFreeCashout)&&b.status==="pending"&&isMatchBet&&b.id;
         const market=markets?.find(m=>m.id===b.market_id);
         const cashoutMarketVal=canCashoutMarket&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
         const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0; // 75% remboursé

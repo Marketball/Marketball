@@ -163,10 +163,17 @@
   <!-- Créer un marché -->
   <div class="card">
     <div class="card-title">➕ CREER UN MARCHE</div>
+
+    <!-- Toggle type de marché -->
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button id="typeBinBtn" onclick="setMarketType('binary')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #10b981;background:rgba(16,185,129,0.12);color:#10b981;font-weight:800;font-size:13px;cursor:pointer">✅ OUI / NON</button>
+      <button id="typeMultiBtn" onclick="setMarketType('multi')" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:800;font-size:13px;cursor:pointer">🎯 MULTI-CHOIX</button>
+    </div>
+
     <div class="form-grid">
       <div class="form-group full">
         <label>TITRE DU MARCHE *</label>
-        <input class="form-inp" id="mTitle" placeholder="Ex: Mbappe va se mettre en couple avec Ester Exposito ?" />
+        <input class="form-inp" id="mTitle" placeholder="Ex: Qui va gagner le Ballon d'Or 2026 ?" />
       </div>
       <div class="form-group">
         <label>CATEGORIE</label>
@@ -183,7 +190,9 @@
         <label>SOURCE</label>
         <input class="form-inp" id="mSource" placeholder="Ex: TMZ, L'Equipe, Twitter..." value="MarketBall" />
       </div>
-      <div class="form-group">
+
+      <!-- Champs binaires (OUI/NON) -->
+      <div class="form-group" id="binaryFields">
         <label>PROBABILITE INITIALE OUI (%)</label>
         <input class="form-inp" type="number" id="mProb" value="50" min="5" max="95" oninput="updateProbPreview()" />
         <div class="prob-preview">
@@ -191,6 +200,7 @@
           <span class="prob-badge" id="probNon" style="background:rgba(239,68,68,0.12);color:#ef4444">NON 50%</span>
         </div>
       </div>
+
       <div class="form-group">
         <label>DATE DE CLOTURE</label>
         <div class="toggle-row" onclick="toggleNoDate()" style="margin-bottom:8px">
@@ -200,6 +210,14 @@
         <input class="form-inp" type="datetime-local" id="mCloses" />
       </div>
     </div>
+
+    <!-- Champs multi-choix -->
+    <div id="multiFields" style="display:none;margin-top:16px">
+      <label style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;display:block;margin-bottom:10px">OPTIONS (2 à 8) — Entrez chaque choix + sa cote initiale</label>
+      <div id="optionsList"></div>
+      <button onclick="addOption()" style="margin-top:8px;padding:8px 16px;border-radius:9px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);color:#10b981;font-size:12px;font-weight:700;cursor:pointer">+ Ajouter une option</button>
+    </div>
+
     <button class="submit-btn" id="submitBtn" onclick="createMarket()">PUBLIER LE MARCHE →</button>
   </div>
 
@@ -281,6 +299,89 @@ let currentFilter = "open";
 let allMarkets = [];
 let allProposed = [];
 let currentProposedFilter = "pending";
+let currentMarketType = "binary";
+let optionCount = 0;
+let resolveMarketId = null;
+
+function setMarketType(type) {
+  currentMarketType = type;
+  const binBtn = document.getElementById("typeBinBtn");
+  const multiBtn = document.getElementById("typeMultiBtn");
+  const binaryFields = document.getElementById("binaryFields");
+  const multiFields = document.getElementById("multiFields");
+  if (type === "binary") {
+    binaryFields.style.display = "";
+    multiFields.style.display = "none";
+    binBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:2px solid #10b981;background:rgba(16,185,129,0.12);color:#10b981;font-weight:800;font-size:13px;cursor:pointer";
+    multiBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:800;font-size:13px;cursor:pointer";
+  } else {
+    binaryFields.style.display = "none";
+    multiFields.style.display = "block";
+    multiBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:2px solid #f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b;font-weight:800;font-size:13px;cursor:pointer";
+    binBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:800;font-size:13px;cursor:pointer";
+    if (document.getElementById("optionsList").children.length === 0) {
+      addOption("", 2.5); addOption("", 3.0);
+    }
+  }
+}
+
+function addOption(label = "", odds = 2.0) {
+  optionCount++;
+  const id = optionCount;
+  const div = document.createElement("div");
+  div.id = `opt-${id}`;
+  div.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:8px";
+  div.innerHTML = `<input class="form-inp" style="flex:3" placeholder="Ex: Mbappé" value="${label}" id="opt-label-${id}" /><input class="form-inp" type="number" style="flex:1;min-width:70px" placeholder="Cote" value="${odds}" step="0.1" min="1.1" id="opt-odds-${id}" /><button onclick="removeOption(${id})" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;cursor:pointer;font-size:13px;flex-shrink:0;font-family:'DM Sans',sans-serif">✕</button>`;
+  document.getElementById("optionsList").appendChild(div);
+}
+
+function removeOption(id) {
+  const list = document.getElementById("optionsList");
+  if (list.children.length <= 2) { showToast("Minimum 2 options requises", "error"); return; }
+  const el = document.getElementById(`opt-${id}`);
+  if (el) el.remove();
+}
+
+function openResolveModal(id) {
+  const market = allMarkets.find(m => m.id === id);
+  if (!market || !market.options) return;
+  resolveMarketId = id;
+  document.getElementById("resolveTitle").textContent = market.title;
+  const container = document.getElementById("resolveOptions");
+  container.innerHTML = "";
+  (market.options || []).forEach(opt => {
+    const btn = document.createElement("button");
+    btn.style.cssText = "padding:12px 16px;border-radius:10px;border:1px solid rgba(245,158,11,0.2);background:rgba(245,158,11,0.06);color:#f59e0b;font-weight:700;font-size:13px;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:all 0.2s;width:100%";
+    btn.onmouseover = () => btn.style.background = "rgba(245,158,11,0.15)";
+    btn.onmouseout = () => btn.style.background = "rgba(245,158,11,0.06)";
+    btn.textContent = `🏆 ${opt.label}  ·  cote ×${opt.odds}`;
+    btn.onclick = () => confirmResolve(opt.label);
+    container.appendChild(btn);
+  });
+  document.getElementById("resolveModal").style.display = "flex";
+}
+
+function closeResolveModal() {
+  document.getElementById("resolveModal").style.display = "none";
+  resolveMarketId = null;
+}
+
+async function confirmResolve(winningOption) {
+  if (!resolveMarketId) return;
+  if (!confirm(`Confirmer la résolution ?\n\nOption gagnante : "${winningOption}"\n\nLes gains seront distribués automatiquement. Action irréversible.`)) return;
+  closeResolveModal();
+  try {
+    const res = await fetch("/api/resolve-market", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ marketId: resolveMarketId, winningOption, pwd: ADMIN_PASSWORD }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erreur serveur");
+    showToast(`✅ Marché résolu ! ${data.resolved} paris traités.`);
+    loadMarkets();
+  } catch (e) { showToast("Erreur : " + e.message, "error"); }
+}
 
 async function sbReq(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -558,29 +659,34 @@ async function createMarket() {
   const source = document.getElementById("mSource").value.trim() || "MarketBall";
   const noDate = document.getElementById("noDateCheck").checked;
   const closes = document.getElementById("mCloses").value;
-  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
 
   if (!title) { showToast("Le titre est obligatoire !", "error"); return; }
   if (!noDate && !closes) { showToast("Choisis une date de clôture ou coche 'Sans date limite'", "error"); return; }
 
-  const ratio = prob / (100 - prob);
-  const q_no = 100;
-  const q_yes = Math.round(q_no * ratio);
+  let marketPayload;
+
+  if (currentMarketType === "binary") {
+    const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
+    const q_yes = Math.round(100 * prob / (100 - prob));
+    marketPayload = { title, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "binary" };
+  } else {
+    const optionDivs = document.getElementById("optionsList").children;
+    const options = [];
+    for (const div of optionDivs) {
+      const id = div.id.replace("opt-", "");
+      const label = (document.getElementById(`opt-label-${id}`)?.value || "").trim();
+      const odds = parseFloat(document.getElementById(`opt-odds-${id}`)?.value) || 2.0;
+      if (label) options.push({ label, odds: Math.max(1.1, Math.round(odds * 100) / 100) });
+    }
+    if (options.length < 2) { showToast("Au moins 2 options avec un nom sont requises", "error"); return; }
+    marketPayload = { title, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
+  }
 
   const btn = document.getElementById("submitBtn");
-  btn.disabled = true;
-  btn.textContent = "Publication en cours...";
+  btn.disabled = true; btn.textContent = "Publication en cours...";
 
   try {
-    await sbReq("custom_markets", {
-      method: "POST",
-      body: JSON.stringify({
-        title, category, source,
-        closes_at: noDate ? null : new Date(closes).toISOString(),
-        q_yes, q_no, total_volume: 0, participants: 0,
-        status: "open", created_by: "admin",
-      }),
-    });
+    await sbReq("custom_markets", { method: "POST", body: JSON.stringify(marketPayload) });
     showToast("✅ Marché publié !");
     document.getElementById("mTitle").value = "";
     document.getElementById("mSource").value = "MarketBall";
@@ -589,14 +695,16 @@ async function createMarket() {
     document.getElementById("noDateCheck").checked = false;
     document.getElementById("mCloses").disabled = false;
     document.getElementById("mCloses").style.opacity = "1";
+    document.getElementById("optionsList").innerHTML = "";
+    optionCount = 0;
+    setMarketType("binary");
     const d = new Date(Date.now() + 14 * 86400000);
     document.getElementById("mCloses").value = d.toISOString().slice(0, 16);
     updateProbPreview();
     loadMarkets();
   } catch (e) { showToast("Erreur : " + e.message, "error"); }
 
-  btn.disabled = false;
-  btn.textContent = "PUBLIER LE MARCHE →";
+  btn.disabled = false; btn.textContent = "PUBLIER LE MARCHE →";
 }
 
 async function closeMarket(id) {
@@ -670,21 +778,25 @@ function renderMarkets() {
     const isClosed = m.status === "closed";
     const prob = Math.round((Math.exp(m.q_yes / 100) / (Math.exp(m.q_yes / 100) + Math.exp(m.q_no / 100))) * 100);
 
+    const isMulti = m.market_type === "multi";
     return `
       <div class="market-item" style="opacity:${isClosed ? 0.6 : 1}">
         <div style="flex:1;min-width:0">
-          <div class="market-item-title">${m.title}</div>
+          <div class="market-item-title">${isMulti ? "🎯 " : ""}${m.title}</div>
           <div class="market-item-meta">
             <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
-            ${m.source || "MarketBall"} · Clôture: ${closes} · OUI: ${prob}%
+            ${isMulti ? `<span class="cat-badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">Multi-choix · ${(m.options||[]).length} options</span>` : `OUI: ${prob}%`}
+            · ${m.source || "MarketBall"} · Clôture: ${closes}
             ${isClosed ? ' · <span style="color:#6b7280;font-weight:700">FERMÉ</span>' : ''}
             ${m.created_by === "elite_proposed" ? ' · <span style="color:#f59e0b;font-weight:700">👑 Elite</span>' : ''}
           </div>
         </div>
         <div class="actions">
-          <button class="edit-btn" onclick="openEditMarket('${m.id}','${m.title.replace(/'/g,"\\'")}','${m.category}','${(m.source||'').replace(/'/g,"\\'")}')">✏️</button>
+          ${!isMulti ? `<button class="edit-btn" onclick="openEditMarket('${m.id}','${m.title.replace(/'/g,"\\'")}','${m.category}','${(m.source||'').replace(/'/g,"\\'")}')">✏️</button>` : ""}
           ${!isClosed
-            ? `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`
+            ? (isMulti
+                ? `<button class="approve-btn" onclick="openResolveModal('${m.id}')">🎯 Résoudre</button>`
+                : `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`)
             : `<button class="reopen-btn" onclick="reopenMarket('${m.id}')">Rouvrir</button>`
           }
           <button class="delete-btn" onclick="deleteMarket('${m.id}')">🗑</button>
@@ -714,6 +826,21 @@ async function loadMarkets() {
 document.getElementById("editModal").addEventListener("click", function(e) {
   if (e.target === this) closeEditModal();
 });
+document.getElementById("resolveModal").addEventListener("click", function(e) {
+  if (e.target === this) closeResolveModal();
+});
 </script>
+
+<!-- RESOLVE MODAL -->
+<div id="resolveModal" style="display:none;position:fixed;inset:0;background:rgba(3,7,18,0.88);z-index:600;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(16px)">
+  <div onclick="event.stopPropagation()" style="background:#0f172a;border:1px solid rgba(245,158,11,0.25);border-radius:20px;padding:28px 24px;width:420px;max-width:95vw">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:6px;color:#f59e0b">🎯 RÉSOUDRE LE MARCHÉ</div>
+    <div id="resolveTitle" style="font-size:13px;color:rgba(241,245,249,0.4);margin-bottom:20px;line-height:1.5;border-bottom:1px solid rgba(241,245,249,0.06);padding-bottom:14px"></div>
+    <div style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.35);margin-bottom:10px;letter-spacing:0.5px">QUELLE OPTION A GAGNÉ ?</div>
+    <div id="resolveOptions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+    <button onclick="closeResolveModal()" style="width:100%;padding:10px 0;border-radius:10px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Annuler</button>
+  </div>
+</div>
+
 </body>
 </html>

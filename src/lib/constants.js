@@ -70,7 +70,7 @@ export const SPIN_SEGMENTS = [
   { label: "10 MC", value: 10, type: "mc", color: "#3b82f6" },
   { label: "100 MC", value: 100, type: "mc", color: "#ef4444" },
   { label: "20 MC", value: 20, type: "mc", color: "#8b5cf6" },
-  { label: "200 MC", value: 200, type: "mc", color: "#fbbf24" },
+  { label: "CASHOUT", value: 1, type: "cashout", color: "#f97316" },
 ];
 
 export const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];

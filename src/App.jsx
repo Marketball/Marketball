@@ -14,6 +14,7 @@ import Confetti from "./components/ui/Confetti.jsx";
 // Feature components
 import AuthPage from "./components/AuthPage.jsx";
 import BetModal from "./components/BetModal.jsx";
+import MultiBetModal from "./components/MultiBetModal.jsx";
 import MatchBetModal from "./components/MatchBetModal.jsx";
 
 // Pages
@@ -273,6 +274,24 @@ export default function App() {
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
   };
 
+  const handleMultiBetConfirm=async(optionLabel,odds,cost,gain)=>{
+    if(!session) return;
+    const newCoins=(profile?.coins||0)-cost;
+    if(newCoins<0){showToast("Pas assez de MC !","error");return;}
+    const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
+    try{
+      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
+      const upd=markets.map(m=>m.id===betModal.id?{...m,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
+      setMarkets(upd);saveOdds(upd);
+      try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}
+      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
+      setBetModal(null);
+      showToast("Prediction placee ! +5 XP");
+      setTimeout(()=>loadBets(session.token,session.user.id),500);
+      await loadLeaderboard(session.token);
+    }catch(e){showToast(`Erreur : ${e.message}`,"error");}
+  };
+
   const handleMatchBetConfirm=async(match,betType,prediction,amount,gain)=>{
     if(!session) return;
     const newCoins=(profile?.coins||0)-amount;
@@ -293,9 +312,11 @@ export default function App() {
     if(!session) return;
     const updates={last_spin:new Date().toISOString()};
     if(segment.type==="mc") updates.coins=(profile?.coins||0)+segment.value;
-    else updates.store_coins=(profile?.store_coins||0)+segment.value;
+    else if(segment.type==="sc") updates.store_coins=(profile?.store_coins||0)+segment.value;
+    else if(segment.type==="cashout") updates.free_cashouts=(profile?.free_cashouts||0)+1;
     await updateProfile(updates,session.token,session.user.id);
-    showToast(`+${segment.value} ${segment.type==="sc"?"💎 SC":"🪙 MC"} gagnes !`);
+    if(segment.type==="cashout") showToast("🔓 1 Cashout gratuit débloqué ! Dispo dans ton Wallet");
+    else showToast(`+${segment.value} ${segment.type==="sc"?"💎 SC":"🪙 MC"} gagnes !`);
   };
 
   const handleWatchAd=async()=>{
@@ -353,14 +374,18 @@ export default function App() {
   };
 
   const handleCashout=async(bet,cashoutValue,isMatchBet=false)=>{
-    if(!session||!isPro(profile)) return;
+    const hasFree=(profile?.free_cashouts||0)>0;
+    if(!session||(!isPro(profile)&&!hasFree)) return;
     try{
       const table=isMatchBet?"match_bets":"user_bets";
       await req(`${table}?id=eq.${bet.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({status:"cashed_out"})});
       const newCoins=(profile?.coins||0)+cashoutValue;
-      await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({coins:newCoins,updated_at:new Date().toISOString()})});
-      setProfile(p=>({...p,coins:newCoins}));
-      profileRef.current={...profileRef.current,coins:newCoins};
+      const profileUpdate={coins:newCoins,updated_at:new Date().toISOString()};
+      if(!isPro(profile)&&hasFree) profileUpdate.free_cashouts=Math.max(0,(profile?.free_cashouts||0)-1);
+      await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify(profileUpdate)});
+      const newFree=(!isPro(profile)&&hasFree)?Math.max(0,(profile?.free_cashouts||0)-1):(profile?.free_cashouts||0);
+      setProfile(p=>({...p,coins:newCoins,free_cashouts:newFree}));
+      profileRef.current={...profileRef.current,coins:newCoins,free_cashouts:newFree};
       if(isMatchBet) setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
       else setBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));
       showToast(`💰 Cashout ! +${fmt(cashoutValue)} MC récupérés`,"win");
@@ -569,7 +594,10 @@ export default function App() {
       ))}
     </div>
 
-{betModal&&<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />}
+{betModal&&(betModal.market_type==="multi"
+  ?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} />
+  :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />
+)}
     {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
