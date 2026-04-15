@@ -8,6 +8,7 @@ import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds }
 
 // UI components
 import SubBadge from "./components/ui/SubBadge.jsx";
+import Avatar from "./components/ui/Avatar.jsx";
 import Toast from "./components/ui/Toast.jsx";
 import Confetti from "./components/ui/Confetti.jsx";
 
@@ -525,7 +526,10 @@ export default function App() {
         </nav>
         {/* Desktop : coins + profil */}
         <div className="hide-mobile" style={{ display:"flex", gap:5, alignItems:"center", flexShrink:0 }}>
-          <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 9px", borderRadius:7, border:"none", background:"transparent", color:"rgba(241,245,249,0.3)", fontWeight:600, fontSize:11, cursor:"pointer" }}>👤 {username}</button>
+          <button onClick={()=>navigateTo("profile")} style={{ padding:"4px 6px", borderRadius:7, border:"none", background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:7 }}>
+            <Avatar username={username} size={28} radius={8} />
+            <span style={{ color:"rgba(241,245,249,0.5)", fontWeight:600, fontSize:11 }}>{username}</span>
+          </button>
           {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
           <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>

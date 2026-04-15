@@ -1,6 +1,7 @@
 import { BADGES } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getBadge, getLevel } from "../lib/helpers.js";
 import MCBadge from "../components/ui/MCBadge.jsx";
+import Avatar from "../components/ui/Avatar.jsx";
 import SCBadge from "../components/ui/SCBadge.jsx";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import SubBadge from "../components/ui/SubBadge.jsx";
@@ -15,7 +16,10 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate })
     <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(241,245,249,0.02))`, border:`1px solid ${badge.color}20`, borderRadius:20, padding:"22px", marginBottom:18, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)` }} />
       <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:14 }}>
-        <div style={{ width:64, height:64, borderRadius:18, background:`linear-gradient(135deg,${badge.color},${badge.color}66)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:30, flexShrink:0, boxShadow:`0 8px 25px ${badge.glow}` }}>{badge.emoji}</div>
+        <div style={{ position:"relative", flexShrink:0 }}>
+          <Avatar username={username} size={64} radius={18} fontSize={22} />
+          <div style={{ position:"absolute", bottom:-6, right:-6, width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${badge.color},${badge.color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:`0 4px 10px ${badge.glow}`, border:"2px solid #030712" }}>{badge.emoji}</div>
+        </div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:1 }}>{username}</div>
           <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap", alignItems:"center" }}>

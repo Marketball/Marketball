@@ -4,6 +4,7 @@ import { BADGES } from "../lib/constants.js";
 import { getLevel, getBadge, getSubPlan, fmt } from "../lib/helpers.js";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import SubBadge from "../components/ui/SubBadge.jsx";
+import Avatar from "../components/ui/Avatar.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
 
 const WEEKLY_REWARDS = [
@@ -150,15 +151,19 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile }
         const hs=[130,155,130];
         return <div key={p.username} style={{ flex:1, background:`${topColors[vi]}0d`, border:`1px solid ${topColors[vi]}20`, borderRadius:16, padding:"14px 10px", textAlign:"center", height:hs[vi], display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" }}>
           <div style={{ position:"absolute", top:8, left:"50%", transform:"translateX(-50%)", fontSize:20 }}>{medals[vi]}</div>
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:6 }}><Avatar username={p.username} size={38} radius={11} /></div>
           <BadgeTag level={getLevel(p.xp||0)} />
-          <div onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, fontSize:12, color:"#f1f5f9", marginBottom:2, marginTop:6, cursor:"pointer" }}>{p.username}</div>
+          <div onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, fontSize:12, color:"#f1f5f9", marginBottom:2, marginTop:4, cursor:"pointer" }}>{p.username}</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:topColors[vi], letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
         </div>;
       })}
     </div>
     {visibleList.map((p,i)=>(
       <div key={p.username} style={{ background:p.username===username?"rgba(16,185,129,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${p.username===username?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.04)"}`, borderRadius:12, padding:"12px 16px", marginBottom:6, display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:28, height:28, borderRadius:"50%", background:i<3?`linear-gradient(135deg,${topColors[i]},${topColors[i]}88)`:"rgba(241,245,249,0.06)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, flexShrink:0, color:i<3?"#000":"rgba(241,245,249,0.4)" }}>{i+1}</div>
+        <div style={{ position:"relative", flexShrink:0 }}>
+          <Avatar username={p.username} size={36} radius={10} />
+          <div style={{ position:"absolute", bottom:-4, right:-4, width:18, height:18, borderRadius:6, background:i<3?`linear-gradient(135deg,${topColors[i]},${topColors[i]}99)`:"rgba(241,245,249,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Bebas Neue',sans-serif", fontSize:10, color:i<3?"#000":"rgba(241,245,249,0.5)", border:"1.5px solid #030712" }}>{i+1}</div>
+        </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2, flexWrap:"wrap" }}>
             <span onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, color:p.username===username?"#10b981":"#f1f5f9", fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{p.username}</span>
