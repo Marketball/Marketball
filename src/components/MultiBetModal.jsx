@@ -33,7 +33,10 @@ export default function MultiBetModal({ market, onClose, onConfirm, coins }) {
           <button key={opt.label} onClick={() => setSelected(opt.label)}
             style={{ padding:"12px 14px", borderRadius:12, border:`2px solid ${selected===opt.label?"#f59e0b":"rgba(241,245,249,0.07)"}`, background:selected===opt.label?"rgba(245,158,11,0.1)":"transparent", color:selected===opt.label?"#f59e0b":"rgba(241,245,249,0.6)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <span>{opt.label}</span>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, color:selected===opt.label?"#fbbf24":"rgba(241,245,249,0.35)" }}>x{opt.odds}</span>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:selected===opt.label?"#fbbf24":"rgba(241,245,249,0.35)" }}>{opt.pct||Math.round(100/opt.odds)}%</div>
+              <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>×{opt.odds}</div>
+            </div>
           </button>
         ))}
       </div>

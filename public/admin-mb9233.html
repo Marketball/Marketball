@@ -213,7 +213,8 @@
 
     <!-- Champs multi-choix -->
     <div id="multiFields" style="display:none;margin-top:16px">
-      <label style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;display:block;margin-bottom:10px">OPTIONS (2 à 8) — Entrez chaque choix + sa cote initiale</label>
+      <label style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;display:block;margin-bottom:6px">OPTIONS (2 à 8) — Nom + % de chance de gagner</label>
+      <div style="font-size:11px;color:rgba(241,245,249,0.25);margin-bottom:10px">Ex: "Mbappé — 40%" → la cote sera calculée automatiquement (×2.5)</div>
       <div id="optionsList"></div>
       <button onclick="addOption()" style="margin-top:8px;padding:8px 16px;border-radius:9px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);color:#10b981;font-size:12px;font-weight:700;cursor:pointer">+ Ajouter une option</button>
     </div>
@@ -243,6 +244,7 @@
   <div class="edit-modal-box">
     <div class="edit-modal-title">✏️ MODIFIER LE MARCHÉ</div>
     <input type="hidden" id="editId" />
+    <input type="hidden" id="editMarketType" value="binary" />
     <div class="form-group" style="margin-bottom:14px">
       <label>TITRE</label>
       <textarea class="form-inp" id="editTitle" rows="3" style="resize:none;line-height:1.5"></textarea>
@@ -262,14 +264,26 @@
       <label>SOURCE</label>
       <input class="form-inp" id="editSource" />
     </div>
-    <div class="form-group" style="margin-bottom:14px">
-      <label>PROBABILITÉ INITIALE OUI (%)</label>
-      <input class="form-inp" type="number" id="editProb" value="50" min="5" max="95" oninput="updateEditProbPreview()" />
-      <div class="prob-preview">
-        <span class="prob-badge" id="editProbOui" style="background:rgba(16,185,129,0.12);color:#10b981">OUI 50%</span>
-        <span class="prob-badge" id="editProbNon" style="background:rgba(239,68,68,0.12);color:#ef4444">NON 50%</span>
+
+    <!-- Champs binaires dans l'éditeur -->
+    <div id="editBinaryFields" style="margin-bottom:14px">
+      <div class="form-group">
+        <label>PROBABILITÉ OUI (%)</label>
+        <input class="form-inp" type="number" id="editProb" value="50" min="5" max="95" oninput="updateEditProbPreview()" />
+        <div class="prob-preview">
+          <span class="prob-badge" id="editProbOui" style="background:rgba(16,185,129,0.12);color:#10b981">OUI 50%</span>
+          <span class="prob-badge" id="editProbNon" style="background:rgba(239,68,68,0.12);color:#ef4444">NON 50%</span>
+        </div>
       </div>
     </div>
+
+    <!-- Champs multi-choix dans l'éditeur -->
+    <div id="editMultiFields" style="display:none;margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;display:block;margin-bottom:8px">OPTIONS</label>
+      <div id="editOptionsList" style="margin-bottom:8px"></div>
+      <button onclick="addEditOption()" style="padding:7px 14px;border-radius:9px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);color:#10b981;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">+ Ajouter une option</button>
+    </div>
+
     <div class="form-group" style="margin-bottom:14px">
       <label>DATE DE CLÔTURE</label>
       <div class="toggle-row" onclick="toggleEditNoDate()" style="margin-bottom:8px">
@@ -278,6 +292,13 @@
       </div>
       <input class="form-inp" type="datetime-local" id="editCloses" />
     </div>
+
+    <!-- Résolution (tous types) -->
+    <div id="editResolveSection" style="display:none;background:rgba(16,185,129,0.04);border:1px solid rgba(16,185,129,0.15);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#10b981;letter-spacing:0.5px;margin-bottom:10px">🏁 RÉSOUDRE CE MARCHÉ</div>
+      <div id="editResolveButtons" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
     <div style="display:flex;gap:10px;margin-top:18px">
       <button onclick="saveEdit()" style="flex:1;padding:12px 0;border-radius:11px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:800;font-size:14px;cursor:pointer">SAUVEGARDER →</button>
       <button onclick="closeEditModal()" style="padding:12px 20px;border-radius:11px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>
@@ -320,18 +341,18 @@ function setMarketType(type) {
     multiBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:2px solid #f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b;font-weight:800;font-size:13px;cursor:pointer";
     binBtn.style.cssText = "flex:1;padding:10px;border-radius:10px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:800;font-size:13px;cursor:pointer";
     if (document.getElementById("optionsList").children.length === 0) {
-      addOption("", 2.5); addOption("", 3.0);
+      addOption("", 40); addOption("", 35);
     }
   }
 }
 
-function addOption(label = "", odds = 2.0) {
+function addOption(label = "", pct = 33) {
   optionCount++;
   const id = optionCount;
   const div = document.createElement("div");
   div.id = `opt-${id}`;
   div.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:8px";
-  div.innerHTML = `<input class="form-inp" style="flex:3" placeholder="Ex: Mbappé" value="${label}" id="opt-label-${id}" /><input class="form-inp" type="number" style="flex:1;min-width:70px" placeholder="Cote" value="${odds}" step="0.1" min="1.1" id="opt-odds-${id}" /><button onclick="removeOption(${id})" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;cursor:pointer;font-size:13px;flex-shrink:0;font-family:'DM Sans',sans-serif">✕</button>`;
+  div.innerHTML = `<input class="form-inp" style="flex:3" placeholder="Ex: Mbappé" value="${label}" id="opt-label-${id}" /><div style="position:relative;flex:1;min-width:80px"><input class="form-inp" type="number" style="width:100%;padding-right:28px" placeholder="%" value="${pct}" step="1" min="1" max="99" id="opt-pct-${id}" /><span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:rgba(241,245,249,0.3);pointer-events:none">%</span></div><button onclick="removeOption(${id})" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;cursor:pointer;font-size:13px;flex-shrink:0;font-family:'DM Sans',sans-serif">✕</button>`;
   document.getElementById("optionsList").appendChild(div);
 }
 
@@ -576,33 +597,41 @@ function editProposed(id, title, category) {
 
 async function saveEdit() {
   const id = document.getElementById("editId").value;
+  const marketType = document.getElementById("editMarketType").value;
   const title = document.getElementById("editTitle").value.trim();
   const category = document.getElementById("editCategory").value;
   const source = document.getElementById("editSource").value.trim();
-  const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
   const noDate = document.getElementById("editNoDateCheck").checked;
   const closes = document.getElementById("editCloses").value;
-  const q_yes = Math.round(100 * prob / (100 - prob));
-  const q_no = 100;
   if (!title) { showToast("Titre obligatoire", "error"); return; }
+
+  let patch;
+  if (marketType === "multi") {
+    const optionDivs = document.getElementById("editOptionsList").children;
+    const options = [];
+    for (const div of optionDivs) {
+      const eid = div.id.replace("eopt-", "");
+      const label = (document.getElementById(`eopt-label-${eid}`)?.value || "").trim();
+      const pct = Math.max(1, Math.min(99, parseFloat(document.getElementById(`eopt-pct-${eid}`)?.value) || 33));
+      const odds = Math.round((100 / pct) * 100) / 100;
+      if (label) options.push({ label, pct, odds });
+    }
+    if (options.length < 2) { showToast("Minimum 2 options requises", "error"); return; }
+    patch = { title, category, source, options, closes_at: noDate ? null : new Date(closes).toISOString() };
+  } else {
+    const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
+    const q_yes = Math.round(100 * prob / (100 - prob));
+    patch = { title, category, source, q_yes, q_no: 100, closes_at: noDate ? null : new Date(closes).toISOString() };
+  }
 
   if (editProposedId) {
     try {
       const proposedItem = allProposed.find(p => p.id === editProposedId);
       await sbReq("custom_markets", {
         method: "POST",
-        body: JSON.stringify({
-          title, category, source,
-          proposed_by: proposedItem?.proposed_by || null,
-          closes_at: noDate ? null : new Date(closes).toISOString(),
-          q_yes, q_no, total_volume: 0, participants: 0,
-          status: "open", created_by: "elite_proposed",
-        }),
+        body: JSON.stringify({ ...patch, proposed_by: proposedItem?.proposed_by || null, q_yes: patch.q_yes||100, q_no: patch.q_no||100, total_volume: 0, participants: 0, status: "open", created_by: "elite_proposed", market_type: marketType }),
       });
-      await sbReq(`proposed_markets?id=eq.${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "approved", admin_note: "Modifié avant publication" }),
-      });
+      await sbReq(`proposed_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "approved", admin_note: "Modifié avant publication" }) });
       showToast("✅ Marché modifié et publié !");
       editProposedId = null;
       closeEditModal();
@@ -610,10 +639,7 @@ async function saveEdit() {
     } catch (e) { showToast("Erreur : " + e.message, "error"); }
   } else {
     try {
-      await sbReq(`custom_markets?id=eq.${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ title, category, source, q_yes, q_no, closes_at: noDate ? null : new Date(closes).toISOString() }),
-      });
+      await sbReq(`custom_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(patch) });
       showToast("✅ Marché modifié !");
       closeEditModal();
       loadMarkets();
@@ -675,8 +701,9 @@ async function createMarket() {
     for (const div of optionDivs) {
       const id = div.id.replace("opt-", "");
       const label = (document.getElementById(`opt-label-${id}`)?.value || "").trim();
-      const odds = parseFloat(document.getElementById(`opt-odds-${id}`)?.value) || 2.0;
-      if (label) options.push({ label, odds: Math.max(1.1, Math.round(odds * 100) / 100) });
+      const pct = Math.max(1, Math.min(99, parseFloat(document.getElementById(`opt-pct-${id}`)?.value) || 33));
+      const odds = Math.round((100 / pct) * 100) / 100; // ex: 40% → ×2.5
+      if (label) options.push({ label, pct, odds });
     }
     if (options.length < 2) { showToast("Au moins 2 options avec un nom sont requises", "error"); return; }
     marketPayload = { title, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
@@ -724,16 +751,54 @@ async function reopenMarket(id) {
   } catch { showToast("Erreur", "error"); }
 }
 
-function openEditMarket(id, title, category, source, closesAt, prob) {
+let editOptionCount = 0;
+
+function addEditOption(label = "", pct = 33) {
+  editOptionCount++;
+  const id = editOptionCount;
+  const div = document.createElement("div");
+  div.id = `eopt-${id}`;
+  div.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:8px";
+  div.innerHTML = `<input class="form-inp" style="flex:3" placeholder="Ex: Mbappé" value="${label}" id="eopt-label-${id}" /><div style="position:relative;flex:1;min-width:80px"><input class="form-inp" type="number" style="width:100%;padding-right:28px" placeholder="%" value="${pct}" step="1" min="1" max="99" id="eopt-pct-${id}" /><span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:rgba(241,245,249,0.3);pointer-events:none">%</span></div><button onclick="removeEditOption(${id})" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;cursor:pointer;font-size:13px;flex-shrink:0;font-family:'DM Sans',sans-serif">✕</button>`;
+  document.getElementById("editOptionsList").appendChild(div);
+}
+
+function removeEditOption(id) {
+  const list = document.getElementById("editOptionsList");
+  if (list.children.length <= 2) { showToast("Minimum 2 options requises", "error"); return; }
+  const el = document.getElementById(`eopt-${id}`);
+  if (el) el.remove();
+}
+
+function openEditMarket(id) {
+  const market = allMarkets.find(m => m.id === id);
+  if (!market) return;
   editProposedId = null;
+  editOptionCount = 0;
+  const isMulti = market.market_type === "multi";
+
   document.getElementById("editId").value = id;
-  document.getElementById("editTitle").value = title;
-  document.getElementById("editCategory").value = category;
-  document.getElementById("editSource").value = source || "MarketBall";
-  document.getElementById("editProb").value = prob || 50;
-  if (closesAt) {
+  document.getElementById("editMarketType").value = market.market_type || "binary";
+  document.getElementById("editTitle").value = market.title || "";
+  document.getElementById("editCategory").value = market.category || "Rumeurs";
+  document.getElementById("editSource").value = market.source || "MarketBall";
+
+  // Toggle binary/multi fields
+  document.getElementById("editBinaryFields").style.display = isMulti ? "none" : "";
+  document.getElementById("editMultiFields").style.display = isMulti ? "block" : "none";
+
+  if (isMulti) {
+    document.getElementById("editOptionsList").innerHTML = "";
+    (market.options || []).forEach(opt => addEditOption(opt.label, opt.pct || Math.round(100 / opt.odds)));
+  } else {
+    const prob = Math.round((Math.exp(market.q_yes / 100) / (Math.exp(market.q_yes / 100) + Math.exp(market.q_no / 100))) * 100);
+    document.getElementById("editProb").value = prob;
+    updateEditProbPreview();
+  }
+
+  if (market.closes_at) {
     document.getElementById("editNoDateCheck").checked = false;
-    document.getElementById("editCloses").value = new Date(closesAt).toISOString().slice(0, 16);
+    document.getElementById("editCloses").value = new Date(market.closes_at).toISOString().slice(0, 16);
     document.getElementById("editCloses").disabled = false;
     document.getElementById("editCloses").style.opacity = "1";
   } else {
@@ -741,7 +806,41 @@ function openEditMarket(id, title, category, source, closesAt, prob) {
     document.getElementById("editCloses").disabled = true;
     document.getElementById("editCloses").style.opacity = "0.3";
   }
-  updateEditProbPreview();
+
+  // Section résolution (seulement pour marchés ouverts)
+  const resolveSection = document.getElementById("editResolveSection");
+  const resolveButtons = document.getElementById("editResolveButtons");
+  if (market.status === "open") {
+    resolveSection.style.display = "block";
+    resolveButtons.innerHTML = "";
+    const options = isMulti ? (market.options || []).map(o => ({ label: o.label })) : [{ label: "OUI ✅", side: "yes" }, { label: "NON ❌", side: "no" }];
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      const sideVal = opt.side || opt.label;
+      btn.style.cssText = "padding:10px 14px;border-radius:10px;border:1px solid rgba(16,185,129,0.25);background:rgba(16,185,129,0.06);color:#10b981;font-weight:700;font-size:13px;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:background 0.2s";
+      btn.onmouseover = () => btn.style.background = "rgba(16,185,129,0.15)";
+      btn.onmouseout = () => btn.style.background = "rgba(16,185,129,0.06)";
+      btn.innerHTML = `🏁 ${opt.label} a gagné`;
+      btn.onclick = async () => {
+        if (!confirm(`Résoudre : "${opt.label}" a gagné ?\n\nLes gains seront distribués. Action irréversible.`)) return;
+        closeEditModal();
+        try {
+          const r = await fetch("/api/resolve-market", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ marketId: id, winningOption: sideVal, pwd: ADMIN_PASSWORD }),
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Erreur serveur");
+          showToast(`✅ Résolu ! ${data.resolved} paris traités.`);
+          loadMarkets();
+        } catch (e) { showToast("Erreur : " + e.message, "error"); }
+      };
+      resolveButtons.appendChild(btn);
+    });
+  } else {
+    resolveSection.style.display = "none";
+  }
+
   document.getElementById("editModal").classList.add("open");
 }
 
@@ -792,7 +891,7 @@ function renderMarkets() {
           </div>
         </div>
         <div class="actions">
-          ${!isMulti ? `<button class="edit-btn" onclick="openEditMarket('${m.id}','${m.title.replace(/'/g,"\\'")}','${m.category}','${(m.source||'').replace(/'/g,"\\'")}')">✏️</button>` : ""}
+          <button class="edit-btn" onclick="openEditMarket('${m.id}')">✏️</button>
           ${!isClosed
             ? (isMulti
                 ? `<button class="approve-btn" onclick="openResolveModal('${m.id}')">🎯 Résoudre</button>`
