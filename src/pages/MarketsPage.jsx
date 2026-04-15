@@ -11,6 +11,7 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
   const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
   const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
   const filtered=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
+  const trendingId=openMarkets.length>0?openMarkets.reduce((best,m)=>m.total_volume>best.total_volume?m:best,openMarkets[0]).id:null;
 
   const handlePropose=async({title,category,proposed_by})=>{
     try{
@@ -59,7 +60,7 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
 
     <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c}</button>)}</div>
     {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
-    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
+    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} />)}</div>
     {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
 }

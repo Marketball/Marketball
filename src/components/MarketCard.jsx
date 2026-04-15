@@ -4,7 +4,7 @@ import { catColor, timeLeft, fmt } from "../lib/helpers.js";
 import ProbBar from "./ui/ProbBar.jsx";
 import ShareMenu from "./ShareMenu.jsx";
 
-export default function MarketCard({ market, onBet }) {
+export default function MarketCard({ market, onBet, isNew, isTrending }) {
   const [hover,setHover]=useState(false);
   const [showShare,setShowShare]=useState(false);
   const isMulti=market.market_type==="multi";
@@ -18,6 +18,8 @@ export default function MarketCard({ market, onBet }) {
         <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
           <span style={{ fontSize:10, fontWeight:700, color:cc, background:`${cc}12`, padding:"2px 8px", borderRadius:20, border:`1px solid ${cc}20` }}>{market.category}</span>
           {isMulti&&<span style={{ fontSize:10, fontWeight:700, color:"#f59e0b", background:"rgba(245,158,11,0.1)", padding:"2px 8px", borderRadius:20, border:"1px solid rgba(245,158,11,0.2)" }}>🎯 {options.length} choix</span>}
+          {isNew&&<span style={{ fontSize:10, fontWeight:700, color:"#f97316", background:"rgba(249,115,22,0.12)", padding:"2px 8px", borderRadius:20, border:"1px solid rgba(249,115,22,0.25)", animation:"pulse 2s infinite" }}>🔥 NOUVEAU</span>}
+          {isTrending&&!isNew&&<span style={{ fontSize:10, fontWeight:700, color:"#a78bfa", background:"rgba(167,139,250,0.1)", padding:"2px 8px", borderRadius:20, border:"1px solid rgba(167,139,250,0.2)" }}>📈 TENDANCE</span>}
           <span style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>⏱ {timeLeft(market.closes_at)}</span>
         </div>
         <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", lineHeight:1.4, marginBottom:3 }}>{market.title}</div>
