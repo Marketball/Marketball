@@ -396,7 +396,7 @@ export default function App() {
     return true;
   };
 
-  if(showAuthModal&&!session) return <AuthPage onAuth={(t,u)=>{setShowAuthModal(false);handleAuth(t,u);}} onClose={()=>setShowAuthModal(false)} modal />;
+  if(showAuthModal&&!session) return <AuthPage onAuth={handleAuth} />;
   if(!session) return (
     <div style={{ minHeight:"100vh", background:"#030712", fontFamily:"'DM Sans',sans-serif", color:"#f1f5f9" }}>
       <style>{GLOBAL_CSS}</style>
@@ -404,20 +404,34 @@ export default function App() {
         <div style={{ position:"absolute", top:"5%", left:"15%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.03),transparent 65%)", animation:"floatOrb 12s ease-in-out infinite" }} />
         <div style={{ position:"absolute", bottom:"10%", right:"10%", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(59,130,246,0.025),transparent 65%)", animation:"floatOrb 15s ease-in-out infinite reverse" }} />
       </div>
-      {/* Header visiteur */}
+      {/* Header identique au mode connecté */}
       <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
-        <div style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }} onClick={()=>{}}>
+        <div className="header-row1" style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
+          <div onClick={()=>setPage("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
             <div style={{ width:28, height:28, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
           </div>
-          <button onClick={()=>setShowAuthModal(true)} style={{ padding:"7px 18px", borderRadius:8, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:0.5 }}>
-            Se connecter
-          </button>
+          <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 10px" }}>
+            {NAV.map(n=>(
+              <button key={n.id} onClick={()=>setPage(n.id)} style={{ padding:"5px 8px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap" }}>
+                {n.icon} {n.label}
+              </button>
+            ))}
+          </nav>
+          <div className="hide-mobile" style={{ flexShrink:0 }}>
+            <button onClick={()=>setShowAuthModal(true)} style={{ padding:"6px 16px", borderRadius:8, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:0.5 }}>
+              👤 Se connecter
+            </button>
+          </div>
+          <div className="show-mobile" style={{ display:"none" }}>
+            <button onClick={()=>setShowAuthModal(true)} style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+              Se connecter
+            </button>
+          </div>
         </div>
-        <div style={{ overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px", display:"flex" }}>
-          {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"}].map(n=>(
-            <button key={n.id} onClick={()=>setPage(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2 }}>
+        <div className="mobile-header-nav" style={{ display:"none", overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px" }}>
+          {NAV.map(n=>(
+            <button key={n.id} onClick={()=>setPage(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2, transition:"all 0.15s" }}>
               <span>{n.icon}</span>
               <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{n.label}</span>
             </button>
@@ -430,10 +444,33 @@ export default function App() {
         <button onClick={()=>setShowAuthModal(true)} style={{ marginLeft:10, padding:"4px 14px", borderRadius:6, border:"none", background:"#10b981", color:"#030712", fontWeight:700, fontSize:12, cursor:"pointer" }}>Créer un compte</button>
       </div>
       {/* Contenu public */}
-      <div style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
+      <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
         {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
         {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
         {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} />}
+        {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard} username="" onViewProfile={()=>setShowAuthModal(true)} />}
+        {(page==="wallet"||page==="store"||page==="subscription"||page==="profile"||page==="howto")&&(
+          <div style={{ textAlign:"center", padding:"60px 20px" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
+            <div style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Connecte-toi pour accéder</div>
+            <div style={{ fontSize:14, color:"rgba(241,245,249,0.4)", marginBottom:24 }}>Cette section est réservée aux membres MarketBall</div>
+            <button onClick={()=>setShowAuthModal(true)} style={{ padding:"12px 32px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>Créer un compte gratuit</button>
+          </div>
+        )}
+      </div>
+      {/* Bottom nav mobile visiteur */}
+      <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,7,18,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(241,245,249,0.07)", paddingBottom:"env(safe-area-inset-bottom)" }}>
+        {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"},{id:"leaderboard",icon:"🏆",label:"Top"}].map(n=>(
+          <button key={n.id} onClick={()=>setPage(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
+            {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
+            <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>
+            <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{n.label}</span>
+          </button>
+        ))}
+        <button onClick={()=>setShowAuthModal(true)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:"#10b981", cursor:"pointer" }}>
+          <span style={{ fontSize:20, lineHeight:1 }}>👤</span>
+          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>Connexion</span>
+        </button>
       </div>
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     </div>
