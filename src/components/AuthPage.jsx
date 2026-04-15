@@ -2,7 +2,7 @@ import { useState } from "react";
 import { authReq } from "../lib/supabase.js";
 import { GLOBAL_CSS, POPULAR_CLUBS } from "../lib/constants.js";
 
-export default function AuthPage({ onAuth }) {
+export default function AuthPage({ onAuth, onClose, modal }) {
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
@@ -37,6 +37,36 @@ export default function AuthPage({ onAuth }) {
 
   const inputStyle={ width:"100%", padding:"12px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:14, outline:"none", boxSizing:"border-box" };
   const labelStyle={ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", display:"block", marginBottom:7 };
+
+  if(modal) return <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={e=>e.target===e.currentTarget&&onClose?.()}>
+    <div style={{ width:"100%", maxWidth:430, position:"relative", zIndex:1, animation:"fadeInUp 0.3s ease" }}>
+      <button onClick={onClose} style={{ position:"absolute", top:-12, right:-12, width:32, height:32, borderRadius:"50%", border:"1px solid rgba(241,245,249,0.1)", background:"rgba(241,245,249,0.05)", color:"rgba(241,245,249,0.5)", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2 }}>✕</button>
+      <div style={{ background:"rgba(10,14,28,0.98)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:22, padding:"28px 24px", boxShadow:"0 40px 80px rgba(0,0,0,0.6)" }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:4 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:4 }}>Parie sur les transferts et matchs — 100% gratuit</div>
+        </div>
+        <div style={{ display:"flex", background:"rgba(241,245,249,0.03)", borderRadius:13, padding:4, marginBottom:20 }}>
+          {["login","signup"].map(m=>(
+            <button key={m} onClick={()=>{setMode(m);setError("");setFavoriteClub("");setClubSearch("");}}
+              style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:mode===m?"rgba(16,185,129,0.15)":"transparent", color:mode===m?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
+              {m==="login"?"Connexion":"Inscription"}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {mode==="signup"&&<div><label style={labelStyle}>PSEUDO</label><input value={username} onChange={e=>setUsername(e.target.value)} placeholder="MonPseudo" style={inputStyle} /></div>}
+          <div><label style={labelStyle}>EMAIL</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" style={inputStyle} /></div>
+          <div><label style={labelStyle}>MOT DE PASSE</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()} style={inputStyle} /></div>
+        </div>
+        {error&&<div style={{ marginTop:14, padding:"11px 14px", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:10, color:"#f87171", fontSize:13 }}>⚠️ {error}</div>}
+        <button onClick={submit} disabled={loading} style={{ width:"100%", marginTop:20, padding:"13px 0", borderRadius:12, border:"none", background:loading?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:loading?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:15, cursor:loading?"not-allowed":"pointer", transition:"all 0.2s", boxShadow:loading?"none":"0 8px 25px rgba(16,185,129,0.3)" }}>
+          {loading?"...":mode==="login"?"SE CONNECTER":"CRÉER MON COMPTE →"}
+        </button>
+        <div style={{ marginTop:14, textAlign:"center", fontSize:12, color:"rgba(241,245,249,0.3)" }}>Démarre avec <span style={{ color:"#fbbf24", fontWeight:700 }}>500 🪙 MC</span> gratuits !</div>
+      </div>
+    </div>
+  </div>;
 
   return <div style={{ minHeight:"100vh", background:"#030712", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", overflow:"hidden" }}>
     <style>{GLOBAL_CSS}</style>

@@ -389,7 +389,55 @@ export default function App() {
     {id:"howto",icon:"❓",label:"Guide"},
   ];
 
-  if(!session) return <AuthPage onAuth={handleAuth} />;
+  const [showAuthModal,setShowAuthModal]=useState(false);
+
+  const requireAuth=(action)=>{
+    if(!session){setShowAuthModal(true);return false;}
+    return true;
+  };
+
+  if(showAuthModal&&!session) return <AuthPage onAuth={(t,u)=>{setShowAuthModal(false);handleAuth(t,u);}} onClose={()=>setShowAuthModal(false)} modal />;
+  if(!session) return (
+    <div style={{ minHeight:"100vh", background:"#030712", fontFamily:"'DM Sans',sans-serif", color:"#f1f5f9" }}>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:"5%", left:"15%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.03),transparent 65%)", animation:"floatOrb 12s ease-in-out infinite" }} />
+        <div style={{ position:"absolute", bottom:"10%", right:"10%", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(59,130,246,0.025),transparent 65%)", animation:"floatOrb 15s ease-in-out infinite reverse" }} />
+      </div>
+      {/* Header visiteur */}
+      <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
+        <div style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }} onClick={()=>{}}>
+            <div style={{ width:28, height:28, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>⚽</div>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
+          </div>
+          <button onClick={()=>setShowAuthModal(true)} style={{ padding:"7px 18px", borderRadius:8, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:0.5 }}>
+            Se connecter
+          </button>
+        </div>
+        <div style={{ overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px", display:"flex" }}>
+          {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"}].map(n=>(
+            <button key={n.id} onClick={()=>setPage(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2 }}>
+              <span>{n.icon}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{n.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Bannière CTA */}
+      <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.06))", borderBottom:"1px solid rgba(16,185,129,0.12)", padding:"10px 20px", textAlign:"center" }}>
+        <span style={{ fontSize:13, color:"rgba(241,245,249,0.7)" }}>Rejoins MarketBall — parie des <strong style={{color:"#fbbf24"}}>MC</strong> sur les transferts et matchs, gagne des <strong style={{color:"#10b981"}}>récompenses réelles</strong> </span>
+        <button onClick={()=>setShowAuthModal(true)} style={{ marginLeft:10, padding:"4px 14px", borderRadius:6, border:"none", background:"#10b981", color:"#030712", fontWeight:700, fontSize:12, cursor:"pointer" }}>Créer un compte</button>
+      </div>
+      {/* Contenu public */}
+      <div style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
+        {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
+        {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
+        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} />}
+      </div>
+      {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
+    </div>
+  );
 
   return <div style={{ minHeight:"100vh", background:"#030712", fontFamily:"'DM Sans',sans-serif", color:"#f1f5f9" }}>
     <style>{GLOBAL_CSS}</style>
