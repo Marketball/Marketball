@@ -63,8 +63,8 @@ function PollCard({ poll, session, profile, showToast }) {
           const isPicked = selected === opt;
           const showResult = !!voted || isExpired;
           return (
-            <button key={opt} onClick={() => !voted && !isExpired && session && setSelected(opt)}
-              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.5)":"rgba(241,245,249,0.08)"}`, background:isChosen?"rgba(59,130,246,0.12)":isPicked?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", cursor:voted||isExpired||!session?"default":"pointer", textAlign:"left", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
+            <button key={opt} onClick={() => { if (!voted && !isExpired) setSelected(opt); }}
+              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.5)":"rgba(241,245,249,0.08)"}`, background:isChosen?"rgba(59,130,246,0.12)":isPicked?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", cursor:voted||isExpired?"default":"pointer", textAlign:"left", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
               {showResult && <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${pct}%`, background:isChosen?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)", transition:"width 0.6s ease" }} />}
               <div style={{ position:"relative", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span style={{ fontSize:13, fontWeight:isChosen||isPicked?800:600, color:isChosen?"#60a5fa":isPicked?"#93c5fd":"rgba(241,245,249,0.7)" }}>
