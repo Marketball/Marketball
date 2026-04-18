@@ -2,11 +2,13 @@ import { useState } from "react";
 import { AMM } from "../lib/amm.js";
 import { WEEKLY_MC_LIMIT } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
+import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
 
-export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets }) {
+export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets, session, showToast }) {
   const [convertAmount,setConvertAmount]=useState(1);
-  const [cashoutConfirm,setCashoutConfirm]=useState(null); // { bet, value, isMatch }
+  const [cashoutConfirm,setCashoutConfirm]=useState(null);
+  const [betFilter,setBetFilter]=useState("tous");
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
   const canSpin=Date.now()-lastSpin>86400000;
   const today=new Date().toISOString().split("T")[0];
@@ -15,14 +17,48 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const weekKey=getWeekKey();
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
-  const mcFromConvert=convertAmount*10; // 1 SC = 10 MC
+  const mcFromConvert=convertAmount*10;
+
   const allBets=[
     ...(matchBets||[]).map(b=>({...b,isMatch:true})),
     ...(bets||[]).map(b=>({...b,isMatch:false}))
   ].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
 
+  // Stats historique
+  const resolvedBets=allBets.filter(b=>b.status==="won"||b.status==="lost");
+  const wonBets=resolvedBets.filter(b=>b.status==="won");
+  const totalWagered=resolvedBets.reduce((s,b)=>s+(b.cost||0),0);
+  const netProfit=wonBets.reduce((s,b)=>s+(b.potential_gain||0),0)-totalWagered;
+  const winRate=resolvedBets.length>0?Math.round((wonBets.length/resolvedBets.length)*100):0;
+
+  // Filtre paris
+  const filteredBets=betFilter==="tous"?allBets:betFilter==="encours"?allBets.filter(b=>b.status==="pending"):allBets.filter(b=>b.status!=="pending");
+
+  // Quêtes du jour
+  const todayMarketBets=(bets||[]).filter(b=>(b.created_at||"").startsWith(today));
+  const todayMatchBets=(matchBets||[]).filter(b=>(b.created_at||"").startsWith(today));
+  const questKey=`mb_quests_${today}_${profile?.id||""}`;
+  const [claimedQuests,setClaimedQuests]=useState(()=>{try{return JSON.parse(localStorage.getItem(questKey)||"{}")}catch{return {}}});
+  const quests=[
+    {id:"login",label:"Connexion du jour",desc:"Se connecter aujourd'hui",icon:"🔐",xp:5,progress:1,goal:1},
+    {id:"bet3",label:"Parieur actif",desc:"3 paris sur les marchés",icon:"📊",xp:15,progress:Math.min(todayMarketBets.length,3),goal:3},
+    {id:"matchbet",label:"Fan de matchs",desc:"1 pari sur un match",icon:"⚽",xp:10,progress:Math.min(todayMatchBets.length,1),goal:1},
+  ];
+  const claimQuest=async(questId,xpReward)=>{
+    if(!session||claimedQuests[questId])return;
+    const nc={...claimedQuests,[questId]:true};
+    localStorage.setItem(questKey,JSON.stringify(nc));
+    setClaimedQuests(nc);
+    try{
+      await req(`profiles?id=eq.${profile.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({xp:(profile?.xp||0)+xpReward})});
+      showToast?.(`+${xpReward} XP gagné ! 🎉`);
+    }catch{}
+  };
+
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>WALLET</div>
+
+    {/* Soldes */}
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
       {[{l:"MARKETCOINS",v:coins,c:"#fbbf24",d:"Pour jouer"},{l:"STORECOINS",v:sc,c:"#10b981",d:"Pour les recompenses"}].map(item=>(
         <div key={item.l} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:16, padding:"18px", textAlign:"center", position:"relative", overflow:"hidden" }}>
@@ -33,6 +69,8 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         </div>
       ))}
     </div>
+
+    {/* Convertir SC */}
     <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 18px", marginBottom:14 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#60a5fa", marginBottom:4 }}>CONVERTIR SC EN MC</div>
       <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>1 SC = 10 MC · {remainingLimit} MC disponibles cette semaine</div>
@@ -49,22 +87,80 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         </button>
       </div>
     </div>
+
+    {/* Roue */}
     <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, marginBottom:4 }}>ROUE QUOTIDIENNE</div>
       <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>Jusqu'a 200 MC ou 1 SC par jour !</div>
       <SpinWheel onSpin={onSpin} canSpin={canSpin} />
     </div>
-    <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 20px", marginBottom:22 }}>
+
+    {/* Pub */}
+    <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 20px", marginBottom:14 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
         <div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>PUB RECOMPENSEE</div><div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>+20 MC · {adsToday}/3 aujourd'hui</div></div>
         <button onClick={()=>canAd&&onWatchAd()} disabled={!canAd} style={{ padding:"9px 16px", borderRadius:10, border:"none", background:canAd?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.04)", color:canAd?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:canAd?"pointer":"not-allowed", fontSize:13 }}>{canAd?"REGARDER":"Limite"}</button>
       </div>
       <div style={{ height:3, background:"rgba(59,130,246,0.1)", borderRadius:99, overflow:"hidden" }}><div style={{ width:`${(adsToday/3)*100}%`, height:"100%", background:"linear-gradient(90deg,#3b82f6,#60a5fa)", borderRadius:99, transition:"width 0.5s" }} /></div>
     </div>
+
+    {/* Quêtes du jour */}
+    <div style={{ background:"rgba(167,139,250,0.04)", border:"1px solid rgba(167,139,250,0.1)", borderRadius:16, padding:"16px 18px", marginBottom:20 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#a78bfa", marginBottom:12 }}>⚡ QUÊTES DU JOUR</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {quests.map(q=>{
+          const done=q.progress>=q.goal;
+          const claimed=!!claimedQuests[q.id];
+          return <div key={q.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:10, background:done?"rgba(16,185,129,0.05)":"rgba(241,245,249,0.02)", border:`1px solid ${done?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.05)"}`, transition:"all 0.3s" }}>
+            <span style={{ fontSize:18, flexShrink:0 }}>{q.icon}</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:done?"#10b981":"#f1f5f9", marginBottom:1 }}>{q.label}</div>
+              <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>{q.desc}</div>
+              {!done&&q.goal>1&&<div style={{ marginTop:5, height:3, background:"rgba(241,245,249,0.06)", borderRadius:99 }}><div style={{ width:`${(q.progress/q.goal)*100}%`, height:"100%", background:"#a78bfa", borderRadius:99, transition:"width 0.4s" }} /></div>}
+            </div>
+            <div style={{ flexShrink:0 }}>
+              {claimed
+                ?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>Réclamé ✓</span>
+                :done
+                  ?<button onClick={()=>claimQuest(q.id,q.xp)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 10px rgba(16,185,129,0.25)" }}>+{q.xp} XP</button>
+                  :<span style={{ fontSize:11, color:"rgba(241,245,249,0.3)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }}>{q.progress}/{q.goal}</span>}
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {/* Mes paris */}
     {allBets.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>MES PARIS</div>
-      {allBets.map((b,i)=>{
-        // Cashout marché AMM
+
+      {/* Stats résumé */}
+      {resolvedBets.length>0&&<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
+        {[
+          {label:"MISÉ",val:`🪙 ${fmt(totalWagered)}`,color:"#fbbf24"},
+          {label:"PROFIT NET",val:`${netProfit>=0?"+":""}${fmt(netProfit)}`,color:netProfit>=0?"#10b981":"#ef4444"},
+          {label:"VICTOIRES",val:`${winRate}%`,color:"#a78bfa"},
+        ].map(s=>(
+          <div key={s.label} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:s.color, letterSpacing:1 }}>{s.val}</div>
+            <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", fontWeight:700, letterSpacing:1, marginTop:2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>}
+
+      {/* Filtre */}
+      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+        {[{id:"tous",l:`Tous (${allBets.length})`},{id:"encours",l:`En cours (${allBets.filter(b=>b.status==="pending").length})`},{id:"resolus",l:`Résolus (${allBets.filter(b=>b.status!=="pending").length})`}].map(f=>(
+          <button key={f.id} onClick={()=>setBetFilter(f.id)}
+            style={{ padding:"5px 11px", borderRadius:16, border:`1px solid ${betFilter===f.id?"#a78bfa":"rgba(241,245,249,0.07)"}`, background:betFilter===f.id?"rgba(167,139,250,0.1)":"transparent", color:betFilter===f.id?"#a78bfa":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer", transition:"all 0.2s", whiteSpace:"nowrap" }}>
+            {f.l}
+          </button>
+        ))}
+      </div>
+
+      {filteredBets.length===0&&<div style={{ textAlign:"center", padding:24, color:"rgba(241,245,249,0.25)", fontSize:13 }}>Aucun pari dans cette catégorie</div>}
+
+      {filteredBets.map((b,i)=>{
         const isMarketBet=!b.isMatch&&!!b.market_id;
         const isMatchBet=!!b.isMatch;
         const hasFreeCashout=(profile?.free_cashouts||0)>0;
@@ -72,7 +168,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         const canCashoutMatch=(isPro(profile)||hasFreeCashout)&&b.status==="pending"&&isMatchBet&&b.id;
         const market=markets?.find(m=>m.id===b.market_id);
         const cashoutMarketVal=canCashoutMarket&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
-        const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0; // 75% remboursé
+        const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0;
         const canCashout=canCashoutMarket||canCashoutMatch;
         const cashoutVal=isMarketBet?cashoutMarketVal:cashoutMatchVal;
         return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":b.status==="cashed_out"?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":b.status==="cashed_out"?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>

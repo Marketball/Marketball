@@ -6,11 +6,13 @@ import ProposeMarketModal from "../components/ProposeMarketModal.jsx";
 
 export default function MarketsPage({ markets, onBet, profile, session, showToast }) {
   const [cat,setCat]=useState("Tous");
+  const [search,setSearch]=useState("");
   const [showPropose,setShowPropose]=useState(false);
   const userIsElite=isElite(profile);
   const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
   const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
-  const filtered=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
+  const base=cat==="Tous"?openMarkets:openMarkets.filter(m=>m.category===cat);
+  const filtered=search?base.filter(m=>m.title.toLowerCase().includes(search.toLowerCase())):base;
   const trendingId=openMarkets.length>0?openMarkets.reduce((best,m)=>m.total_volume>best.total_volume?m:best,openMarkets[0]).id:null;
 
   const handlePropose=async({title,category,proposed_by})=>{
@@ -58,8 +60,14 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
       </div>
     )}
 
+    <div style={{ position:"relative",marginBottom:12 }}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un marché..."
+        style={{ width:"100%",padding:"10px 36px 10px 36px",background:"rgba(241,245,249,0.04)",border:"1px solid rgba(241,245,249,0.08)",borderRadius:12,color:"#f1f5f9",fontSize:13,outline:"none",fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box" }} />
+      <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"rgba(241,245,249,0.25)",fontSize:14,pointerEvents:"none" }}>🔍</span>
+      {search&&<button onClick={()=>setSearch("")} style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(241,245,249,0.35)",cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1 }}>×</button>}
+    </div>
     <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c}</button>)}</div>
-    {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>Aucun marché ouvert</div>}
+    {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>{search?"Aucun résultat pour cette recherche":"Aucun marché ouvert"}</div>}
     <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} />)}</div>
     {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
