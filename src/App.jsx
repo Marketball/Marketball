@@ -29,6 +29,7 @@ import SubscriptionPage from "./pages/SubscriptionPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import HowItWorksPage from "./pages/HowItWorksPage.jsx";
 import CommunityPage from "./pages/CommunityPage.jsx";
+import OnboardingModal from "./components/OnboardingModal.jsx";
 
 // PublicProfilePage est dans LeaderboardPage
 import { PublicProfilePage } from "./pages/LeaderboardPage.jsx";
@@ -50,6 +51,7 @@ export default function App() {
   const [matchBetModal,setMatchBetModal]=useState(null);
   const [toast,setToast]=useState(null);
   const [showConfetti,setShowConfetti]=useState(false);
+  const [showOnboarding,setShowOnboarding]=useState(false);
   const [publicProfileUser,setPublicProfileUser]=useState(null);
   const profileRef=useRef(null);
 
@@ -237,6 +239,7 @@ export default function App() {
     const loadedMatches=await loadMatches();
     if(mb?.length) await checkAndResolveBets(token,user.id,loadedMatches,mb);
     await handleDailyStreak(token,user.id);
+    if(!localStorage.getItem("mb_onboarded"))setShowOnboarding(true);
     // Interval unique 60s : recharge matchs + résout les paris terminés
     const interval=setInterval(async()=>{
       const lm=await loadMatches();
@@ -611,5 +614,6 @@ export default function App() {
     {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
+    {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} />}
   </div>;
 }

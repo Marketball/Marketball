@@ -1,9 +1,39 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AMM } from "../lib/amm.js";
 import { WEEKLY_MC_LIMIT } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
+
+function ChartSVG({ points }) {
+  const W=300, H=70, PAD=10;
+  const minV=Math.min(...points), maxV=Math.max(...points);
+  const range=maxV-minV||1;
+  const n=points.length;
+  const toX=i=>n===1?W/2:(i/(n-1))*W;
+  const toY=v=>PAD+(1-(v-minV)/range)*(H-PAD*2);
+  const zeroY=toY(Math.max(0,minV));
+  const ptStr=points.map((v,i)=>`${toX(i)},${toY(v)}`).join(" ");
+  const lastVal=points[n-1];
+  const color=lastVal>=0?"#10b981":"#ef4444";
+  const areaPts=`0,${zeroY} ${ptStr} ${toX(n-1)},${zeroY}`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ overflow:"visible" }}>
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <line x1={0} y1={zeroY} x2={W} y2={zeroY} stroke="rgba(241,245,249,0.07)" strokeWidth={1} strokeDasharray="4,3" />
+      <polygon points={areaPts} fill="url(#chartGrad)" />
+      <polyline points={ptStr} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={toX(n-1)} cy={toY(lastVal)} r={3.5} fill={color} />
+      <text x={W} y={PAD-2} textAnchor="end" fill="rgba(241,245,249,0.3)" fontSize={9} fontFamily="'Bebas Neue',sans-serif">{maxV>=0?`+${maxV.toLocaleString("fr-FR")}`:maxV.toLocaleString("fr-FR")}</text>
+      {minV<0&&<text x={W} y={H+2} textAnchor="end" fill="rgba(241,245,249,0.3)" fontSize={9} fontFamily="'Bebas Neue',sans-serif">{minV.toLocaleString("fr-FR")}</text>}
+    </svg>
+  );
+}
 
 export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets, session, showToast }) {
   const [convertAmount,setConvertAmount]=useState(1);
@@ -30,6 +60,12 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const totalWagered=resolvedBets.reduce((s,b)=>s+(b.cost||0),0);
   const netProfit=wonBets.reduce((s,b)=>s+(b.potential_gain||0),0)-totalWagered;
   const winRate=resolvedBets.length>0?Math.round((wonBets.length/resolvedBets.length)*100):0;
+  const chartPoints=useMemo(()=>{
+    const asc=[...resolvedBets].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+    let cum=0;
+    const pts=[0,...asc.map(b=>{cum+=b.status==="won"?(b.potential_gain||0)-(b.cost||0):-(b.cost||0);return cum;})];
+    return pts;
+  },[resolvedBets.length]);
 
   // Filtre paris
   const filteredBets=betFilter==="tous"?allBets:betFilter==="encours"?allBets.filter(b=>b.status==="pending"):allBets.filter(b=>b.status!=="pending");
@@ -146,6 +182,15 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
             <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", fontWeight:700, letterSpacing:1, marginTop:2 }}>{s.label}</div>
           </div>
         ))}
+      </div>}
+
+      {/* Graphique profit cumulé */}
+      {chartPoints.length>2&&<div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:0.5 }}>PROFIT CUMULÉ</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:netProfit>=0?"#10b981":"#ef4444", letterSpacing:1 }}>{netProfit>=0?"+":""}{fmt(netProfit)} MC</div>
+        </div>
+        <ChartSVG points={chartPoints} />
       </div>}
 
       {/* Filtre */}
