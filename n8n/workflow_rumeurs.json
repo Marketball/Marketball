@@ -1,0 +1,318 @@
+{
+  "name": "MarketBall — Rumeurs Transferts (18h quotidien)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily-18h",
+      "name": "Tous les jours à 18h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [-1800, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/quacker~twitter-scraper/run-sync-get-dataset-items?timeout=120",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "=Bearer VOTRE_CLE_APIFY_ICI" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"handles\": [\"FabrizioRomano\", \"David_Ornstein\", \"DiMarzio\", \"MatteMoretto\", \"BenJacobs\", \"GianlucaDiMarzio\", \"SkyKaranovic\", \"RomarioBalbi\", \"RobertOConnor_\", \"iMiaSalvio\"], \"tweetsDesired\": 3, \"addUserInfo\": true, \"proxyConfig\": { \"useApifyProxy\": true } }",
+        "options": { "timeout": 120000 }
+      },
+      "id": "node-apify",
+      "name": "Scrape Tweets (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-1600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ACCOUNTS = {\n  'fabrizioromano':   { name: 'Fabrizio Romano',    reliability: 96, tier: 1 },\n  'david_ornstein':   { name: 'David Ornstein',     reliability: 92, tier: 1 },\n  'dimarzio':         { name: 'Gianluca Di Marzio', reliability: 91, tier: 1 },\n  'mattemoretto':     { name: 'Matteo Moretto',     reliability: 90, tier: 1 },\n  'benjacobs':        { name: 'Ben Jacobs',         reliability: 88, tier: 1 },\n  'gianlucadimarzio': { name: 'GDM Transfers',      reliability: 85, tier: 2 },\n  'skykaranovic':     { name: 'Dharmesh Sheth',     reliability: 82, tier: 2 },\n  'romariobalbi':     { name: 'Romano Balbi',       reliability: 78, tier: 2 },\n  'robertoconnor_':   { name: 'Robert O Connor',    reliability: 75, tier: 2 },\n  'imiasalvio':       { name: 'Mia Salvio',         reliability: 72, tier: 2 }\n};\n\nconst items = $input.all();\nconst tweets = [];\n\nfor (const item of items) {\n  const tweet = item.json;\n  const text = tweet.full_text || tweet.text || tweet.tweetText || tweet.body || '';\n  const tweetId = tweet.id_str || tweet.id || tweet.tweetId || `gen_${Date.now()}_${Math.random()}`;\n  const handle = (tweet.user?.screen_name || tweet.author?.userName || tweet.authorMeta?.screenName || '').toLowerCase();\n  const meta = ACCOUNTS[handle] || { name: handle, reliability: 60, tier: 3 };\n\n  if (!text || text.startsWith('RT @') || text.startsWith('@') || text.length < 30) continue;\n\n  const normalized = text.toLowerCase().replace(/[^a-z0-9àéèêùôîï]/g, '').substring(0, 120);\n  const contentHash = Buffer.from(normalized).toString('base64').substring(0, 24);\n  const words = text.toLowerCase().split(/\\s+/).filter(w => w.length > 5);\n  const semanticHash = Buffer.from(words.slice(0, 8).sort().join('')).toString('base64').substring(0, 16);\n\n  tweets.push({ json: {\n    tweet_id:           String(tweetId),\n    content_hash:       contentHash,\n    semantic_hash:      semanticHash,\n    text:               text.substring(0, 600),\n    created_at:         tweet.created_at || tweet.createdAt || new Date().toISOString(),\n    author_handle:      handle,\n    author_name:        meta.name,\n    source_reliability: meta.reliability,\n    source_tier:        meta.tier,\n    likes:              tweet.favorite_count || tweet.likeCount || tweet.likes || 0,\n    retweets:           tweet.retweet_count || tweet.retweetCount || tweet.retweets || 0,\n    url:                tweet.url || tweet.tweetUrl || `https://twitter.com/${handle}/status/${tweetId}`\n  }});\n}\n\nconsole.log(`Tweets récupérés : ${tweets.length}`);\nreturn tweets.length > 0 ? tweets : [{ json: { error: 'aucun tweet valide' } }];\n"
+      },
+      "id": "node-formatter",
+      "name": "Formater + Double Hash",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "transfer|signing|loan|deal|bid|offer|agreement|here we go|done deal|medical|visite médicale|transfert|prêt|accord|offre|negoci|traspaso|fichaje|mercato|rinnovo|firma|prestito|signing confirmed|accord trouvé|en route|officialisé|officiel",
+              "operator": { "type": "string", "operation": "regex" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-filter",
+      "name": "Filtre mots-clés transfert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-1200, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/rumors",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select", "value": "rumor_id,content_hash,semantic_hash,player_name,to_club,source_handles,confirmation_count,reliability,status,odd_yes,odd_no,created_at" },
+            { "name": "status", "value": "eq.open" },
+            { "name": "created_at", "value": "=gte.={{ $now.minus(7, 'days').toISO() }}" },
+            { "name": "limit", "value": "300" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-load-rumors",
+      "name": "Charger rumeurs existantes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-1000, 160],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const tweet = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/rumors?select=rumor_id,content_hash,semantic_hash,player_name,source_handles,reliability,odd_yes,odd_no&status=eq.open&limit=300',\n  headers: {\n    'apikey': 'sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK',\n    'Authorization': 'Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK'\n  }\n});\nconst existing = Array.isArray(response) ? response : [];\n\nconst exactMatch = existing.find(r => r.content_hash === tweet.content_hash);\nif (exactMatch) return [{ json: { action: 'SKIP', reason: 'Doublon exact', tweet } }];\n\nconst semiMatch = existing.find(r => r.semantic_hash === tweet.semantic_hash);\nif (semiMatch) return [{ json: { action: 'SKIP', reason: 'Quasi-doublon sémantique', tweet } }];\n\nconst properNouns = tweet.text.match(/[A-ZÀ-Ü][a-zà-ü]{4,}/g) || [];\nconst sameRumor = existing.find(r => {\n  if (!r.player_name) return false;\n  const lastName = r.player_name.split(' ').pop().toLowerCase();\n  return properNouns.some(n => n.toLowerCase() === lastName);\n});\n\nif (sameRumor) {\n  const alreadyConfirmed = (sameRumor.source_handles || []).includes(tweet.author_handle);\n  if (alreadyConfirmed) return [{ json: { action: 'SKIP', reason: 'Source déjà enregistrée', tweet } }];\n  return [{ json: {\n    action: 'ENRICH',\n    existing_rumor_id: sameRumor.rumor_id,\n    existing_reliability: sameRumor.reliability,\n    existing_odd_yes: sameRumor.odd_yes,\n    existing_odd_no: sameRumor.odd_no,\n    new_source_handle: tweet.author_handle,\n    new_source_reliability: tweet.source_reliability,\n    tweet\n  }}];\n}\n\nreturn [{ json: { action: 'CREATE', reason: 'Nouvelle rumeur inédite', tweet } }];\n"
+      },
+      "id": "node-anti-dup",
+      "name": "Moteur Anti-Doublons",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-800, 160]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "SKIP",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-skip",
+      "name": "Ignorer doublons",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-600, 160]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "CREATE",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-create-or-enrich",
+      "name": "Créer ou Enrichir ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-400, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst currentReliability = data.existing_reliability || 50;\nconst newSourceBoost = Math.round(data.new_source_reliability * 0.12);\nconst newReliability = Math.min(98, currentReliability + newSourceBoost + 5);\nconst prob = newReliability / 100;\nconst margin = newReliability >= 80 ? 0.04 : 0.06;\nconst newOddYes = Math.max(1.01, Math.min(20, parseFloat((1/(prob+margin)).toFixed(2))));\nconst newOddNo  = Math.max(1.01, Math.min(20, parseFloat((1/(1-prob+margin)).toFixed(2))));\nreturn [{ json: { existing_rumor_id: data.existing_rumor_id, new_source_handle: data.new_source_handle, new_reliability: newReliability, new_odd_yes: newOddYes, new_odd_no: newOddNo } }];\n"
+      },
+      "id": "node-recalc",
+      "name": "Recalculer cotes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-200, 60]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/rumors?rumor_id=eq.{{ $json.existing_rumor_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ reliability: $json.new_reliability, odd_yes: $json.new_odd_yes, odd_no: $json.new_odd_no, last_confirmed_at: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "node-enrich-patch",
+      "name": "Enrichir rumeur",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [0, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer VOTRE_CLE_GROQ_ICI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"max_tokens\": 900,\n  \"temperature\": 0.1,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"Tu es un expert transferts foot. Reponds UNIQUEMENT en JSON valide sans markdown.\" },\n    { \"role\": \"user\", \"content\": \"={{ 'Tweet: ' + $json.tweet.text.replace(/[\\n\\r\\t]/g, ' ').replace(/\"/g, \"'\") + ' | Source: ' + $json.tweet.author_name + ' | Fiabilite: ' + $json.tweet.source_reliability + '% | Reponds en JSON avec exactement ces champs: is_transfer_rumor (bool), player_name (string), from_club (string|null), to_club (string|null), transfer_type (transfer|loan|extension|renewal), rumor_strength (rumor|strong|confirmed), is_here_we_go (bool), is_contradiction (bool), summary_fr (string max 120 chars), tags (array strings), event_question (string), event_question_short (string max 40 chars), odd_context (string)' }}\" }\n  ]\n}",
+        "options": {}
+      },
+      "id": "node-groq",
+      "name": "Groq — Analyse IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-200, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawResponse = $json.choices?.[0]?.message?.content || '{}';\nlet analysis;\ntry {\n  analysis = JSON.parse(rawResponse.replace(/```json|```/g, '').trim());\n} catch(e) {\n  return [{ json: { error: 'parsing failed', raw: rawResponse.substring(0, 200) } }];\n}\nif (!analysis.is_transfer_rumor || !analysis.player_name) {\n  return [{ json: { error: 'not a transfer', player: analysis.player_name } }];\n}\nconst tweetData = $('Créer ou Enrichir ?').item.json.tweet;\nconst reliability = tweetData.source_reliability || 50;\nconst prob = reliability / 100;\nconst margin = reliability >= 80 ? 0.04 : reliability >= 60 ? 0.07 : 0.10;\nconst oddYes = Math.max(1.05, Math.min(20, parseFloat((1/(prob+margin)).toFixed(2))));\nconst oddNo  = Math.max(1.05, Math.min(20, parseFloat((1/(1-prob+margin)).toFixed(2))));\nconst deadline = new Date(Date.now() + 30 * 86400000).toISOString();\nconst uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });\nreturn [{ json: {\n  rumor_id: uuid, content_hash: tweetData.content_hash, semantic_hash: tweetData.semantic_hash,\n  tweet_id: tweetData.tweet_id, tweet_url: tweetData.url,\n  player_name: analysis.player_name, from_club: analysis.from_club || null, to_club: analysis.to_club || null,\n  transfer_type: analysis.transfer_type || 'transfer', rumor_strength: analysis.rumor_strength || 'rumor',\n  summary_fr: analysis.summary_fr || '', tags: JSON.stringify(analysis.tags || []),\n  original_text: tweetData.text,\n  event_question: analysis.event_question || `${analysis.player_name} va changer de club ?`,\n  event_question_short: analysis.event_question_short || `${analysis.player_name} transfert ?`,\n  event_deadline: deadline, odd_context: analysis.odd_context || '',\n  odd_yes: oddYes, odd_no: oddNo,\n  source_name: tweetData.author_name, source_handle: tweetData.author_handle,\n  source_handles: JSON.stringify([tweetData.author_handle]),\n  source_tier: tweetData.source_tier, reliability: reliability, confirmation_count: 1,\n  is_here_we_go: analysis.is_here_we_go || false, is_contradiction: analysis.is_contradiction || false,\n  has_contradiction: false, likes: tweetData.likes || 0, retweets: tweetData.retweets || 0,\n  status: 'pending', expires_at: deadline, created_at: new Date().toISOString()\n}}];\n"
+      },
+      "id": "node-build",
+      "name": "Construire rumeur finale",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 280],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_here_we_go }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-hwg",
+      "name": "Here We Go ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [200, 160]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/rumors?player_name=ilike.*{{ $json.player_name.split(' ').pop() }}*&status=eq.open",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ rumor_strength: 'confirmed', status: 'resolved_yes', resolution_note: 'HERE WE GO confirmé par ' + $json.source_name, resolved_at: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "node-hwg-resolve",
+      "name": "Résoudre HERE WE GO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/rumors",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $input.item.json }}",
+        "options": {}
+      },
+      "id": "node-insert",
+      "name": "Insérer rumeur Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconsole.log(`Cycle terminé — ${new Date().toLocaleString('fr-FR')} — ${items.length} rumeurs traitées`);\nreturn [{ json: { processed: items.length, timestamp: new Date().toISOString() } }];\n"
+      },
+      "id": "node-log",
+      "name": "Log cycle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 160]
+    }
+  ],
+  "connections": {
+    "Tous les jours à 18h":       { "main": [[{ "node": "Scrape Tweets (Apify)",       "type": "main", "index": 0 }]] },
+    "Scrape Tweets (Apify)":      { "main": [[{ "node": "Formater + Double Hash",      "type": "main", "index": 0 }]] },
+    "Formater + Double Hash":     { "main": [[{ "node": "Filtre mots-clés transfert", "type": "main", "index": 0 }]] },
+    "Filtre mots-clés transfert": { "main": [[{ "node": "Moteur Anti-Doublons",       "type": "main", "index": 0 }]] },
+    "Moteur Anti-Doublons":       { "main": [[{ "node": "Ignorer doublons",           "type": "main", "index": 0 }]] },
+    "Ignorer doublons":           { "main": [[{ "node": "Créer ou Enrichir ?",        "type": "main", "index": 0 }]] },
+    "Créer ou Enrichir ?":        { "main": [
+      [{ "node": "Groq — Analyse IA", "type": "main", "index": 0 }],
+      [{ "node": "Recalculer cotes",  "type": "main", "index": 0 }]
+    ]},
+    "Recalculer cotes":           { "main": [[{ "node": "Enrichir rumeur",            "type": "main", "index": 0 }]] },
+    "Enrichir rumeur":            { "main": [[{ "node": "Log cycle",                  "type": "main", "index": 0 }]] },
+    "Groq — Analyse IA":          { "main": [[{ "node": "Construire rumeur finale",   "type": "main", "index": 0 }]] },
+    "Construire rumeur finale":   { "main": [[{ "node": "Here We Go ?",               "type": "main", "index": 0 }]] },
+    "Here We Go ?":               { "main": [
+      [{ "node": "Résoudre HERE WE GO", "type": "main", "index": 0 }, { "node": "Insérer rumeur Supabase", "type": "main", "index": 0 }],
+      [{ "node": "Insérer rumeur Supabase","type": "main", "index": 0 }]
+    ]},
+    "Résoudre HERE WE GO":        { "main": [[{ "node": "Log cycle",                  "type": "main", "index": 0 }]] },
+    "Insérer rumeur Supabase":    { "main": [[{ "node": "Log cycle",                  "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}

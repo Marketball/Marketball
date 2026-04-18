@@ -142,6 +142,18 @@
     </div>
   </div>
 
+  <!-- Rumeurs N8n en attente de validation -->
+  <div class="card" style="border-color:rgba(99,102,241,0.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="color:#818cf8;margin-bottom:0">
+        🤖 RUMEURS N8N EN ATTENTE
+        <span class="badge-count" id="rumeursCount">0 en attente</span>
+      </div>
+      <button onclick="loadRumeurs()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">↻ Rafraichir</button>
+    </div>
+    <div id="rumeursList"><div class="empty">Chargement...</div></div>
+  </div>
+
   <!-- Marchés proposés par les Elites -->
   <div class="card" style="border-color:rgba(245,158,11,0.2)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -235,6 +247,26 @@
     </div>
     <div class="markets-list" id="marketsList">
       <div class="empty">Chargement...</div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT RUMEUR MODAL -->
+<div id="editRumeurModal" style="display:none;position:fixed;inset:0;background:rgba(3,7,18,0.88);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(16px)" onclick="if(event.target===this){this.style.display='none'}">
+  <div onclick="event.stopPropagation()" style="background:#0f172a;border:1px solid rgba(99,102,241,0.25);border-radius:20px;padding:28px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:20px;color:#818cf8">✏️ MODIFIER LA RUMEUR</div>
+    <div class="form-group" style="margin-bottom:12px"><label>JOUEUR</label><input class="form-inp" id="erPlayer" placeholder="Ex: Mbappé" /></div>
+    <div class="form-group" style="margin-bottom:12px"><label>CLUB DESTINATION</label><input class="form-inp" id="erToClub" placeholder="Ex: Real Madrid" /></div>
+    <div class="form-group" style="margin-bottom:12px"><label>QUESTION MARCHÉ</label><input class="form-inp" id="erQuestion" placeholder="Ex: Mbappé va-t-il rejoindre le Real Madrid ?" /></div>
+    <div class="form-group" style="margin-bottom:12px"><label>RÉSUMÉ (affiché dans l'app)</label><textarea class="form-inp" id="erSummary" rows="2" style="resize:none"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+      <div class="form-group"><label>COTE OUI</label><input class="form-inp" id="erOddYes" type="number" step="0.05" min="1.05" /></div>
+      <div class="form-group"><label>COTE NON</label><input class="form-inp" id="erOddNo" type="number" step="0.05" min="1.05" /></div>
+      <div class="form-group"><label>FIABILITÉ %</label><input class="form-inp" id="erReliability" type="number" min="0" max="100" /></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="saveEditRumeur()" style="flex:2;padding:12px 0;border-radius:11px;border:none;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-weight:800;font-size:14px;cursor:pointer">PUBLIER →</button>
+      <button onclick="document.getElementById('editRumeurModal').style.display='none'" style="flex:1;padding:12px 0;border-radius:11px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-weight:700;font-size:14px;cursor:pointer">Annuler</button>
     </div>
   </div>
 </div>
@@ -438,7 +470,7 @@ function doLogout() {
   document.getElementById("pwdInput").value = "";
 }
 
-function loadAll() { loadMarkets(); loadProposed(); }
+function loadAll() { loadMarkets(); loadProposed(); loadRumeurs(); }
 
 function showToast(msg, type = "success") {
   const t = document.createElement("div");
@@ -919,6 +951,108 @@ async function loadMarkets() {
   } catch (e) {
     document.getElementById("marketsList").innerHTML = `<div class="empty" style="color:#f87171">Erreur de chargement</div>`;
   }
+}
+
+// ============================================================
+// RUMEURS N8N
+// ============================================================
+let allRumeurs = [];
+
+async function loadRumeurs() {
+  document.getElementById("rumeursList").innerHTML = '<div class="empty">Chargement...</div>';
+  try {
+    const data = await sbReq("rumors?status=eq.pending&order=created_at.desc&limit=50");
+    allRumeurs = data || [];
+    document.getElementById("rumeursCount").textContent = `${allRumeurs.length} en attente`;
+    renderRumeurs();
+  } catch(e) {
+    document.getElementById("rumeursList").innerHTML = `<div class="empty" style="color:#f87171">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderRumeurs() {
+  const list = document.getElementById("rumeursList");
+  if (!allRumeurs.length) { list.innerHTML = '<div class="empty">Aucune rumeur en attente</div>'; return; }
+  list.innerHTML = allRumeurs.map(r => {
+    const date = new Date(r.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+    const relColor = r.reliability >= 85 ? "#10b981" : r.reliability >= 70 ? "#f59e0b" : "#f87171";
+    return `
+      <div style="background:rgba(99,102,241,0.04);border:1px solid rgba(99,102,241,0.15);border-radius:14px;padding:16px 18px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:14px;color:#f1f5f9;margin-bottom:4px">${r.player_name||'?'} → ${r.to_club||'?'}</div>
+            <div style="font-size:12px;color:rgba(241,245,249,0.5);margin-bottom:6px;font-style:italic">"${(r.event_question||'').substring(0,100)}"</div>
+            <div style="font-size:11px;color:rgba(241,245,249,0.35)">
+              📡 <strong style="color:#818cf8">${r.source_name||r.source_handle||'?'}</strong>
+              · Fiabilité <strong style="color:${relColor}">${r.reliability||'?'}%</strong>
+              · OUI ×${r.odd_yes||'?'} / NON ×${r.odd_no||'?'}
+              · ${date}
+            </div>
+            ${r.summary_fr ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(241,245,249,0.03);border-radius:8px;font-size:12px;color:rgba(241,245,249,0.5)">${r.summary_fr}</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="approve-btn" onclick="publishRumeur('${r.rumor_id}')">✅ Publier</button>
+          <button class="edit-btn" onclick="openEditRumeur('${r.rumor_id}')">✏️ Modifier</button>
+          <button class="reject-btn" onclick="rejectRumeur('${r.rumor_id}')">❌ Rejeter</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function publishRumeur(id) {
+  if (!confirm("Publier cette rumeur dans l'app ?")) return;
+  try {
+    await sbReq(`rumors?rumor_id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "open" }) });
+    showToast("✅ Rumeur publiée !");
+    loadRumeurs();
+  } catch(e) { showToast("Erreur : " + e.message, "error"); }
+}
+
+async function rejectRumeur(id) {
+  if (!confirm("Rejeter cette rumeur ? Elle ne sera pas visible dans l'app.")) return;
+  try {
+    await sbReq(`rumors?rumor_id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "rejected" }) });
+    showToast("Rumeur rejetée");
+    loadRumeurs();
+  } catch(e) { showToast("Erreur", "error"); }
+}
+
+let editRumeurId = null;
+function openEditRumeur(id) {
+  const r = allRumeurs.find(r => r.rumor_id === id);
+  if (!r) return;
+  editRumeurId = id;
+  document.getElementById("erPlayer").value = r.player_name || "";
+  document.getElementById("erToClub").value = r.to_club || "";
+  document.getElementById("erQuestion").value = r.event_question || "";
+  document.getElementById("erSummary").value = r.summary_fr || "";
+  document.getElementById("erOddYes").value = r.odd_yes || 2.0;
+  document.getElementById("erOddNo").value = r.odd_no || 3.0;
+  document.getElementById("erReliability").value = r.reliability || 70;
+  document.getElementById("editRumeurModal").style.display = "flex";
+}
+
+async function saveEditRumeur() {
+  if (!editRumeurId) return;
+  const patch = {
+    player_name: document.getElementById("erPlayer").value.trim(),
+    to_club: document.getElementById("erToClub").value.trim(),
+    event_question: document.getElementById("erQuestion").value.trim(),
+    summary_fr: document.getElementById("erSummary").value.trim(),
+    odd_yes: parseFloat(document.getElementById("erOddYes").value) || 2.0,
+    odd_no: parseFloat(document.getElementById("erOddNo").value) || 3.0,
+    reliability: parseInt(document.getElementById("erReliability").value) || 70,
+    status: "open",
+  };
+  if (!patch.player_name || !patch.event_question) { showToast("Joueur et question obligatoires", "error"); return; }
+  try {
+    await sbReq(`rumors?rumor_id=eq.${editRumeurId}`, { method: "PATCH", body: JSON.stringify(patch) });
+    showToast("✅ Rumeur modifiée et publiée !");
+    document.getElementById("editRumeurModal").style.display = "none";
+    editRumeurId = null;
+    loadRumeurs();
+  } catch(e) { showToast("Erreur : " + e.message, "error"); }
 }
 
 // Fermer modal en cliquant dehors
