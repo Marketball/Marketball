@@ -13,28 +13,40 @@ function timeAgo(date) {
   return `il y a ${d}j`;
 }
 
-function PollCard({ poll, session, profile }) {
+function PollCard({ poll, session, profile, showToast }) {
   const [voted, setVoted] = useState(null);
+  const [selected, setSelected] = useState(null);
   const [votes, setVotes] = useState(poll.votes || {});
+  const [sending, setSending] = useState(false);
   const options = poll.options || [];
-  const total = Object.values(votes).reduce((s, v) => s + v, 0);
+  const total = Object.values(votes).filter((v,i,a) => typeof v === "number").reduce((s,v,i) => {
+    const key = Object.keys(votes)[Object.values(votes).indexOf(v)];
+    return key?.startsWith("user_") ? s : s + v;
+  }, 0);
+  const totalVotes = options.reduce((s, opt) => s + (votes[opt] || 0), 0);
   const isExpired = poll.expires_at && new Date(poll.expires_at) < new Date();
 
   useEffect(() => {
-    if (profile?.id && votes[`user_${profile.id}`]) setVoted(votes[`user_${profile.id}`]);
+    if (profile?.id && votes[`user_${profile.id}`]) {
+      setVoted(votes[`user_${profile.id}`]);
+    }
   }, [profile]);
 
-  const handleVote = async (opt) => {
-    if (!session || voted || isExpired) return;
-    const newVotes = { ...votes, [opt]: (votes[opt] || 0) + 1, [`user_${profile.id}`]: opt };
+  const handleVote = async () => {
+    if (!session || !selected || voted || isExpired || sending) return;
+    setSending(true);
+    const newVotes = { ...votes, [selected]: (votes[selected] || 0) + 1, [`user_${profile.id}`]: selected };
     setVotes(newVotes);
-    setVoted(opt);
+    setVoted(selected);
     try {
       await req(`community_polls?id=eq.${poll.id}`, {
         method: "PATCH", _token: session.token,
         body: JSON.stringify({ votes: newVotes }),
       });
-    } catch {}
+    } catch(e) {
+      showToast?.("Erreur lors du vote", "error");
+    }
+    setSending(false);
   };
 
   return (
@@ -43,28 +55,39 @@ function PollCard({ poll, session, profile }) {
         <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", lineHeight:1.4, flex:1 }}>{poll.question}</div>
         <span style={{ fontSize:10, fontWeight:700, color:"#60a5fa", background:"rgba(59,130,246,0.1)", padding:"2px 8px", borderRadius:20, border:"1px solid rgba(59,130,246,0.2)", flexShrink:0, marginLeft:8 }}>📊 SONDAGE</span>
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {options.map(opt => {
           const count = votes[opt] || 0;
-          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-          const isSelected = voted === opt;
-          const showResult = voted || isExpired;
+          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+          const isChosen = voted === opt;
+          const isPicked = selected === opt;
+          const showResult = !!voted || isExpired;
           return (
-            <button key={opt} onClick={() => handleVote(opt)} disabled={!!voted || isExpired || !session}
-              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isSelected?"#3b82f6":"rgba(241,245,249,0.08)"}`, background:isSelected?"rgba(59,130,246,0.12)":"rgba(241,245,249,0.02)", cursor:voted||isExpired||!session?"default":"pointer", textAlign:"left", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
-              {showResult && <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${pct}%`, background:isSelected?"rgba(59,130,246,0.15)":"rgba(241,245,249,0.04)", transition:"width 0.5s ease" }} />}
+            <button key={opt} onClick={() => !voted && !isExpired && session && setSelected(opt)}
+              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.5)":"rgba(241,245,249,0.08)"}`, background:isChosen?"rgba(59,130,246,0.12)":isPicked?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", cursor:voted||isExpired||!session?"default":"pointer", textAlign:"left", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
+              {showResult && <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${pct}%`, background:isChosen?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)", transition:"width 0.6s ease" }} />}
               <div style={{ position:"relative", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:13, fontWeight:isSelected?800:600, color:isSelected?"#60a5fa":"rgba(241,245,249,0.7)" }}>{isSelected?"✓ ":""}{opt}</span>
-                {showResult && <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:isSelected?"#60a5fa":"rgba(241,245,249,0.4)", letterSpacing:1 }}>{pct}%</span>}
+                <span style={{ fontSize:13, fontWeight:isChosen||isPicked?800:600, color:isChosen?"#60a5fa":isPicked?"#93c5fd":"rgba(241,245,249,0.7)" }}>
+                  {isChosen?"✓ ":isPicked&&!voted?"● ":""}{opt}
+                </span>
+                {showResult && <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:isChosen?"#60a5fa":"rgba(241,245,249,0.4)", letterSpacing:1 }}>{pct}%</span>}
               </div>
             </button>
           );
         })}
       </div>
-      <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginTop:10 }}>
-        {total} vote{total>1?"s":""}
-        {isExpired ? " · Terminé" : !session ? " · Connecte-toi pour voter" : voted ? " · Merci !" : ""}
-        {poll.expires_at && !isExpired && ` · Se termine ${timeAgo(poll.expires_at).replace("il y a","dans")}`}
+
+      {/* Bouton valider */}
+      {!voted && !isExpired && session && (
+        <button onClick={handleVote} disabled={!selected || sending}
+          style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:selected&&!sending?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.06)", color:selected&&!sending?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:13, cursor:selected&&!sending?"pointer":"not-allowed", transition:"all 0.2s", marginBottom:8 }}>
+          {sending?"...":selected?"VALIDER MON VOTE →":"Sélectionne une option"}
+        </button>
+      )}
+
+      <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>
+        {totalVotes} vote{totalVotes>1?"s":""}
+        {isExpired ? " · Terminé" : !session ? " · Connecte-toi pour voter" : voted ? " · Vote enregistré ✓" : ""}
       </div>
     </div>
   );
@@ -202,7 +225,7 @@ export default function CommunityPage({ session, profile, showToast }) {
             Aucun sondage actif pour l'instant
           </div>
         ) : polls.map(poll => (
-          <PollCard key={poll.id} poll={poll} session={session} profile={profile} />
+          <PollCard key={poll.id} poll={poll} session={session} profile={profile} showToast={showToast} />
         ))}
       </>}
     </div>
