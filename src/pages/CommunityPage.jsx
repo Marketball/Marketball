@@ -14,38 +14,38 @@ function timeAgo(date) {
 }
 
 function PollCard({ poll, session, profile, showToast }) {
-  const [voted, setVoted] = useState(null);
-  const [selected, setSelected] = useState(null);
-  const [votes, setVotes] = useState(poll.votes || {});
-  const [sending, setSending] = useState(false);
-  const options = poll.options || [];
-  const total = Object.values(votes).filter((v,i,a) => typeof v === "number").reduce((s,v,i) => {
-    const key = Object.keys(votes)[Object.values(votes).indexOf(v)];
-    return key?.startsWith("user_") ? s : s + v;
-  }, 0);
-  const totalVotes = options.reduce((s, opt) => s + (votes[opt] || 0), 0);
-  const isExpired = poll.expires_at && new Date(poll.expires_at) < new Date();
+  const options = Array.isArray(poll.options) ? poll.options : [];
+  const rawVotes = poll.votes || {};
+  // Compter uniquement les votes par option (pas les clés user_xxx)
+  const counts = {};
+  options.forEach(opt => { counts[opt] = rawVotes[opt] || 0; });
+  const totalVotes = options.reduce((s, opt) => s + counts[opt], 0);
 
-  useEffect(() => {
-    if (profile?.id && votes[`user_${profile.id}`]) {
-      setVoted(votes[`user_${profile.id}`]);
-    }
-  }, [profile]);
+  const userKey = profile?.id ? `user_${profile.id}` : null;
+  const alreadyVoted = userKey ? (rawVotes[userKey] || null) : null;
+
+  const [selected, setSelected] = useState(null);
+  const [localVoted, setLocalVoted] = useState(alreadyVoted);
+  const [localCounts, setLocalCounts] = useState(counts);
+  const [localTotal, setLocalTotal] = useState(totalVotes);
+  const [sending, setSending] = useState(false);
+  const isExpired = poll.expires_at && new Date(poll.expires_at) < new Date();
+  const showResults = !!localVoted || isExpired;
 
   const handleVote = async () => {
-    if (!session || !selected || voted || isExpired || sending) return;
+    if (!session || !selected || localVoted || isExpired || sending) return;
     setSending(true);
-    const newVotes = { ...votes, [selected]: (votes[selected] || 0) + 1, [`user_${profile.id}`]: selected };
-    setVotes(newVotes);
-    setVoted(selected);
+    const newCounts = { ...localCounts, [selected]: (localCounts[selected] || 0) + 1 };
+    const newVotes = { ...rawVotes, ...newCounts, [userKey]: selected };
+    setLocalCounts(newCounts);
+    setLocalTotal(localTotal + 1);
+    setLocalVoted(selected);
     try {
       await req(`community_polls?id=eq.${poll.id}`, {
         method: "PATCH", _token: session.token,
         body: JSON.stringify({ votes: newVotes }),
       });
-    } catch(e) {
-      showToast?.("Erreur lors du vote", "error");
-    }
+    } catch { showToast?.("Erreur lors du vote", "error"); }
     setSending(false);
   };
 
@@ -57,37 +57,32 @@ function PollCard({ poll, session, profile, showToast }) {
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {options.map(opt => {
-          const count = votes[opt] || 0;
-          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-          const isChosen = voted === opt;
-          const isPicked = selected === opt;
-          const showResult = !!voted || isExpired;
+          const pct = localTotal > 0 ? Math.round((localCounts[opt] / localTotal) * 100) : 0;
+          const isChosen = localVoted === opt;
+          const isPicked = selected === opt && !localVoted;
           return (
-            <button key={opt} onClick={() => { if (!voted && !isExpired) setSelected(opt); }}
-              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.5)":"rgba(241,245,249,0.08)"}`, background:isChosen?"rgba(59,130,246,0.12)":isPicked?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", cursor:voted||isExpired?"default":"pointer", textAlign:"left", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
-              {showResult && <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${pct}%`, background:isChosen?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)", transition:"width 0.6s ease" }} />}
+            <div key={opt} onClick={() => !localVoted && !isExpired && setSelected(opt)}
+              style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.4)":"rgba(241,245,249,0.08)"}`, background:isChosen?"rgba(59,130,246,0.12)":isPicked?"rgba(59,130,246,0.05)":"rgba(241,245,249,0.02)", cursor:localVoted||isExpired?"default":"pointer", position:"relative", overflow:"hidden", transition:"all 0.2s" }}>
+              {showResults && <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${pct}%`, background:isChosen?"rgba(59,130,246,0.15)":"rgba(241,245,249,0.04)", transition:"width 0.6s ease" }} />}
               <div style={{ position:"relative", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:13, fontWeight:isChosen||isPicked?800:600, color:isChosen?"#60a5fa":isPicked?"#93c5fd":"rgba(241,245,249,0.7)" }}>
-                  {isChosen?"✓ ":isPicked&&!voted?"● ":""}{opt}
+                <span style={{ fontSize:13, fontWeight:isChosen||isPicked?800:500, color:isChosen?"#60a5fa":isPicked?"#93c5fd":"rgba(241,245,249,0.75)" }}>
+                  {isChosen?"✓ ":isPicked?"● ":""}{opt}
                 </span>
-                {showResult && <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:isChosen?"#60a5fa":"rgba(241,245,249,0.4)", letterSpacing:1 }}>{pct}%</span>}
+                {showResults && <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:isChosen?"#60a5fa":"rgba(241,245,249,0.35)", letterSpacing:1 }}>{pct}%</span>}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
-
-      {/* Bouton valider */}
-      {!voted && !isExpired && session && (
-        <button onClick={handleVote} disabled={!selected || sending}
-          style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:selected&&!sending?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.06)", color:selected&&!sending?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:13, cursor:selected&&!sending?"pointer":"not-allowed", transition:"all 0.2s", marginBottom:8 }}>
-          {sending?"...":selected?"VALIDER MON VOTE →":"Sélectionne une option"}
+      {!localVoted && !isExpired && (
+        <button onClick={handleVote} disabled={!selected || sending || !session}
+          style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:selected&&session&&!sending?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.06)", color:selected&&session&&!sending?"#fff":"rgba(241,245,249,0.25)", fontWeight:800, fontSize:13, cursor:selected&&session&&!sending?"pointer":"not-allowed", transition:"all 0.2s", marginBottom:8 }}>
+          {!session?"Connecte-toi pour voter":sending?"...":selected?"VALIDER MON VOTE →":"Sélectionne une option"}
         </button>
       )}
-
       <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>
-        {totalVotes} vote{totalVotes>1?"s":""}
-        {isExpired ? " · Terminé" : !session ? " · Connecte-toi pour voter" : voted ? " · Vote enregistré ✓" : ""}
+        {localTotal} vote{localTotal>1?"s":""}
+        {isExpired?" · Terminé":localVoted?" · Vote enregistré ✓":""}
       </div>
     </div>
   );
