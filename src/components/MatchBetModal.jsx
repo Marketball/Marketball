@@ -25,7 +25,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const currentPlayers=scorerTeam==="home"?homePlayers:awayPlayers;
   const getOdds=()=>{
     if(betType==="winner"){if(prediction===match.home_team)return odds.oddsHome;if(prediction==="Nul")return odds.oddsDraw;if(prediction===match.away_team)return odds.oddsAway;return 2;}
-    if(betType==="exact_score") return calcExactScoreOdds(homeGoals,awayGoals,odds);
+    if(betType==="exact_score") return calcExactScoreOdds(homeGoals,awayGoals,odds,match);
     if(betType==="first_scorer") return prediction?calcScorerOdds(prediction,true):5;
     if(betType==="scorer") return prediction?calcScorerOdds(prediction,false):3;
     if(betType==="over_under"){const line=prediction.includes("1.5")?1.5:prediction.includes("3.5")?3.5:2.5;return calcOverUnderOdds(line,prediction.startsWith("Plus"),odds);}
@@ -67,7 +67,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
       </div>
       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
         {[[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[3,1],[3,0]].map(([h,a])=>{
-          const o=calcExactScoreOdds(h,a,odds),sel=homeGoals===h&&awayGoals===a;
+          const o=calcExactScoreOdds(h,a,odds,match),sel=homeGoals===h&&awayGoals===a;
           return <button key={`${h}-${a}`} onClick={()=>{setHomeGoals(h);setAwayGoals(a);}} style={{ padding:"5px 10px", borderRadius:8, border:`1px solid ${sel?"#10b981":"rgba(241,245,249,0.07)"}`, background:sel?"rgba(16,185,129,0.1)":"transparent", color:sel?"#10b981":"rgba(241,245,249,0.4)", fontSize:11, fontWeight:700, cursor:"pointer" }}>{h}-{a} <span style={{ color:"#fbbf24", fontFamily:"'Bebas Neue',sans-serif" }}>x{o}</span></button>;
         })}
       </div>

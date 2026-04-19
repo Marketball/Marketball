@@ -68,7 +68,7 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
     </div>
     <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c}</button>)}</div>
     {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>{search?"Aucun résultat pour cette recherche":"Aucun marché ouvert"}</div>}
-    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} />)}</div>
+    <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} session={session} profile={profile} />)}</div>
     {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
 }

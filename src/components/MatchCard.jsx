@@ -2,7 +2,7 @@ import { useState } from "react";
 import { calcLiveMatchOdds } from "../lib/amm.js";
 import { compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 
-export default function MatchCard({ match, onBet }) {
+export default function MatchCard({ match, onBet, onStats }) {
   const [hover,setHover]=useState(false);
   const [imgErr,setImgErr]=useState({});
   const cc=compColor(match.competition);
@@ -44,6 +44,10 @@ export default function MatchCard({ match, onBet }) {
         </div>
       ))}
     </div>}
-    {!isFinished&&<button className="btn-animated" onClick={()=>onBet(match)} style={{ width:"100%", padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PARIER →</button>}
+    <div style={{ display:"flex", gap:6 }}>
+      <button className="btn-animated" onClick={e=>{e.stopPropagation();onStats&&onStats(match);}} style={{ padding:"10px 12px", borderRadius:11, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>📊</button>
+      {!isFinished&&<button className="btn-animated" onClick={e=>{e.stopPropagation();onBet(match);}} style={{ flex:1, padding:"10px 0", borderRadius:11, border:`1px solid ${hover?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, background:hover?"rgba(16,185,129,0.08)":"transparent", color:hover?"#10b981":"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PARIER →</button>}
+      {isFinished&&<button className="btn-animated" onClick={e=>{e.stopPropagation();onStats&&onStats(match);}} style={{ flex:1, padding:"10px 0", borderRadius:11, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>VOIR LES STATS →</button>}
+    </div>
   </div>;
 }

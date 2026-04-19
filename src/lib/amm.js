@@ -231,9 +231,22 @@ export const calcMatchOdds = (match) => {
   };
 };
 
-export const calcExactScoreOdds = (hG, aG, odds) => {
-  const lH = odds.pHome * 2.2 + odds.pDraw * 1.1, lA = odds.pAway * 2.2 + odds.pDraw * 1.1;
+export const calcExactScoreOdds = (hG, aG, odds, match = null) => {
   const poi = (l, k) => { let r = Math.exp(-l); for (let i = 0; i < k; i++) r *= l / (i + 1); return r; };
+  const isLive = match && (match.status === "IN_PLAY" || match.status === "PAUSED");
+  if (isLive) {
+    const hs = match.home_score ?? 0, as_ = match.away_score ?? 0;
+    const elapsed = Math.max(1, Math.min(93, match.elapsed || 45));
+    const remaining = Math.max(1, 94 - elapsed);
+    // Score déjà impossible
+    if (hG < hs || aG < as_) return 200;
+    const hNeed = hG - hs, aNeed = aG - as_;
+    const frac = remaining / 90;
+    const lH = (odds.pHome * 2.2 + odds.pDraw * 1.1) * frac;
+    const lA = (odds.pAway * 2.2 + odds.pDraw * 1.1) * frac;
+    return Math.min(200, Math.max(1.05, +((1 / Math.max(poi(lH, hNeed) * poi(lA, aNeed), 0.0001)) * 1.1).toFixed(1)));
+  }
+  const lH = odds.pHome * 2.2 + odds.pDraw * 1.1, lA = odds.pAway * 2.2 + odds.pDraw * 1.1;
   return Math.min(200, Math.max(3, +((1 / Math.max(poi(lH, hG) * poi(lA, aG), 0.001)) * 1.1).toFixed(1)));
 };
 

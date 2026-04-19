@@ -262,7 +262,7 @@ export default function App() {
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
       const safeGain=Math.max(cost+1, gain||cost+1);
-      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending"})});
+      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending"})});
       const updMarket=markets.find(m=>m.id===betModal.id);
       const upd=markets.map(m=>m.id===betModal.id?{...m,q_yes:side==="yes"?m.q_yes+amount:m.q_yes,q_no:side==="no"?m.q_no+amount:m.q_no,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
@@ -285,7 +285,7 @@ export default function App() {
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
-      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
+      await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
       const upd=markets.map(m=>m.id===betModal.id?{...m,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
       try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}
@@ -303,7 +303,7 @@ export default function App() {
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
     const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
     try{
-      const res=await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,match_id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"})});
+      const res=await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",match_id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"})});
       const newBet=res?.[0]||{id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"};
       setMatchBets(prev=>[newBet,...prev]);
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
@@ -576,7 +576,7 @@ export default function App() {
 
     <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} />}
-      {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} />}
+      {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} session={session} profile={profile} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} />}

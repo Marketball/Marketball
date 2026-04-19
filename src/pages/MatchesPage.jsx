@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { compColor, compEmoji, compLabel } from "../lib/helpers.js";
 import MatchCard from "../components/MatchCard.jsx";
+import MatchBetsModal from "../components/MatchBetsModal.jsx";
 
 const INTL_SLUGS = ["WC","EURO","NL","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL"];
 
-export default function MatchesPage({ matches, onBet, loading }) {
-  const [tab,setTab]=useState("clubs"); // "clubs" | "intl"
+export default function MatchesPage({ matches, onBet, loading, session, profile }) {
+  const [tab,setTab]=useState("clubs");
   const [subComp,setSubComp]=useState("Tous");
+  const [statsMatch,setStatsMatch]=useState(null);
 
   const clubMatches=matches.filter(m=>CLUB_SLUGS.includes(m.competition));
   const intlMatches=matches.filter(m=>INTL_SLUGS.includes(m.competition));
@@ -59,15 +61,16 @@ export default function MatchesPage({ matches, onBet, loading }) {
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#ef4444" }}>EN DIRECT</div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:24 }}>
-        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}
+        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
       </div>
     </>}
 
     {upcoming.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"#10b981" }}>À VENIR</div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
-        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} />)}
+        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
       </div>
     </>}
+    {statsMatch&&<MatchBetsModal match={statsMatch} onClose={()=>setStatsMatch(null)} onBet={(m)=>{setStatsMatch(null);onBet(m);}} session={session} profile={profile} />}
   </div>;
 }

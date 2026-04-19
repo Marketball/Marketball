@@ -5,7 +5,7 @@ import ProbBar from "./ui/ProbBar.jsx";
 import ShareMenu from "./ShareMenu.jsx";
 import MarketStatsModal from "./MarketStatsModal.jsx";
 
-export default function MarketCard({ market, onBet, isNew, isTrending }) {
+export default function MarketCard({ market, onBet, isNew, isTrending, session, profile }) {
   const [hover,setHover]=useState(false);
   const [showShare,setShowShare]=useState(false);
   const [showStats,setShowStats]=useState(false);
@@ -63,6 +63,6 @@ export default function MarketCard({ market, onBet, isNew, isTrending }) {
       {showShare&&<ShareMenu market={market} onClose={()=>setShowShare(false)} />}
     </div>
   </div>
-  {showStats&&<MarketStatsModal market={market} onClose={()=>setShowStats(false)} onBet={onBet} />}
+  {showStats&&<MarketStatsModal market={market} onClose={()=>setShowStats(false)} onBet={onBet} session={session} profile={profile} />}
   </>;
 }
