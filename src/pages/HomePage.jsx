@@ -8,7 +8,7 @@ import SCBadge from "../components/ui/SCBadge.jsx";
 import MatchCard from "../components/MatchCard.jsx";
 import MarketCard from "../components/MarketCard.jsx";
 
-export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard }) {
+export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard, session }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
@@ -80,7 +80,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
       <span style={{ width:3, height:18, background:"#3b82f6", borderRadius:99, display:"inline-block" }} />MARCHES EN VEDETTE
     </div>
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,6).map(m=><MarketCard key={m.id} market={m} onBet={onBet} />)}</div>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,6).map(m=><MarketCard key={m.id} market={m} onBet={onBet} session={session} profile={profile} />)}</div>
     <button className="btn-animated" onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les marches →</button>
 
     {/* MATCHS À VENIR */}

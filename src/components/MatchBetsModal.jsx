@@ -11,7 +11,7 @@ export default function MatchBetsModal({ match, onClose, onBet, session, profile
   const matchTitle = `${match.home_team} vs ${match.away_team}`;
 
   useEffect(() => {
-    req(`match_bets?match_title=eq.${encodeURIComponent(matchTitle)}&select=bet_type,prediction,cost,status,username&order=created_at.desc&limit=300`)
+    req(`match_bets?match_title=eq.${encodeURIComponent(matchTitle)}&select=bet_type,prediction,cost,status,username&order=created_at.desc&limit=300`, session ? { _token: session.token } : undefined)
       .then(d => setBets(d || []))
       .catch(() => setBets([]));
   }, [matchTitle]);

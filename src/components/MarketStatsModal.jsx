@@ -34,7 +34,7 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
   const isMulti = market.market_type === "multi";
 
   useEffect(() => {
-    req(`user_bets?market_id=eq.${market.id}&select=side,cost,status,username&order=created_at.desc&limit=500`)
+    req(`user_bets?market_id=eq.${market.id}&select=side,cost,status,username&order=created_at.desc&limit=500`, session ? { _token: session.token } : undefined)
       .then(data => setBets(data || []))
       .catch(() => setBets([]));
   }, [market.id]);
