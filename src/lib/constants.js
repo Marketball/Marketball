@@ -43,7 +43,7 @@ export const SUBSCRIPTION_PLANS = [
     color: "#3b82f6",
     emoji: "⚡",
     mcBoost: 150,
-    priceId: "price_1TF03SEMwfOErJuWzQ59d54A", // Ligue Pro
+    priceId: "price_1TOJWuIB3HPK0xH5DzsgINcE", // Ligue Pro
     features: ["150 MC chaque lundi","Option Cashout","Récompenses Premium (maillots, tech)","Sans pub"],
     popular: true,
   },
@@ -55,7 +55,7 @@ export const SUBSCRIPTION_PLANS = [
     color: "#f59e0b",
     emoji: "👑",
     mcBoost: 250,
-    priceId: "price_1TF03vEMwfOErJuWF6vlaoue", // Ligue Elite
+    priceId: "price_1TOJYAIB3HPK0xH5AusdEOFn", // Ligue Elite
     features: ["250 MC chaque lundi","Accès marchés exclusifs","Récompenses de luxe (VIP, dédicaces)","Sans pub","Support prioritaire"],
   },
 ];
