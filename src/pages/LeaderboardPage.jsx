@@ -148,14 +148,14 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile }
     <div style={{ display:"flex", gap:10, marginBottom:24, alignItems:"flex-end" }}>
       {[leaderboard[1],leaderboard[0],leaderboard[2]].map((p,vi)=>{
         if(!p) return <div key={vi} style={{ flex:1 }} />;
-        const hs=[130,155,130];
-        return <div key={p.username} style={{ flex:1, background:`${topColors[vi]}0d`, border:`1px solid ${topColors[vi]}20`, borderRadius:16, padding:"14px 10px", textAlign:"center", height:hs[vi], display:"flex", flexDirection:"column", justifyContent:"flex-end", position:"relative" }}>
-          <div style={{ display:"flex", justifyContent:"center", marginBottom:6, marginTop:8, position:"relative" }}>
+        const hs=[150,175,150];
+        return <div key={p.username} style={{ flex:1, background:`${topColors[vi]}0d`, border:`1px solid ${topColors[vi]}20`, borderRadius:16, padding:"14px 10px", textAlign:"center", height:hs[vi], display:"flex", flexDirection:"column", justifyContent:"flex-end", alignItems:"center", position:"relative", gap:6 }}>
+          <div style={{ display:"flex", justifyContent:"center", position:"relative", marginBottom:10 }}>
             <Avatar username={p.username} size={36} radius={10} />
-            <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", fontSize:14, lineHeight:1 }}>{medals[vi]}</div>
+            <div style={{ position:"absolute", bottom:-8, left:"50%", transform:"translateX(-50%)", fontSize:13, lineHeight:1 }}>{medals[vi]}</div>
           </div>
           <BadgeTag level={getLevel(p.xp||0)} />
-          <div onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, fontSize:12, color:"#f1f5f9", marginBottom:2, marginTop:4, cursor:"pointer" }}>{p.username}</div>
+          <div onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, fontSize:12, color:"#f1f5f9", cursor:"pointer" }}>{p.username}</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:topColors[vi], letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
         </div>;
       })}
