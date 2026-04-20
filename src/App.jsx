@@ -40,7 +40,7 @@ export default function App() {
   const [session,setSession]=useState(null);
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
-  const navigateTo=(p)=>{setPage(p);};
+  const navigateTo=(p)=>{setPage(p);if(p==="community")setPendingFriendCount(0);};
   const [markets,setMarkets]=useState([]);
   const [matches,setMatches]=useState([]);
   const [matchesLoading,setMatchesLoading]=useState(false);
@@ -55,6 +55,7 @@ export default function App() {
   const [showConfetti,setShowConfetti]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
   const [publicProfileUser,setPublicProfileUser]=useState(null);
+  const [pendingFriendCount,setPendingFriendCount]=useState(0);
   const profileRef=useRef(null);
 
   const showToast=(msg,type="success")=>{setToast({msg,type});if(type==="win")setShowConfetti(true);};
@@ -231,6 +232,13 @@ export default function App() {
     }
   },[session]);
 
+  const loadPendingFriends=useCallback(async(token,userId)=>{
+    try{
+      const d=await req(`friendships?recipient_id=eq.${userId}&status=eq.pending&select=id`,{_token:token});
+      setPendingFriendCount(d?.length||0);
+    }catch{}
+  },[]);
+
   const handleAuth=async(token,user)=>{
     setSession({token,user});
     const favClub=user.user_metadata?.favorite_club||null;
@@ -241,6 +249,7 @@ export default function App() {
     const loadedMatches=await loadMatches();
     if(mb?.length) await checkAndResolveBets(token,user.id,loadedMatches,mb);
     await handleDailyStreak(token,user.id);
+    loadPendingFriends(token,user.id);
     if(!localStorage.getItem("mb_onboarded"))setShowOnboarding(true);
     // Interval unique 60s : recharge matchs + résout les paris terminés
     const interval=setInterval(async()=>{
@@ -525,8 +534,9 @@ export default function App() {
         {/* Desktop : nav centrale */}
         <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 10px" }}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ padding:"5px 8px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap" }}>
+            <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ padding:"5px 8px", borderRadius:8, border:"none", background:page===n.id?"rgba(16,185,129,0.1)":"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.65)", fontWeight:600, fontSize:11, cursor:"pointer", transition:"all 0.2s", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", whiteSpace:"nowrap", position:"relative" }}>
               {n.icon} {n.label}
+              {n.id==="community"&&pendingFriendCount>0&&<span style={{ position:"absolute", top:0, right:0, width:8, height:8, borderRadius:"50%", background:"#ef4444", border:"1.5px solid #030712" }} />}
             </button>
           ))}
         </nav>
@@ -603,7 +613,10 @@ export default function App() {
       ].map(n=>(
         <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
           {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
-          <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>
+          <span style={{ fontSize:20, lineHeight:1, position:"relative" }}>
+            {n.icon}
+            {n.id==="community"&&pendingFriendCount>0&&<span style={{ position:"absolute", top:-2, right:-4, width:8, height:8, borderRadius:"50%", background:"#ef4444", border:"1.5px solid #030712" }} />}
+          </span>
           <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{n.label}</span>
         </button>
       ))}
