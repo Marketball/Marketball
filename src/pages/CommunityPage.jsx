@@ -88,7 +88,7 @@ function PollCard({ poll, session, profile, showToast }) {
   );
 }
 
-export default function CommunityPage({ session, profile, showToast }) {
+export default function CommunityPage({ session, profile, showToast, onViewProfile }) {
   const [posts, setPosts] = useState([]);
   const [polls, setPolls] = useState([]);
   const [input, setInput] = useState("");
@@ -176,7 +176,7 @@ export default function CommunityPage({ session, profile, showToast }) {
               <Avatar username={post.username} size={32} radius={9} />
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
-                  <span style={{ fontWeight:700, fontSize:13, color: post.user_id===session?.user?.id?"#10b981":"#f1f5f9" }}>{post.username}</span>
+                  <span onClick={()=>onViewProfile?.(post.username)} style={{ fontWeight:700, fontSize:13, color: post.user_id===session?.user?.id?"#10b981":"#f1f5f9", cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{post.username}</span>
                   <span style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>{timeAgo(post.created_at)}</span>
                   {post.user_id===session?.user?.id && (
                     <button onClick={() => handleDelete(post.id)} style={{ marginLeft:"auto", padding:"1px 6px", borderRadius:6, border:"none", background:"transparent", color:"rgba(241,245,249,0.2)", cursor:"pointer", fontSize:11 }}>✕</button>
@@ -224,12 +224,12 @@ export default function CommunityPage({ session, profile, showToast }) {
         ))}
       </>}
 
-      {tab === "amis" && <FriendsTab profile={profile} session={session} showToast={showToast} />}
+      {tab === "amis" && <FriendsTab profile={profile} session={session} showToast={showToast} onViewProfile={onViewProfile} />}
     </div>
   );
 }
 
-function FriendsTab({ profile, session, showToast }) {
+function FriendsTab({ profile, session, showToast, onViewProfile }) {
   const [subtab, setSubtab] = useState("friends");
   const [friends, setFriends] = useState([]);
   const [pending, setPending] = useState([]);
@@ -321,7 +321,7 @@ function FriendsTab({ profile, session, showToast }) {
           <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
             <Avatar username={f.username} size={36} radius={10} />
             <div style={{ flex:1 }}>
-              <div style={{ fontWeight:700, fontSize:13 }}>{f.username}</div>
+              <div onClick={()=>onViewProfile?.(f.username)} style={{ fontWeight:700, fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{f.username}</div>
               <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>{f.total_wins||0}/{f.total_bets||0} paris</div>
             </div>
             <button onClick={() => removeFriend(f.friendship?.id)} style={{ padding:"5px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"rgba(239,68,68,0.5)", fontSize:11, cursor:"pointer", fontWeight:700 }}>Retirer</button>
@@ -356,7 +356,7 @@ function FriendsTab({ profile, session, showToast }) {
       {searchResults.map(r => (
         <div key={r.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
           <Avatar username={r.username} size={36} radius={10} />
-          <div style={{ flex:1 }}><div style={{ fontWeight:700, fontSize:13 }}>{r.username}</div></div>
+          <div style={{ flex:1 }}><div onClick={()=>onViewProfile?.(r.username)} style={{ fontWeight:700, fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{r.username}</div></div>
           {friends.some(f=>f.id===r.id) ? <span style={{ fontSize:11, color:"#10b981", fontWeight:700 }}>✓ Ami</span>
           : sent.some(f=>f.recipient_id===r.id) ? <span style={{ fontSize:11, color:"rgba(241,245,249,0.3)" }}>Envoyée</span>
           : <button onClick={() => sendRequest(r.id)} style={{ padding:"6px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:11, cursor:"pointer", fontWeight:700 }}>+ Ajouter</button>}

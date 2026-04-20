@@ -481,7 +481,7 @@ export default function App() {
         {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
         {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} />}
         {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard} username="" onViewProfile={()=>setShowAuthModal(true)} />}
-        {page==="community"&&<CommunityPage session={null} profile={null} showToast={showToast} />}
+        {page==="community"&&<CommunityPage session={null} profile={null} showToast={showToast} onViewProfile={()=>setShowAuthModal(true)} />}
         {(page==="wallet"||page==="store"||page==="subscription"||page==="profile"||page==="howto")&&(
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
             <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
@@ -585,7 +585,7 @@ export default function App() {
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} session={session} />}
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
-      {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} />}
+      {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} onViewProfile={(u)=>{setPublicProfileUser(u);navigateTo("leaderboard");}} />}
       {page==="friends"&&<FriendsPage profile={profile} session={session} onViewProfile={(u)=>setPublicProfileUser(u)} showToast={showToast} />}
       {page==="leagues"&&<LeaguesPage profile={profile} session={session} showToast={showToast} />}
     </div>
