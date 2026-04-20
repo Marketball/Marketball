@@ -76,7 +76,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
     <div style={{ width:"100%", maxWidth:430, position:"relative", zIndex:1, animation:"fadeInUp 0.4s ease" }}>
       {/* Logo */}
       <div style={{ textAlign:"center", marginBottom:32 }}>
-        <div style={{ width:64, height:64, background:"linear-gradient(135deg,#10b981,#3b82f6)", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, margin:"0 auto 14px", boxShadow:"0 20px 50px rgba(16,185,129,0.25)" }}>⚽</div>
+        <img src="/favicon.png" alt="MB" style={{ width:64, height:64, borderRadius:20, objectFit:"cover", margin:"0 auto 14px", display:"block", boxShadow:"0 20px 50px rgba(16,185,129,0.25)" }} />
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:42, letterSpacing:4, color:"#f1f5f9" }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></div>
         <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginTop:5 }}>Prédictions football — 100% gratuit</div>
       </div>

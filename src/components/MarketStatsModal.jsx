@@ -6,6 +6,60 @@ import CommentsSection from "./ui/CommentsSection.jsx";
 
 const COLORS = ["#10b981","#ef4444","#f59e0b","#3b82f6","#8b5cf6","#ec4899"];
 
+function OddsChart({ bets, market }) {
+  const isMulti = market.market_type === "multi";
+  if (isMulti || !bets || bets.length < 2) return null;
+  // Reconstruire l'évolution de la proba OUI au fil des paris
+  const sorted = [...bets].sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
+  let qy = market.q_yes || 100, qn = market.q_no || 100;
+  // Rewind : partir de l'état initial (enlever tous les paris)
+  sorted.forEach(b => {
+    if (b.side==="yes") qy = Math.max(1, qy-(b.amount||0));
+    else if (b.side==="no") qn = Math.max(1, qn-(b.amount||0));
+  });
+  const points = [Math.round(AMM.probYes(qy,qn)*100)];
+  sorted.forEach(b => {
+    if (b.side==="yes") qy += (b.amount||0);
+    else if (b.side==="no") qn += (b.amount||0);
+    points.push(Math.round(AMM.probYes(qy,qn)*100));
+  });
+  const W=300, H=60, PAD=8;
+  const n = points.length;
+  const minV = Math.min(...points), maxV = Math.max(...points);
+  const range = maxV - minV || 1;
+  const toX = i => n===1 ? W/2 : (i/(n-1))*W;
+  const toY = v => PAD + (1-(v-minV)/range)*(H-PAD*2);
+  const ptStr = points.map((v,i)=>`${toX(i)},${toY(v)}`).join(" ");
+  const lastP = points[points.length-1];
+  const color = lastP >= 50 ? "#10b981" : "#ef4444";
+  const areaD = `M 0,${toY(points[0])} ${points.map((v,i)=>`L ${toX(i)},${toY(v)}`).join(" ")} L ${W},${H} L 0,${H} Z`;
+  return (
+    <div style={{ marginBottom:16 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:0.5 }}>ÉVOLUTION PROBA OUI</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color, letterSpacing:1 }}>{lastP}%</div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ overflow:"visible" }}>
+        <defs>
+          <linearGradient id="oddsGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1={0} y1={toY(50)} x2={W} y2={toY(50)} stroke="rgba(241,245,249,0.08)" strokeWidth={1} strokeDasharray="3,3" />
+        <path d={areaD} fill="url(#oddsGrad)" />
+        <polyline points={ptStr} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={toX(n-1)} cy={toY(lastP)} r={3} fill={color} />
+        <text x={0} y={toY(minV)+3} fill="rgba(241,245,249,0.25)" fontSize={8} fontFamily="'Bebas Neue',sans-serif">{minV}%</text>
+        <text x={0} y={toY(maxV)-2} fill="rgba(241,245,249,0.25)" fontSize={8} fontFamily="'Bebas Neue',sans-serif">{maxV}%</text>
+      </svg>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:"rgba(241,245,249,0.2)", marginTop:3 }}>
+        <span>1er pari</span><span>{n-1} paris</span>
+      </div>
+    </div>
+  );
+}
+
 function MiniDonut({ entries }) {
   const total = entries.reduce((s,e) => s + e.v, 0);
   if (!total) return null;
@@ -34,7 +88,7 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
   const isMulti = market.market_type === "multi";
 
   useEffect(() => {
-    req(`user_bets?market_id=eq.${market.id}&select=side,cost,status,username&order=created_at.desc&limit=500`, session ? { _token: session.token } : undefined)
+    req(`user_bets?market_id=eq.${market.id}&select=side,cost,status,username,amount,created_at&order=created_at.asc&limit=500`, session ? { _token: session.token } : undefined)
       .then(data => setBets(data || []))
       .catch(() => setBets([]));
   }, [market.id]);
@@ -70,7 +124,7 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
   ];
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease", padding:20 }}>
+    <div onClick={onClose} style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease", padding:20, overscrollBehavior:"contain" }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:24, width:430, maxWidth:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", animation:"fadeInUp 0.3s ease" }}>
 
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:3 }}>STATISTIQUES</div>
@@ -120,6 +174,8 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
                   </div>
                 </div>
               )}
+              {/* Graphique évolution */}
+              <OddsChart bets={bets} market={market} />
               {/* Barres détaillées */}
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {entries.map(e => {
@@ -157,7 +213,7 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
             <div style={{ textAlign:"center", padding:24, color:"rgba(241,245,249,0.2)", fontSize:13 }}>Aucun pari pour l'instant</div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:340, overflowY:"auto" }}>
-              {bets.map((b, i) => {
+              {[...bets].reverse().map((b, i) => {
                 const colorEntry = entries.find(e => e.label === b.side || (e.label==="OUI" && b.side==="yes") || (e.label==="NON" && b.side==="no"));
                 const color = colorEntry?.color || "#94a3b8";
                 const label = b.side === "yes" ? "OUI" : b.side === "no" ? "NON" : b.side;
