@@ -332,15 +332,17 @@ function FriendsTab({ profile, session, showToast }) {
     {subtab==="requests" && (pending.length===0
       ? <div style={{ textAlign:"center", padding:40, color:"rgba(241,245,249,0.2)", fontSize:13 }}>Aucune demande en attente</div>
       : pending.map(f => (
-          <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
-            <Avatar username={f.profile?.username||"?"} size={36} radius={10} />
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:700, fontSize:13 }}>{f.profile?.username||"Joueur"}</div>
-              <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>veut être ton ami</div>
+          <div key={f.id} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+              <Avatar username={f.profile?.username||"?"} size={36} radius={10} />
+              <div>
+                <div style={{ fontWeight:700, fontSize:13 }}>{f.profile?.username||"Joueur"}</div>
+                <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>veut être ton ami</div>
+              </div>
             </div>
-            <div style={{ display:"flex", gap:6 }}>
-              <button onClick={() => acceptRequest(f.id)} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:11, cursor:"pointer", fontWeight:700 }}>✓</button>
-              <button onClick={() => declineRequest(f.id)} style={{ padding:"6px 12px", borderRadius:8, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontSize:11, cursor:"pointer" }}>✕</button>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => acceptRequest(f.id)} style={{ flex:1, padding:"9px 0", borderRadius:9, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:13, cursor:"pointer", fontWeight:800 }}>✓ Accepter</button>
+              <button onClick={() => declineRequest(f.id)} style={{ flex:1, padding:"9px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontSize:13, cursor:"pointer", fontWeight:700 }}>✕ Refuser</button>
             </div>
           </div>
         ))
