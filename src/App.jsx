@@ -413,12 +413,13 @@ export default function App() {
   const NAV=[
     {id:"home",icon:"⚡",label:"Accueil"},
     {id:"matches",icon:"⚽",label:"Matchs"},
-    {id:"markets",icon:"📊",label:"Marches"},
+    {id:"markets",icon:"📊",label:"Marchés"},
     {id:"community",icon:"💬",label:"Communauté"},
     {id:"wallet",icon:"💰",label:"Wallet"},
     {id:"leaderboard",icon:"🏆",label:"Top"},
+    {id:"friends",icon:"👥",label:"Amis"},
+    {id:"leagues",icon:"🏅",label:"Ligues amis"},
     {id:"store",icon:"🎁",label:"Store"},
-    {id:"subscription",icon:"👑",label:"Ligues"},
     {id:"howto",icon:"❓",label:"Guide"},
   ];
 
