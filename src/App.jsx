@@ -417,9 +417,8 @@ export default function App() {
     {id:"community",icon:"💬",label:"Communauté"},
     {id:"wallet",icon:"💰",label:"Wallet"},
     {id:"leaderboard",icon:"🏆",label:"Top"},
-    {id:"friends",icon:"👥",label:"Amis"},
-    {id:"leagues",icon:"🏅",label:"Ligues amis"},
     {id:"store",icon:"🎁",label:"Store"},
+    {id:"subscription",icon:"👑",label:"Ligues"},
     {id:"howto",icon:"❓",label:"Guide"},
   ];
 
@@ -564,8 +563,6 @@ export default function App() {
           {id:"community",icon:"💬",label:"Communauté"},
           {id:"wallet",icon:"💰",label:"Wallet"},
           {id:"leaderboard",icon:"🏆",label:"Top"},
-          {id:"friends",icon:"👥",label:"Amis"},
-          {id:"leagues",icon:"🏅",label:"Ligues"},
           {id:"store",icon:"🎁",label:"Store"},
           {id:"profile",icon:"👤",label:"Profil"},
         ].map(n=>(
@@ -582,11 +579,11 @@ export default function App() {
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} session={session} profile={profile} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
-      {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} />}
+      {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
       {page==="leaderboard"&&publicProfileUser&&<PublicProfilePage username={publicProfileUser} onBack={()=>setPublicProfileUser(null)} leaderboard={leaderboard} session={session} profile={profile} showToast={showToast} />}
       {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={navigateTo} />}
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
-      {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} />}
+      {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} session={session} />}
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
       {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} />}
       {page==="friends"&&<FriendsPage profile={profile} session={session} onViewProfile={(u)=>setPublicProfileUser(u)} showToast={showToast} />}
@@ -599,10 +596,9 @@ export default function App() {
         {id:"home",icon:"⚡",label:"Accueil"},
         {id:"matches",icon:"⚽",label:"Matchs"},
         {id:"markets",icon:"📊",label:"Marchés"},
+        {id:"community",icon:"💬",label:"Com."},
         {id:"wallet",icon:"💰",label:"Wallet"},
         {id:"leaderboard",icon:"🏆",label:"Top"},
-        {id:"friends",icon:"👥",label:"Amis"},
-        {id:"leagues",icon:"🏅",label:"Ligues"},
         {id:"profile",icon:"👤",label:"Profil"},
       ].map(n=>(
         <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>

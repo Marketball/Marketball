@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { BADGES } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getBadge, getLevel } from "../lib/helpers.js";
 import MCBadge from "../components/ui/MCBadge.jsx";
@@ -6,8 +7,19 @@ import SCBadge from "../components/ui/SCBadge.jsx";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import SubBadge from "../components/ui/SubBadge.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
+import { req } from "../lib/supabase.js";
 
-export default function ProfilePage({ profile, username, onLogout, onNavigate }) {
+export default function ProfilePage({ profile, username, onLogout, onNavigate, session }) {
+  const [friendCount, setFriendCount] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if(!profile?.id) return;
+    req(`friendships?or=(requester_id.eq.${profile.id},recipient_id.eq.${profile.id})&status=eq.accepted&select=id`)
+      .then(d => setFriendCount((d||[]).length)).catch(()=>{});
+    req(`friendships?recipient_id=eq.${profile.id}&status=eq.pending&select=id`, { _token: session?.token })
+      .then(d => setPendingCount((d||[]).length)).catch(()=>{});
+  }, [profile?.id]);
   const level=getLevel(profile?.xp||0), badge=getBadge(level);
   const wr=profile?.total_bets>0?Math.round((profile.total_wins/profile.total_bets)*100):0;
   const sub=getSubPlan(profile);
@@ -73,6 +85,18 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate })
     </div>
     <div style={{ background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.08)", borderRadius:12, padding:"12px 16px", marginBottom:18, fontSize:12, color:"rgba(241,245,249,0.35)", lineHeight:1.6 }}>
       Les MarketCoins n'ont <strong style={{ color:"rgba(241,245,249,0.6)" }}>aucune valeur monetaire</strong>.
+    </div>
+    {/* Section Amis */}
+    <div onClick={()=>onNavigate("leaderboard")} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:14, padding:"14px 16px", marginBottom:16, cursor:"pointer", display:"flex", alignItems:"center", gap:14 }}>
+      <div style={{ width:42, height:42, borderRadius:12, background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>👥</div>
+      <div style={{ flex:1 }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1 }}>MES AMIS</div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:2 }}>
+          {friendCount===null?"...":friendCount} ami{friendCount!==1?"s":""}
+          {pendingCount>0&&<span style={{ marginLeft:8, color:"#fbbf24", fontWeight:700 }}>· {pendingCount} demande{pendingCount>1?"s":""} en attente</span>}
+        </div>
+      </div>
+      <div style={{ fontSize:18, color:"rgba(241,245,249,0.3)" }}>›</div>
     </div>
     <button onClick={onLogout} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.04)", color:"#f87171", fontWeight:800, fontSize:14, cursor:"pointer" }}>Se deconnecter</button>
   </div>;
