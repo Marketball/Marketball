@@ -39,20 +39,47 @@ export function useCountdown() {
   return timeLeft;
 }
 
-export function PublicProfilePage({ username, onBack, leaderboard }) {
+export function PublicProfilePage({ username, onBack, leaderboard, session, profile: myProfile, showToast }) {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [friendStatus, setFriendStatus] = useState(null); // null | "pending" | "accepted" | "incoming"
+  const [addingFriend, setAddingFriend] = useState(false);
+
+  const myId = myProfile?.id;
+  const token = session?.token;
 
   useEffect(()=>{
     const load = async () => {
       try {
         const data = await req(`profiles?username=eq.${encodeURIComponent(username)}&select=*`);
-        if(data?.[0]) setProfileData(data[0]);
+        if(data?.[0]) {
+          setProfileData(data[0]);
+          // Vérifier statut amitié
+          if(myId && data[0].id !== myId) {
+            const f = await req(`friendships?or=(and(requester_id.eq.${myId},recipient_id.eq.${data[0].id}),and(requester_id.eq.${data[0].id},recipient_id.eq.${myId}))&select=*`);
+            if(f?.[0]) {
+              if(f[0].status === "accepted") setFriendStatus("accepted");
+              else if(f[0].requester_id === myId) setFriendStatus("pending");
+              else setFriendStatus("incoming");
+            }
+          }
+        }
       } catch {}
       setLoading(false);
     };
     load();
-  },[username]);
+  },[username, myId]);
+
+  const addFriend = async () => {
+    if(!myId || !token) return;
+    setAddingFriend(true);
+    try {
+      await req(`friendships`, { method:"POST", body:JSON.stringify({ requester_id:myId, recipient_id:profileData.id, status:"pending" }), _token:token });
+      setFriendStatus("pending");
+      showToast?.("Demande d'ami envoyée !");
+    } catch(e) { showToast?.(e.message||"Erreur","error"); }
+    setAddingFriend(false);
+  };
 
   if(loading) return <div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>CHARGEMENT...</div>;
   if(!profileData) return <div style={{ textAlign:"center", padding:60 }}>
@@ -68,7 +95,22 @@ export function PublicProfilePage({ username, onBack, leaderboard }) {
   const sub=getSubPlan(profileData);
 
   return <div className="page-enter">
-    <button onClick={onBack} style={{ marginBottom:16, padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", gap:6 }}>← Retour</button>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+      <button onClick={onBack} style={{ padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", gap:6 }}>← Retour</button>
+      {myId && profileData?.id !== myId && (
+        friendStatus==="accepted" ? (
+          <span style={{ fontSize:12, color:"#10b981", fontWeight:700 }}>✓ Ami</span>
+        ) : friendStatus==="pending" ? (
+          <span style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>Demande envoyée</span>
+        ) : friendStatus==="incoming" ? (
+          <span style={{ fontSize:12, color:"#fbbf24" }}>Demande reçue</span>
+        ) : (
+          <button onClick={addFriend} disabled={addingFriend} style={{ padding:"7px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+            {addingFriend?"...":"+ Ajouter ami"}
+          </button>
+        )
+      )}
+    </div>
     <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(241,245,249,0.02))`, border:`1px solid ${badge.color}20`, borderRadius:20, padding:"24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)` }} />
       <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:14 }}>
