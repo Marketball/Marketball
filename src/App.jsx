@@ -439,7 +439,6 @@ export default function App() {
       <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
         <div className="header-row1" style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
           <div onClick={()=>setPage("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
-            <img src="/favicon.png" alt="MB" style={{ width:28, height:28, borderRadius:8, objectFit:"cover", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }} />
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
           </div>
           <nav className="hide-mobile" style={{ display:"flex", gap:1, flex:1, margin:"0 10px" }}>
@@ -519,7 +518,6 @@ export default function App() {
       {/* Ligne 1 : logo + droite */}
       <div className="header-row1" style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
         <div onClick={()=>navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
-          <img src="/favicon.png" alt="MB" style={{ width:28, height:28, borderRadius:8, objectFit:"cover", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }} />
           <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
         </div>
         {/* Desktop : nav centrale */}
