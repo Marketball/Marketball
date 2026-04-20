@@ -153,7 +153,7 @@ export default function CommunityPage({ session, profile, showToast }) {
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-        {[{id:"chat",label:"💬 Chat"},{id:"polls",label:"📊 Sondages"}].map(t => (
+        {[{id:"chat",label:"💬 Chat"},{id:"polls",label:"📊 Sondages"},{id:"amis",label:"👥 Amis"}].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ padding:"8px 18px", borderRadius:20, border:`1px solid ${tab===t.id?"#10b981":"rgba(241,245,249,0.08)"}`, background:tab===t.id?"rgba(16,185,129,0.1)":"transparent", color:tab===t.id?"#10b981":"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
             {t.label}
@@ -223,6 +223,143 @@ export default function CommunityPage({ session, profile, showToast }) {
           <PollCard key={poll.id} poll={poll} session={session} profile={profile} showToast={showToast} />
         ))}
       </>}
+
+      {tab === "amis" && <FriendsTab profile={profile} session={session} showToast={showToast} />}
     </div>
   );
+}
+
+function FriendsTab({ profile, session, showToast }) {
+  const [subtab, setSubtab] = useState("friends");
+  const [friends, setFriends] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sent, setSent] = useState([]);
+
+  const userId = profile?.id;
+  const token = session?.token;
+
+  const load = async () => {
+    if(!userId) return;
+    setLoading(true);
+    const [accepted, pendingIn, pendingOut] = await Promise.all([
+      req(`friendships?or=(requester_id.eq.${userId},recipient_id.eq.${userId})&status=eq.accepted&select=*`, { _token:token }).catch(()=>[]),
+      req(`friendships?recipient_id=eq.${userId}&status=eq.pending&select=*`, { _token:token }).catch(()=>[]),
+      req(`friendships?requester_id=eq.${userId}&status=eq.pending&select=*`, { _token:token }).catch(()=>[]),
+    ]);
+    const friendIds = (accepted||[]).map(f => f.requester_id===userId ? f.recipient_id : f.requester_id);
+    const requesterIds = (pendingIn||[]).map(f => f.requester_id);
+    const [fp, rp] = await Promise.all([
+      friendIds.length ? req(`profiles?id=in.(${friendIds.join(",")})&select=id,username,xp,total_bets,total_wins`) : Promise.resolve([]),
+      requesterIds.length ? req(`profiles?id=in.(${requesterIds.join(",")})&select=id,username,xp`) : Promise.resolve([]),
+    ]);
+    setFriends((fp||[]).map(p => ({ ...p, friendship: accepted.find(f => f.requester_id===p.id||f.recipient_id===p.id) })));
+    setPending((pendingIn||[]).map(f => ({ ...f, profile: rp?.find(p => p.id===f.requester_id) })));
+    setSent(pendingOut||[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [userId]);
+
+  const searchUsers = async () => {
+    if(!search.trim()) return;
+    setSearching(true);
+    const results = await req(`profiles?username=ilike.*${encodeURIComponent(search.trim())}*&select=id,username,xp&limit=10`).catch(()=>[]);
+    setSearchResults((results||[]).filter(r => r.id !== userId));
+    setSearching(false);
+  };
+
+  const sendRequest = async (recipientId) => {
+    await req(`friendships`, { method:"POST", body:JSON.stringify({ requester_id:userId, recipient_id:recipientId, status:"pending" }), _token:token });
+    showToast?.("Demande envoyée !");
+    setSearchResults(prev => prev.filter(r => r.id !== recipientId));
+    load();
+  };
+
+  const acceptRequest = async (id) => {
+    await req(`friendships?id=eq.${id}`, { method:"PATCH", body:JSON.stringify({ status:"accepted" }), _token:token });
+    showToast?.("Ami ajouté !");
+    load();
+  };
+
+  const declineRequest = async (id) => {
+    await req(`friendships?id=eq.${id}`, { method:"DELETE", _token:token });
+    load();
+  };
+
+  const removeFriend = async (id) => {
+    await req(`friendships?id=eq.${id}`, { method:"DELETE", _token:token });
+    showToast?.("Ami retiré");
+    load();
+  };
+
+  if(!userId) return <div style={{ textAlign:"center", padding:40, color:"rgba(241,245,249,0.25)", fontSize:13 }}>Connecte-toi pour gérer tes amis</div>;
+
+  const SUBTABS = [
+    { id:"friends", label:`Amis (${friends.length})` },
+    { id:"requests", label:`Demandes${pending.length?` (${pending.length})`:""}` },
+    { id:"search", label:"🔍 Chercher" },
+  ];
+
+  return <div>
+    <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+      {SUBTABS.map(t => (
+        <button key={t.id} onClick={() => setSubtab(t.id)} style={{ flex:1, padding:"7px 4px", borderRadius:10, border:`1px solid ${subtab===t.id?"#10b981":"rgba(241,245,249,0.07)"}`, background:subtab===t.id?"rgba(16,185,129,0.08)":"transparent", color:subtab===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:10, cursor:"pointer" }}>{t.label}</button>
+      ))}
+    </div>
+
+    {subtab==="friends" && (loading ? <div style={{ textAlign:"center", padding:30, color:"rgba(241,245,249,0.25)" }}>Chargement...</div>
+      : friends.length===0 ? <div style={{ textAlign:"center", padding:40 }}>
+          <div style={{ fontSize:36, marginBottom:10 }}>👥</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"rgba(241,245,249,0.25)" }}>AUCUN AMI</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.2)", marginTop:6 }}>Cherche des joueurs dans l'onglet Chercher</div>
+        </div>
+      : friends.map(f => (
+          <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
+            <Avatar username={f.username} size={36} radius={10} />
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:700, fontSize:13 }}>{f.username}</div>
+              <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>{f.total_wins||0}/{f.total_bets||0} paris</div>
+            </div>
+            <button onClick={() => removeFriend(f.friendship?.id)} style={{ padding:"5px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"rgba(239,68,68,0.5)", fontSize:11, cursor:"pointer", fontWeight:700 }}>Retirer</button>
+          </div>
+        ))
+    )}
+
+    {subtab==="requests" && (pending.length===0
+      ? <div style={{ textAlign:"center", padding:40, color:"rgba(241,245,249,0.2)", fontSize:13 }}>Aucune demande en attente</div>
+      : pending.map(f => (
+          <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
+            <Avatar username={f.profile?.username||"?"} size={36} radius={10} />
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:700, fontSize:13 }}>{f.profile?.username||"Joueur"}</div>
+              <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>veut être ton ami</div>
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={() => acceptRequest(f.id)} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:11, cursor:"pointer", fontWeight:700 }}>✓</button>
+              <button onClick={() => declineRequest(f.id)} style={{ padding:"6px 12px", borderRadius:8, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontSize:11, cursor:"pointer" }}>✕</button>
+            </div>
+          </div>
+        ))
+    )}
+
+    {subtab==="search" && <div>
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchUsers()} placeholder="Chercher un pseudo..." style={{ flex:1, padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:14, outline:"none" }} />
+        <button onClick={searchUsers} disabled={searching} style={{ padding:"11px 16px", borderRadius:11, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>{searching?"...":"Go"}</button>
+      </div>
+      {searchResults.map(r => (
+        <div key={r.id} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:8 }}>
+          <Avatar username={r.username} size={36} radius={10} />
+          <div style={{ flex:1 }}><div style={{ fontWeight:700, fontSize:13 }}>{r.username}</div></div>
+          {friends.some(f=>f.id===r.id) ? <span style={{ fontSize:11, color:"#10b981", fontWeight:700 }}>✓ Ami</span>
+          : sent.some(f=>f.recipient_id===r.id) ? <span style={{ fontSize:11, color:"rgba(241,245,249,0.3)" }}>Envoyée</span>
+          : <button onClick={() => sendRequest(r.id)} style={{ padding:"6px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:11, cursor:"pointer", fontWeight:700 }}>+ Ajouter</button>}
+        </div>
+      ))}
+    </div>}
+  </div>;
 }

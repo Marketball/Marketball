@@ -380,8 +380,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
 
   const TABS = [
     { id:"global", label:"🌍 Global" },
-    { id:"amis", label:"👥 Amis", locked:!isLoggedIn },
-    { id:"ligues", label:"🏅 Ligues", locked:!isLoggedIn },
+    { id:"ligues", label:"🏅 Ligues privées", locked:!isLoggedIn },
   ];
 
   return <div className="page-enter">
@@ -475,9 +474,6 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
         </button>
       )}
     </>}
-
-    {/* Tab Amis */}
-    {tab==="amis"&&<FriendsLeaderboard profile={profile} session={session} onViewProfile={onViewProfile} />}
 
     {/* Tab Ligues */}
     {tab==="ligues"&&<PrivateLeagues profile={profile} session={session} showToast={showToast} />}
