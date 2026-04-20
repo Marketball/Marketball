@@ -234,8 +234,11 @@ export default function App() {
 
   const loadPendingFriends=useCallback(async(token,userId)=>{
     try{
-      const d=await req(`friendships?recipient_id=eq.${userId}&status=eq.pending&select=id`,{_token:token});
-      setPendingFriendCount(d?.length||0);
+      const [friends,challenges]=await Promise.all([
+        req(`friendships?recipient_id=eq.${userId}&status=eq.pending&select=id`,{_token:token}),
+        req(`friend_challenges?challenged_id=eq.${userId}&status=eq.pending&select=id`,{_token:token}),
+      ]);
+      setPendingFriendCount((friends?.length||0)+(challenges?.length||0));
     }catch{}
   },[]);
 

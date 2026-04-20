@@ -42,7 +42,49 @@ export default async function handler(req, res) {
   }
 
   // Ferme le marché
-  await supabase.from("custom_markets").update({ status: "closed" }).eq("id", marketId);
+  await supabase.from("custom_markets").update({ status: "closed", winning_side: winningOption }).eq("id", marketId);
 
-  res.json({ success: true, resolved: bets?.length || 0 });
+  // Résoudre les défis liés à ce marché
+  const { data: challenges } = await supabase
+    .from("friend_challenges")
+    .select("*")
+    .eq("market_id", String(marketId))
+    .eq("status", "accepted");
+
+  for (const challenge of challenges || []) {
+    const challengerWon = challenge.challenger_side === winningOption;
+    const winnerId = challengerWon ? challenge.challenger_id : challenge.challenged_id;
+    const pot = challenge.amount * 2;
+
+    // Créditer le gagnant
+    const { data: winner } = await supabase.from("profiles").select("coins, total_wins, total_profit, weekly_profit").eq("id", winnerId).single();
+    if (winner) {
+      const profit = challenge.amount; // gain net = amount (l'autre amount était misé par l'adversaire)
+      await supabase.from("profiles").update({
+        coins: (winner.coins || 0) + pot,
+        total_wins: (winner.total_wins || 0) + 1,
+        total_profit: (winner.total_profit || 0) + profit,
+        weekly_profit: (winner.weekly_profit || 0) + profit,
+      }).eq("id", winnerId);
+    }
+
+    await supabase.from("friend_challenges").update({ status: "resolved", winner_id: winnerId }).eq("id", challenge.id);
+  }
+
+  // Annuler les défis en attente sur ce marché (non encore acceptés)
+  const { data: pendingChallenges } = await supabase
+    .from("friend_challenges")
+    .select("*")
+    .eq("market_id", String(marketId))
+    .eq("status", "pending");
+
+  for (const challenge of pendingChallenges || []) {
+    const { data: challenger } = await supabase.from("profiles").select("coins").eq("id", challenge.challenger_id).single();
+    if (challenger) {
+      await supabase.from("profiles").update({ coins: (challenger.coins || 0) + challenge.amount }).eq("id", challenge.challenger_id);
+    }
+    await supabase.from("friend_challenges").update({ status: "cancelled" }).eq("id", challenge.id);
+  }
+
+  res.json({ success: true, resolved: bets?.length || 0, challenges: (challenges?.length || 0) + (pendingChallenges?.length || 0) });
 }

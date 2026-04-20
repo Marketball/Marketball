@@ -153,7 +153,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-        {[{id:"chat",label:"💬 Chat"},{id:"polls",label:"📊 Sondages"},{id:"amis",label:"👥 Amis"}].map(t => (
+        {[{id:"chat",label:"💬 Chat"},{id:"polls",label:"📊 Sondages"},{id:"amis",label:"👥 Amis"},{id:"defis",label:"⚔️ Défis"}].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ padding:"8px 18px", borderRadius:20, border:`1px solid ${tab===t.id?"#10b981":"rgba(241,245,249,0.08)"}`, background:tab===t.id?"rgba(16,185,129,0.1)":"transparent", color:tab===t.id?"#10b981":"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
             {t.label}
@@ -225,6 +225,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
       </>}
 
       {tab === "amis" && <FriendsTab profile={profile} session={session} showToast={showToast} onViewProfile={onViewProfile} />}
+      {tab === "defis" && <ChallengesTab profile={profile} session={session} showToast={showToast} />}
     </div>
   );
 }
@@ -363,5 +364,148 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
         </div>
       ))}
     </div>}
+  </div>;
+}
+
+function ChallengesTab({ profile, session, showToast }) {
+  const [challenges, setChallenges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [subtab, setSubtab] = useState("recus");
+
+  const userId = profile?.id;
+  const token = session?.token;
+
+  const load = async () => {
+    if (!userId) return;
+    setLoading(true);
+    const data = await req(
+      `friend_challenges?or=(challenger_id.eq.${userId},challenged_id.eq.${userId})&order=created_at.desc&limit=50`,
+      { _token: token }
+    ).catch(() => []);
+    setChallenges(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [userId]);
+
+  const accept = async (c) => {
+    if ((profile?.coins || 0) < c.amount) { showToast("Pas assez de MC", "error"); return; }
+    try {
+      await req(`friend_challenges?id=eq.${c.id}`, { method: "PATCH", body: JSON.stringify({ status: "accepted" }), _token: token });
+      await req(`profiles?id=eq.${userId}`, { method: "PATCH", body: JSON.stringify({ coins: (profile?.coins || 0) - c.amount }), _token: token });
+      showToast("Défi accepté ! ⚔️");
+      load();
+    } catch (e) { showToast(e.message || "Erreur", "error"); }
+  };
+
+  const decline = async (c) => {
+    try {
+      // Rembourser le challenger
+      await req(`profiles?id=eq.${c.challenger_id}`, { method: "PATCH", body: JSON.stringify({ coins: 0 }), _token: token });
+      // On fait un GET d'abord pour avoir les coins actuels
+      const [p] = await req(`profiles?id=eq.${c.challenger_id}&select=coins`);
+      await req(`profiles?id=eq.${c.challenger_id}`, { method: "PATCH", body: JSON.stringify({ coins: (p?.coins || 0) + c.amount }), _token: token });
+      await req(`friend_challenges?id=eq.${c.id}`, { method: "PATCH", body: JSON.stringify({ status: "declined" }), _token: token });
+      showToast("Défi refusé");
+      load();
+    } catch (e) { showToast(e.message || "Erreur", "error"); }
+  };
+
+  const cancel = async (c) => {
+    try {
+      const [p] = await req(`profiles?id=eq.${userId}&select=coins`, { _token: token });
+      await req(`profiles?id=eq.${userId}`, { method: "PATCH", body: JSON.stringify({ coins: (p?.coins || 0) + c.amount }), _token: token });
+      await req(`friend_challenges?id=eq.${c.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }), _token: token });
+      showToast("Défi annulé, MC remboursés");
+      load();
+    } catch (e) { showToast(e.message || "Erreur", "error"); }
+  };
+
+  if (!userId) return <div style={{ textAlign: "center", padding: 40, color: "rgba(241,245,249,0.25)", fontSize: 13 }}>Connecte-toi pour voir tes défis</div>;
+
+  const received = challenges.filter(c => c.challenged_id === userId && c.status === "pending");
+  const sent = challenges.filter(c => c.challenger_id === userId && ["pending", "accepted"].includes(c.status));
+  const history = challenges.filter(c => ["resolved", "declined", "cancelled"].includes(c.status));
+
+  const SUBTABS = [
+    { id: "recus", label: `📬 Reçus${received.length ? ` (${received.length})` : ""}` },
+    { id: "envoyes", label: `📤 Envoyés${sent.length ? ` (${sent.length})` : ""}` },
+    { id: "historique", label: "📜 Historique" },
+  ];
+
+  const statusColor = { pending: "#fbbf24", accepted: "#3b82f6", resolved: "#10b981", declined: "#ef4444", cancelled: "#6b7280" };
+  const statusLabel = { pending: "⏳ En attente", accepted: "⚔️ En cours", resolved: "✅ Résolu", declined: "❌ Refusé", cancelled: "🚫 Annulé" };
+
+  const ChallengeCard = ({ c, showActions }) => (
+    <div style={{ background: "rgba(241,245,249,0.02)", border: "1px solid rgba(241,245,249,0.06)", borderRadius: 14, padding: "14px 16px", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, lineHeight: 1.4 }}>{c.market_title}</div>
+          <div style={{ fontSize: 11, color: "rgba(241,245,249,0.4)" }}>
+            <span style={{ color: "#f59e0b", fontWeight: 700 }}>{c.challenger_username}</span>
+            {" "}vs{" "}
+            <span style={{ color: "#3b82f6", fontWeight: 700 }}>{c.challenged_username}</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 700, color: statusColor[c.status], background: `${statusColor[c.status]}15`, padding: "2px 8px", borderRadius: 20, border: `1px solid ${statusColor[c.status]}25`, flexShrink: 0, marginLeft: 8 }}>
+          {statusLabel[c.status]}
+        </span>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: showActions ? 12 : 0 }}>
+        <div style={{ flex: 1, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 9, padding: "8px 10px", textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "rgba(241,245,249,0.35)", marginBottom: 3 }}>{c.challenger_username}</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, color: "#f59e0b", letterSpacing: 1 }}>{c.challenger_side.toUpperCase()}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: "#10b981", letterSpacing: 1 }}>🪙 {c.amount * 2}</div>
+            <div style={{ fontSize: 9, color: "rgba(241,245,249,0.3)" }}>pot</div>
+          </div>
+        </div>
+        <div style={{ flex: 1, background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 9, padding: "8px 10px", textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "rgba(241,245,249,0.35)", marginBottom: 3 }}>{c.challenged_username}</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, color: "#3b82f6", letterSpacing: 1 }}>{c.challenged_side.toUpperCase()}</div>
+        </div>
+      </div>
+      {showActions === "accept" && (
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => decline(c)} style={{ flex: 1, padding: "9px 0", borderRadius: 9, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "rgba(239,68,68,0.6)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>✕ Refuser</button>
+          <button onClick={() => accept(c)} style={{ flex: 2, padding: "9px 0", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>⚔️ Accepter — {c.amount} MC</button>
+        </div>
+      )}
+      {showActions === "cancel" && c.status === "pending" && (
+        <button onClick={() => cancel(c)} style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "1px solid rgba(241,245,249,0.08)", background: "transparent", color: "rgba(241,245,249,0.3)", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>Annuler le défi</button>
+      )}
+    </div>
+  );
+
+  return <div>
+    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+      {SUBTABS.map(t => (
+        <button key={t.id} onClick={() => setSubtab(t.id)} style={{ flex: 1, padding: "7px 4px", borderRadius: 10, border: `1px solid ${subtab === t.id ? "#f59e0b" : "rgba(241,245,249,0.07)"}`, background: subtab === t.id ? "rgba(245,158,11,0.08)" : "transparent", color: subtab === t.id ? "#f59e0b" : "rgba(241,245,249,0.35)", fontWeight: 700, fontSize: 10, cursor: "pointer" }}>{t.label}</button>
+      ))}
+    </div>
+
+    {loading ? <div style={{ textAlign: "center", padding: 30, color: "rgba(241,245,249,0.25)" }}>Chargement...</div> : <>
+      {subtab === "recus" && (received.length === 0
+        ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>⚔️</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI REÇU</div></div>
+        : received.map(c => <ChallengeCard key={c.id} c={c} showActions="accept" />)
+      )}
+      {subtab === "envoyes" && (sent.length === 0
+        ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>📤</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI ENVOYÉ</div></div>
+        : sent.map(c => <ChallengeCard key={c.id} c={c} showActions="cancel" />)
+      )}
+      {subtab === "historique" && (history.length === 0
+        ? <div style={{ textAlign: "center", padding: 40, color: "rgba(241,245,249,0.25)", fontSize: 13 }}>Aucun défi terminé</div>
+        : history.map(c => {
+            const iWon = c.winner_id === userId;
+            const iWasInvolved = c.status === "resolved";
+            return <div key={c.id}>
+              {iWasInvolved && <div style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: iWon ? "#10b981" : "#ef4444", marginBottom: 4 }}>{iWon ? `🏆 +${c.amount} MC remportés` : `💸 -${c.amount} MC perdus`}</div>}
+              <ChallengeCard c={c} showActions={null} />
+            </div>;
+          })
+      )}
+    </>}
   </div>;
 }

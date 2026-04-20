@@ -4,11 +4,13 @@ import { catColor, timeLeft, fmt } from "../lib/helpers.js";
 import ProbBar from "./ui/ProbBar.jsx";
 import ShareMenu from "./ShareMenu.jsx";
 import MarketStatsModal from "./MarketStatsModal.jsx";
+import ChallengeModal from "./ChallengeModal.jsx";
 
-export default function MarketCard({ market, onBet, isNew, isTrending, session, profile }) {
+export default function MarketCard({ market, onBet, isNew, isTrending, session, profile, showToast }) {
   const [hover,setHover]=useState(false);
   const [showShare,setShowShare]=useState(false);
   const [showStats,setShowStats]=useState(false);
+  const [showChallenge,setShowChallenge]=useState(false);
   const isMulti=market.market_type==="multi";
   const options=market.options||[];
   const p=isMulti?null:AMM.probYes(market.q_yes,market.q_no), cc=catColor(market.category);
@@ -59,10 +61,12 @@ export default function MarketCard({ market, onBet, isNew, isTrending, session, 
     <div style={{ display:"flex", gap:6, position:"relative" }}>
       <button className="btn-animated" onClick={(e)=>{e.stopPropagation();setShowShare(!showShare);}} style={{ padding:"10px 12px", borderRadius:11, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>↗</button>
       <button className="btn-animated" onClick={(e)=>{e.stopPropagation();setShowStats(true);}} style={{ padding:"10px 12px", borderRadius:11, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>📊</button>
+      {session&&<button className="btn-animated" onClick={(e)=>{e.stopPropagation();setShowChallenge(true);}} style={{ padding:"10px 12px", borderRadius:11, border:"1px solid rgba(245,158,11,0.2)", background:"rgba(245,158,11,0.04)", color:"#f59e0b", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>⚔️</button>}
       <button className="btn-animated" onClick={(e)=>{e.stopPropagation();onBet(market);}} style={{ flex:1, padding:"10px 0", borderRadius:11, border:`1px solid ${hover?(isMulti?"rgba(245,158,11,0.3)":"rgba(16,185,129,0.3)"):"rgba(241,245,249,0.08)"}`, background:hover?(isMulti?"rgba(245,158,11,0.08)":"rgba(16,185,129,0.08)"):"transparent", color:hover?(isMulti?"#f59e0b":"#10b981"):"rgba(241,245,249,0.45)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>PREDIRE →</button>
       {showShare&&<ShareMenu market={market} onClose={()=>setShowShare(false)} />}
     </div>
   </div>
   {showStats&&<MarketStatsModal market={market} onClose={()=>setShowStats(false)} onBet={onBet} session={session} profile={profile} />}
+  {showChallenge&&<ChallengeModal market={market} profile={profile} session={session} onClose={()=>setShowChallenge(false)} showToast={showToast||((m)=>alert(m))} />}
   </>;
 }
