@@ -155,7 +155,11 @@ export default function App() {
         req("custom_markets?status=eq.open&order=created_at.desc").catch(()=>[]),
       ]);
       const rumorMarkets=(rumors||[]).map(r=>({id:r.rumor_id,title:r.event_question||`${r.player_name} → ${r.to_club} ?`,q_yes:100,q_no:100,total_volume:0,participants:0,closes_at:r.expires_at||new Date(Date.now()+14*86400000).toISOString(),category:"Transferts",source:r.source_name||"Source",status:"open"}));
-      const customMarkets=(customs||[]).map(c=>({id:c.id,title:c.title,q_yes:c.q_yes||100,q_no:c.q_no||100,total_volume:c.total_volume||0,participants:c.participants||0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null,market_type:c.market_type||"binary",options:c.options||null,created_at:c.created_at||null}));
+      const savedOdds=loadSavedOdds();
+      const customMarkets=(customs||[]).map(c=>{
+        const saved=savedOdds[c.id];
+        return {id:c.id,title:c.title,q_yes:saved?.q_yes??c.q_yes??100,q_no:saved?.q_no??c.q_no??100,total_volume:saved?.total_volume??c.total_volume??0,participants:saved?.participants??c.participants??0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null,market_type:c.market_type||"binary",options:c.options||null,created_at:c.created_at||null};
+      });
       setMarkets([...customMarkets,...rumorMarkets]);
     }catch{}
   },[]);
@@ -283,7 +287,7 @@ export default function App() {
       if(updMarket){
         const newQYes=side==="yes"?updMarket.q_yes+amount:updMarket.q_yes;
         const newQNo=side==="no"?updMarket.q_no+amount:updMarket.q_no;
-        try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch{}
+        try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch(e){console.warn("[bet] PATCH custom_markets failed:",e.message);}
       }
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
