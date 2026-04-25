@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 // Lib
 import { req, authReq } from "./lib/supabase.js";
-import { resolveBet } from "./lib/amm.js";
+import { resolveBet, resolveParlay } from "./lib/amm.js";
 import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "./lib/constants.js";
 import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds } from "./lib/helpers.js";
 
@@ -30,6 +30,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import HowItWorksPage from "./pages/HowItWorksPage.jsx";
 import CommunityPage from "./pages/CommunityPage.jsx";
 import OnboardingModal from "./components/OnboardingModal.jsx";
+import ParlaySlip from "./components/ParlaySlip.jsx";
 import FriendsPage from "./pages/FriendsPage.jsx";
 import LeaguesPage from "./pages/LeaguesPage.jsx";
 
@@ -55,6 +56,7 @@ export default function App() {
   const [matchBetInitialPred,setMatchBetInitialPred]=useState("");
   const [betsFrozenUntil,setBetsFrozenUntil]=useState(0);
   const matchesRef=useRef([]);
+  const [parlaySelections,setParlaySelections]=useState([]);
   const [toast,setToast]=useState(null);
   const [showConfetti,setShowConfetti]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
@@ -81,21 +83,31 @@ export default function App() {
     let newProfit=profileRef.current?.total_profit||0;
     let newWins=profileRef.current?.total_wins||0;
 
+    const finishedMatches=currentMatches.filter(m=>m.status==="FINISHED");
     for(const bet of pending){
       try{
-        const match=currentMatches.find(m=>
-          m.status==="FINISHED"&&bet.match_title&&
-          bet.match_title.includes(m.home_team)&&bet.match_title.includes(m.away_team)
+        // Résolution d'un combiné
+        if(bet.bet_type==="parlay"){
+          const result=resolveParlay(bet,finishedMatches);
+          if(result===null) continue; // encore en cours
+          try{await req(`match_bets?id=eq.${bet.id}`,{method:"PATCH",_token:token,body:JSON.stringify({status:result})});}catch{}
+          setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:result}:b));
+          if(result==="won"){
+            const gain=bet.potential_gain||0;
+            newCoins+=gain;newXP+=Math.floor(gain/10)+20;newProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
+            showToast(`🎯 COMBINÉ GAGNE ! +${fmt(gain)} MC`, "win");
+          }
+          continue;
+        }
+        // Résolution d'un pari simple
+        const match=finishedMatches.find(m=>
+          bet.match_title&&bet.match_title.includes(m.home_team)&&bet.match_title.includes(m.away_team)
         );
         if(!match) continue;
         let scorers=match.scorers||[];
         const needsScorers=["first_scorer","scorer"].includes(bet.bet_type)&&scorers.length===0&&match.id;
         if(needsScorers){
-          try{
-            const fr=await fetch(`/api/fixtures?id=${match.id}`);
-            const fd=await fr.json();
-            if(fd.scorers?.length) scorers=fd.scorers;
-          }catch{}
+          try{const fr=await fetch(`/api/fixtures?id=${match.id}`);const fd=await fr.json();if(fd.scorers?.length) scorers=fd.scorers;}catch{}
         }
         const matchResult={homeScore:match.home_score,awayScore:match.away_score,homeTeam:match.home_team,awayTeam:match.away_team,scorers};
         const won=resolveBet(bet,matchResult);
@@ -104,11 +116,7 @@ export default function App() {
         setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:newStatus}:b));
         if(won){
           const gain=bet.potential_gain||0;
-          newCoins+=gain;
-          newXP+=Math.floor(gain/10)+10;
-          newProfit+=gain-(bet.cost||0);
-          newWins+=1;
-          profileUpdated=true;
+          newCoins+=gain;newXP+=Math.floor(gain/10)+10;newProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
           showToast(`🏆 PARI GAGNE ! +${fmt(gain)} MC — ${bet.match_title||""}`, "win");
         }
       }catch{}
@@ -359,6 +367,33 @@ export default function App() {
       setMatchBetModal(null);
       showToast("Pari place ! +5 XP");
       await loadLeaderboard(session.token);
+    }catch(e){showToast(`Erreur : ${e.message}`,"error");}
+  };
+
+  const addToParlay=(sel)=>{
+    if(!session){showToast("Connecte-toi pour faire un combiné","error");return;}
+    setParlaySelections(prev=>{
+      const already=prev.some(s=>s.matchTitle===sel.matchTitle&&s.prediction===sel.prediction);
+      if(already){showToast("Sélection déjà dans le combiné","error");return prev;}
+      if(prev.length>=8){showToast("Maximum 8 sélections dans un combiné","error");return prev;}
+      showToast(`✅ ${sel.prediction} ajouté au combiné`);
+      return [...prev,sel];
+    });
+  };
+
+  const handleParlayConfirm=async(selections,amount,gain,combinedOdds)=>{
+    if(!session) return;
+    const newCoins=(profile?.coins||0)-amount;
+    if(newCoins<0){showToast("Pas assez de MC !","error");return;}
+    const newXP=(profile?.xp||0)+10,newLevel=getLevel(newXP);
+    try{
+      const predJson=JSON.stringify(selections);
+      const title=`Combiné ${selections.length} sélections`;
+      await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",match_title:title,bet_type:"parlay",prediction:predJson,cost:amount,potential_gain:gain,status:"pending"})});
+      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
+      setParlaySelections([]);
+      showToast(`🎯 Combiné x${combinedOdds} placé ! Gain potentiel : ${fmt(gain)} MC`,"win");
+      setTimeout(()=>loadMatchBets(session.token,session.user.id),500);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
   };
 
@@ -633,8 +668,8 @@ export default function App() {
     </div>
 
     <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
-      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
-      {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
+      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} onAddToParlay={addToParlay} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
+      {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} onAddToParlay={addToParlay} loading={matchesLoading} session={session} profile={profile} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} profile={profile} session={session} showToast={showToast} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
@@ -675,6 +710,7 @@ export default function App() {
   :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} initialSide={betInitialSide} />
 )}
     {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} />}
+    {session&&<ParlaySlip selections={parlaySelections} onRemove={(i)=>setParlaySelections(prev=>prev.filter((_,idx)=>idx!==i))} onConfirm={handleParlayConfirm} onClear={()=>setParlaySelections([])} coins={coins} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
     {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} />}

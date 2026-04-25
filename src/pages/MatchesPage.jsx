@@ -6,7 +6,7 @@ import MatchBetsModal from "../components/MatchBetsModal.jsx";
 const INTL_SLUGS = ["WC","EURO","NL","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL"];
 
-export default function MatchesPage({ matches, onBet, loading, session, profile }) {
+export default function MatchesPage({ matches, onBet, onAddToParlay, loading, session, profile }) {
   const [tab,setTab]=useState("clubs");
   const [subComp,setSubComp]=useState("Tous");
   const [statsMatch,setStatsMatch]=useState(null);
@@ -61,14 +61,14 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#ef4444" }}>EN DIRECT</div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:24 }}>
-        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} onAddToParlay={onAddToParlay} />)}
       </div>
     </>}
 
     {upcoming.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"#10b981" }}>À VENIR</div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
-        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} onAddToParlay={onAddToParlay} />)}
       </div>
     </>}
     {statsMatch&&<MatchBetsModal match={statsMatch} onClose={()=>setStatsMatch(null)} onBet={(m)=>{setStatsMatch(null);onBet(m);}} session={session} profile={profile} />}

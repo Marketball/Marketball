@@ -10,7 +10,7 @@ import MarketCard from "../components/MarketCard.jsx";
 import MarketStatsModal from "../components/MarketStatsModal.jsx";
 import ChallengeModal from "../components/ChallengeModal.jsx";
 
-export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast }) {
+export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, onAddToParlay, profile, leaderboard, session, showToast }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
@@ -83,7 +83,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
         <div style={{ width:8, height:8, borderRadius:"50%", background:"#ef4444", animation:"pulse 1s infinite", boxShadow:"0 0 8px #ef4444" }} />
         <span style={{ color:"#ef4444" }}>EN DIRECT</span>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:20 }}>{live.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:20 }}>{live.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} onAddToParlay={onAddToParlay} />)}</div>
     </>}
 
     {/* MARCHES EN VEDETTE */}
@@ -98,7 +98,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />MATCHS À VENIR
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} onAddToParlay={onAddToParlay} />)}</div>
       <button className="btn-animated" onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les matchs →</button>
     </>}
 

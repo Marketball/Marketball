@@ -235,14 +235,23 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0;
         const canCashout=canCashoutMarket||canCashoutMatch;
         const cashoutVal=isMarketBet?cashoutMarketVal:cashoutMatchVal;
+        const isParlay=b.bet_type==="parlay";
+        let parlayLegs=[];
+        if(isParlay){try{parlayLegs=JSON.parse(b.prediction||"[]");}catch{}}
         return <div key={i} style={{ background:b.status==="won"?"rgba(16,185,129,0.06)":b.status==="lost"?"rgba(239,68,68,0.06)":b.status==="cashed_out"?"rgba(59,130,246,0.06)":"rgba(241,245,249,0.02)", border:`1px solid ${b.status==="won"?"rgba(16,185,129,0.2)":b.status==="lost"?"rgba(239,68,68,0.15)":b.status==="cashed_out"?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"13px 16px", marginBottom:8 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontWeight:700, fontSize:13, marginBottom:3 }}>{b.market_title||b.match_title||"Paris"}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                {isParlay&&<span style={{ fontSize:10, fontWeight:800, color:"#f59e0b", background:"rgba(245,158,11,0.12)", padding:"1px 7px", borderRadius:10, border:"1px solid rgba(245,158,11,0.2)" }}>🎯 COMBINÉ x{parlayLegs.length}</span>}
+                <div style={{ fontWeight:700, fontSize:13 }}>{isParlay?`${parlayLegs.length} sélections`:b.market_title||b.match_title||"Paris"}</div>
+              </div>
+              {isParlay&&<div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginBottom:4 }}>
+                {parlayLegs.map((l,li)=><div key={li} style={{ marginBottom:1 }}>• {l.matchTitle} — <span style={{ color:"#f59e0b" }}>{l.prediction}</span> (x{l.odds})</div>)}
+              </div>}
               <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>
-                <span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>
-                {" · "}{fmt(b.cost)} MC
-                {isMatchBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>⚽ Match</span>}
+                {!isParlay&&<span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>}
+                {!isParlay&&" · "}{fmt(b.cost)} MC
+                {isMatchBet&&!isParlay&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>⚽ Match</span>}
                 {isMarketBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>📊 Marché</span>}
               </div>
             </div>
