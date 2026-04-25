@@ -9,6 +9,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
   const [username,setUsername]=useState("");
   const [favoriteClub,setFavoriteClub]=useState("");
   const [clubSearch,setClubSearch]=useState("");
+  const [referralCode,setReferralCode]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
 
@@ -25,7 +26,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
         const d=await authReq("signup",{email,password,data:{username,favorite_club:favoriteClub||null}});
         if(d.user){
           const ld=await authReq("token?grant_type=password",{email,password});
-          onAuth(ld.access_token,ld.user,ld.refresh_token);
+          onAuth(ld.access_token,ld.user,ld.refresh_token,referralCode.trim().toUpperCase()||null);
         }
       }else{
         const d=await authReq("token?grant_type=password",{email,password});
@@ -58,6 +59,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
           {mode==="signup"&&<div><label style={labelStyle}>PSEUDO</label><input value={username} onChange={e=>setUsername(e.target.value)} placeholder="MonPseudo" style={inputStyle} /></div>}
           <div><label style={labelStyle}>EMAIL</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" style={inputStyle} /></div>
           <div><label style={labelStyle}>MOT DE PASSE</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()} style={inputStyle} /></div>
+          {mode==="signup"&&<div><label style={labelStyle}>CODE PARRAIN <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>(optionnel)</span></label><input value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase())} placeholder="Ex: MARTIN-4X2B" style={{ ...inputStyle, letterSpacing:2, textTransform:"uppercase" }} /></div>}
         </div>
         {error&&<div style={{ marginTop:14, padding:"11px 14px", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:10, color:"#f87171", fontSize:13 }}>⚠️ {error}</div>}
         <button onClick={submit} disabled={loading} style={{ width:"100%", marginTop:20, padding:"13px 0", borderRadius:12, border:"none", background:loading?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:loading?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:15, cursor:loading?"not-allowed":"pointer", transition:"all 0.2s", boxShadow:loading?"none":"0 8px 25px rgba(16,185,129,0.3)" }}>
@@ -113,6 +115,13 @@ export default function AuthPage({ onAuth, onClose, modal }) {
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&!favoriteClub&&submit()} style={inputStyle} />
           </div>
 
+          {/* Code parrain (inscription seulement) */}
+          {mode==="signup"&&(
+            <div>
+              <label style={labelStyle}>CODE PARRAIN <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>(optionnel)</span></label>
+              <input value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase())} placeholder="Ex: MARTIN-4X2B" style={{ ...inputStyle, letterSpacing:2, textTransform:"uppercase" }} />
+            </div>
+          )}
           {/* Club favori (inscription seulement) */}
           {mode==="signup"&&(
             <div>

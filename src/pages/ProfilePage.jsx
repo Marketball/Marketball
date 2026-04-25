@@ -12,6 +12,8 @@ import { req } from "../lib/supabase.js";
 export default function ProfilePage({ profile, username, onLogout, onNavigate, session }) {
   const [friendCount, setFriendCount] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [referralCount, setReferralCount] = useState(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
     if(!profile?.id) return;
@@ -19,7 +21,11 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
       .then(d => setFriendCount((d||[]).length)).catch(()=>{});
     req(`friendships?recipient_id=eq.${profile.id}&status=eq.pending&select=id`, { _token: session?.token })
       .then(d => setPendingCount((d||[]).length)).catch(()=>{});
-  }, [profile?.id]);
+    if(profile?.referral_code){
+      req(`profiles?referred_by=eq.${profile.referral_code}&select=id`)
+        .then(d => setReferralCount((d||[]).length)).catch(()=>{});
+    }
+  }, [profile?.id, profile?.referral_code]);
   const level=getLevel(profile?.xp||0), badge=getBadge(level);
   const wr=profile?.total_bets>0?Math.round((profile.total_wins/profile.total_bets)*100):0;
   const sub=getSubPlan(profile);
@@ -97,6 +103,39 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
       </div>
       <div style={{ fontSize:18, color:"rgba(241,245,249,0.3)" }}>›</div>
+    </div>
+    {/* Section Parrainage */}
+    <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.15)", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12, color:"#f59e0b" }}>🎁 PARRAINAGE</div>
+      <div style={{ fontSize:11, color:"rgba(241,245,249,0.4)", marginBottom:12, lineHeight:1.6 }}>
+        Partage ton code — ton filleul reçoit 3000 MC de départ, tu gagnes des SC !<br/>
+        <span style={{ color:"#10b981" }}>5 SC</span> filleul Free · <span style={{ color:"#3b82f6" }}>10 SC</span> Standard · <span style={{ color:"#a78bfa" }}>20 SC</span> Premium
+      </div>
+      {profile?.referral_code?(
+        <>
+          <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
+            <div style={{ flex:1, background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color:"#f59e0b", textAlign:"center" }}>
+              {profile.referral_code}
+            </div>
+            <button onClick={()=>{navigator.clipboard.writeText(profile.referral_code);setCodeCopied(true);setTimeout(()=>setCodeCopied(false),2000);}}
+              style={{ padding:"10px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:codeCopied?"rgba(245,158,11,0.15)":"transparent", color:codeCopied?"#f59e0b":"rgba(241,245,249,0.5)", fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
+              {codeCopied?"Copié ✓":"Copier"}
+            </button>
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ flex:1, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"10px", textAlign:"center" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#f59e0b", letterSpacing:1 }}>{referralCount===null?"...":referralCount}</div>
+              <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", fontWeight:700, letterSpacing:1.5, marginTop:2 }}>FILLEULS</div>
+            </div>
+            <div style={{ flex:1, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"10px", textAlign:"center" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:1 }}>{profile?.referral_sc_earned||0} SC</div>
+              <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", fontWeight:700, letterSpacing:1.5, marginTop:2 }}>GAGNÉS</div>
+            </div>
+          </div>
+        </>
+      ):(
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.25)", textAlign:"center", padding:"12px 0" }}>Code en cours de génération...</div>
+      )}
     </div>
     <button onClick={onLogout} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.04)", color:"#f87171", fontWeight:800, fontSize:14, cursor:"pointer" }}>Se deconnecter</button>
   </div>;

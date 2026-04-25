@@ -187,14 +187,28 @@ export default function App() {
     return()=>clearInterval(interval);
   },[session]);
 
-  const loadProfile=useCallback(async(token,userId,favoriteClub=null)=>{
+  const generateReferralCode=(name)=>{
+    const base=(name||"USER").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6).padEnd(3,"X");
+    const suffix=Math.random().toString(36).slice(2,6).toUpperCase();
+    return `${base}-${suffix}`;
+  };
+
+  const loadProfile=useCallback(async(token,userId,favoriteClub=null,referralCode=null)=>{
     try{
       const data=await req(`profiles?id=eq.${userId}&select=*`,{_token:token});
       if(data?.[0]){setProfile(data[0]);profileRef.current=data[0];}
       else{
-        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const username=token&&userId?undefined:undefined; // sera pris de user_metadata
+        const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
+        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
+        // Appliquer le code parrain si fourni
+        if(referralCode){
+          try{
+            await fetch("/api/referral",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode,newUserId:userId})});
+          }catch{}
+        }
       }
     }catch{}
   },[]);
@@ -259,11 +273,11 @@ export default function App() {
     }catch{}
   },[]);
 
-  const handleAuth=async(token,user,refreshToken)=>{
+  const handleAuth=async(token,user,refreshToken,referralCode=null)=>{
     if(refreshToken) localStorage.setItem("mb_auth",JSON.stringify({access_token:token,refresh_token:refreshToken,user}));
     setSession({token,user});
     const favClub=user.user_metadata?.favorite_club||null;
-    await loadProfile(token,user.id,favClub);
+    await loadProfile(token,user.id,favClub,referralCode);
     await loadBets(token,user.id);
     const mb=await loadMatchBets(token,user.id);
     await loadLeaderboard(token);
