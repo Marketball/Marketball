@@ -7,8 +7,10 @@ import MCBadge from "../components/ui/MCBadge.jsx";
 import SCBadge from "../components/ui/SCBadge.jsx";
 import MatchCard from "../components/MatchCard.jsx";
 import MarketCard from "../components/MarketCard.jsx";
+import MarketStatsModal from "../components/MarketStatsModal.jsx";
+import ChallengeModal from "../components/ChallengeModal.jsx";
 
-export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard, session }) {
+export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
@@ -17,6 +19,8 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
   const myRank=leaderboard?.findIndex(p=>p.id===profile?.id);
   const rankDisplay=myRank>=0?myRank+1:null;
   const [pulse,setPulse]=useState(false);
+  const [showTopStats,setShowTopStats]=useState(false);
+  const [showTopChallenge,setShowTopChallenge]=useState(false);
   useEffect(()=>{const t=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(t);},[]);
 
   return <div className="page-enter">
@@ -42,30 +46,36 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     </div>
 
     {/* MARCHE DU MOMENT */}
-    {topMarket&&<div onClick={()=>onBet(topMarket)} style={{ position:"relative", background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.06))", border:"1px solid rgba(16,185,129,0.2)", borderRadius:20, padding:"18px 20px", marginBottom:20, cursor:"pointer", overflow:"hidden", animation:pulse?"market-pulse 2s ease":"none", transition:"all 0.3s" }}>
+    {topMarket&&<div style={{ position:"relative", background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.06))", border:"1px solid rgba(16,185,129,0.2)", borderRadius:20, padding:"18px 20px", marginBottom:20, overflow:"hidden", animation:pulse?"market-pulse 2s ease":"none", transition:"all 0.3s" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#10b981,#3b82f6,#10b981)", backgroundSize:"200% 100%", animation:"shimmer 2s linear infinite" }} />
       <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%)", pointerEvents:"none" }} />
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", boxShadow:"0 0 8px #10b981", animation:"pulse 1s infinite" }} />
         <span style={{ fontSize:10, fontWeight:800, color:"#10b981", letterSpacing:2 }}>MARCHÉ DU MOMENT</span>
         <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(241,245,249,0.4)" }}>🔥 {fmt(topMarket.total_volume)} MC misés</span>
       </div>
-      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4 }}>{topMarket.title}</div>
-      <div style={{ display:"flex", gap:8 }}>
-        {["OUI","NON"].map((s,i)=>{
+      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>{topMarket.title}</div>
+      <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+        {[{s:"OUI",side:"yes",i:0},{s:"NON",side:"no",i:1}].map(({s,side,i})=>{
           const pct=i===0?Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100):100-Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100);
           const c=i===0?"#10b981":"#ef4444";
-          return <div key={s} style={{ flex:1, background:`${c}10`, border:`1px solid ${c}25`, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+          return <button key={s} className="btn-animated" onClick={()=>onBet(topMarket,side)} style={{ flex:1, background:`${c}10`, border:`1px solid ${c}25`, borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.2s" }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:c, letterSpacing:1 }}>{pct}%</div>
-            <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>{s}</div>
-          </div>;
+            <div style={{ fontSize:10, color:c, fontWeight:700, opacity:0.7 }}>{s} →</div>
+          </button>;
         })}
-        <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+        <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#f1f5f9", letterSpacing:1 }}>{topMarket.participants||0}</div>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>JOUEURS</div>
         </div>
       </div>
+      <div style={{ display:"flex", gap:6 }}>
+        <button className="btn-animated" onClick={()=>setShowTopStats(true)} style={{ flex:1, padding:"8px 0", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:12, cursor:"pointer" }}>📊 STATS & PARIEURS</button>
+        {session&&<button className="btn-animated" onClick={()=>setShowTopChallenge(true)} style={{ padding:"8px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.2)", background:"rgba(245,158,11,0.04)", color:"#f59e0b", fontWeight:700, fontSize:12, cursor:"pointer" }}>⚔️ DÉFIER</button>}
+      </div>
     </div>}
+    {showTopStats&&topMarket&&<MarketStatsModal market={topMarket} onClose={()=>setShowTopStats(false)} onBet={onBet} session={session} profile={profile} />}
+    {showTopChallenge&&topMarket&&session&&<ChallengeModal market={topMarket} profile={profile} session={session} onClose={()=>setShowTopChallenge(false)} showToast={showToast||((m)=>alert(m))} />}
 
     {/* EN DIRECT */}
     {live.length>0&&<>

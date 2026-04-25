@@ -15,8 +15,8 @@ const isOverUnderSettled = (predLabel, match) => {
   return false;
 };
 
-export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFrozenUntil }) {
-  const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(""),[amount,setAmount]=useState("");
+export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFrozenUntil, initialPrediction }) {
+  const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(initialPrediction||""),[amount,setAmount]=useState("");
   const [scorerTeam,setScorerTeam]=useState("home"),[homePlayers,setHomePlayers]=useState([]),[awayPlayers,setAwayPlayers]=useState([]),[loadingPlayers,setLoadingPlayers]=useState(false);
   const [homeGoals,setHomeGoals]=useState(1),[awayGoals,setAwayGoals]=useState(1);
   const odds=calcLiveMatchOdds(match);

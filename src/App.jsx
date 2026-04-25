@@ -50,7 +50,9 @@ export default function App() {
   // Refs pour stocker les intervals et pouvoir les nettoyer au logout
   const intervalsRef=useRef([]);
   const [betModal,setBetModal]=useState(null);
+  const [betInitialSide,setBetInitialSide]=useState("yes");
   const [matchBetModal,setMatchBetModal]=useState(null);
+  const [matchBetInitialPred,setMatchBetInitialPred]=useState("");
   const [betsFrozenUntil,setBetsFrozenUntil]=useState(0);
   const matchesRef=useRef([]);
   const [toast,setToast]=useState(null);
@@ -631,9 +633,9 @@ export default function App() {
     </div>
 
     <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
-      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} session={session} />}
-      {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
+      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
+      {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
+      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} profile={profile} session={session} showToast={showToast} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
       {page==="leaderboard"&&publicProfileUser&&<PublicProfilePage username={publicProfileUser} onBack={()=>setPublicProfileUser(null)} leaderboard={leaderboard} session={session} profile={profile} showToast={showToast} />}
@@ -670,9 +672,9 @@ export default function App() {
 
 {betModal&&(betModal.market_type==="multi"
   ?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} />
-  :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />
+  :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} initialSide={betInitialSide} />
 )}
-    {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} />}
+    {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
     {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} />}

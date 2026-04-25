@@ -32,9 +32,15 @@ export default function MarketCard({ market, onBet, isNew, isTrending, session, 
           {market.proposed_by&&<span style={{ color:"#f59e0b", fontSize:10, fontWeight:700 }}>· 👑 {market.proposed_by}</span>}
         </div>
       </div>
-      {!isMulti&&<div style={{ textAlign:"right", flexShrink:0 }}>
-        <div className="prob-pct" style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, lineHeight:1, color:p>0.5?"#10b981":"#ef4444", letterSpacing:1 }}>{Math.round(p*100)}<span style={{ fontSize:18 }}>%</span></div>
-        <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", letterSpacing:1 }}>OUI</div>
+      {!isMulti&&<div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
+        <button className="btn-animated" onClick={e=>{e.stopPropagation();onBet(market,"yes");}} style={{ background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)", borderRadius:9, padding:"5px 10px", cursor:"pointer", textAlign:"center", minWidth:58 }}>
+          <div className="prob-pct" style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, lineHeight:1, color:"#10b981", letterSpacing:1 }}>{Math.round(p*100)}<span style={{ fontSize:14 }}>%</span></div>
+          <div style={{ fontSize:9, color:"rgba(16,185,129,0.6)", letterSpacing:1, fontWeight:700 }}>OUI</div>
+        </button>
+        <button className="btn-animated" onClick={e=>{e.stopPropagation();onBet(market,"no");}} style={{ background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:9, padding:"5px 10px", cursor:"pointer", textAlign:"center", minWidth:58 }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, lineHeight:1, color:"#ef4444", letterSpacing:1 }}>{100-Math.round(p*100)}<span style={{ fontSize:11 }}>%</span></div>
+          <div style={{ fontSize:9, color:"rgba(239,68,68,0.5)", letterSpacing:1, fontWeight:700 }}>NON</div>
+        </button>
       </div>}
     </div>
     {isMulti?(

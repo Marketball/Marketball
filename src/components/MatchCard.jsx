@@ -37,11 +37,14 @@ export default function MatchCard({ match, onBet, onStats }) {
       <div style={{ flex:1, textAlign:"center" }}><Logo logo={match.away_logo} name={match.away_team} side="away" /><div style={{ fontWeight:800, fontSize:12, color:"#f1f5f9" }}>{match.away_team}</div></div>
     </div>
     {!isFinished&&<div style={{ display:"flex", gap:6, marginBottom:12 }}>
-      {[{l:"1",o:odds.oddsHome,c:"#10b981"},{l:"X",o:odds.oddsDraw,c:"#94a3b8"},{l:"2",o:odds.oddsAway,c:"#ef4444"}].map(item=>(
-        <div key={item.l} style={{ flex:1, textAlign:"center", background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:9, padding:"6px 0" }}>
+      {[{l:"1",o:odds.oddsHome,c:"#10b981",pred:match.home_team},{l:"X",o:odds.oddsDraw,c:"#94a3b8",pred:"Nul"},{l:"2",o:odds.oddsAway,c:"#ef4444",pred:match.away_team}].map(item=>(
+        <button key={item.l} className="btn-animated" onClick={e=>{e.stopPropagation();!isFinished&&onBet(match,item.pred);}}
+          style={{ flex:1, textAlign:"center", background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:9, padding:"7px 0", cursor:"pointer", transition:"all 0.2s" }}
+          onMouseEnter={e=>{e.currentTarget.style.background=`${item.c}12`;e.currentTarget.style.borderColor=`${item.c}40`;}}
+          onMouseLeave={e=>{e.currentTarget.style.background="rgba(241,245,249,0.03)";e.currentTarget.style.borderColor="rgba(241,245,249,0.06)";}}>
           <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", marginBottom:1, letterSpacing:1 }}>{item.l}</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:item.c, letterSpacing:1 }}>{item.o}</div>
-        </div>
+        </button>
       ))}
     </div>}
     <div style={{ display:"flex", gap:6 }}>

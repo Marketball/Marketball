@@ -3,8 +3,8 @@ import { AMM } from "../lib/amm.js";
 import { fmt, fmtPct } from "../lib/helpers.js";
 import MCBadge from "./ui/MCBadge.jsx";
 
-export default function BetModal({ market, onClose, onConfirm, coins }) {
-  const [side,setSide]=useState("yes");
+export default function BetModal({ market, onClose, onConfirm, coins, initialSide }) {
+  const [side,setSide]=useState(initialSide==="no"?"no":"yes");
   const [coinsInput,setCoinsInput]=useState("");
   const pYes=AMM.probYes(market.q_yes,market.q_no);
 
