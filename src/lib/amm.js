@@ -1,10 +1,20 @@
 export const AMM = {
-  probYes: (qY, qN) => { const eY = Math.exp(Math.min(qY,500) / 100), eN = Math.exp(Math.min(qN,500) / 100); return Math.max(0.02, Math.min(0.98, eY / (eY + eN))); },
+  // Formule stable numériquement — pas de cap sur q_yes/q_no
+  // P(yes) = sigmoid((qY - qN) / b) → fonctionne même avec qY=50 000 vs qN=100
+  probYes: (qY, qN) => {
+    const diff = (qN - qY) / 100; // si qY >> qN : diff très négatif → prob proche de 1
+    if (diff < -20) return 0.98;
+    if (diff > 20) return 0.02;
+    return Math.max(0.02, Math.min(0.98, 1 / (1 + Math.exp(diff))));
+  },
   costToBuy: (qY, qN, shares, side) => {
     const b = 100;
-    const qYc=Math.min(qY,500), qNc=Math.min(qN,500);
-    const before = b * Math.log(Math.exp(qYc / b) + Math.exp(qNc / b));
-    const after = side === "yes" ? b * Math.log(Math.exp((qYc + shares) / b) + Math.exp(qNc / b)) : b * Math.log(Math.exp(qYc / b) + Math.exp((qNc + shares) / b));
+    // log-sum-exp stable : log(exp(a) + exp(c)) = max + log(1 + exp(min - max))
+    const lse = (a, c) => { const m = Math.max(a, c); return m + Math.log(1 + Math.exp(Math.min(a, c) - m)); };
+    const before = b * lse(qY / b, qN / b);
+    const after = side === "yes"
+      ? b * lse((qY + shares) / b, qN / b)
+      : b * lse(qY / b, (qN + shares) / b);
     return Math.max(1, Math.round(after - before));
   },
   // Cashout : valeur actuelle des parts selon les cotes du moment
