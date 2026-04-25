@@ -24,6 +24,14 @@ export default function MatchesPage({ matches, onBet, onAddToParlay, loading, se
   const upcoming=filtered.filter(m=>m.status==="SCHEDULED");
   const finished=filtered.filter(m=>m.status==="FINISHED").slice(0,6);
 
+  // Grouper les matchs à venir par jour
+  const upcomingByDay=upcoming.reduce((acc,m)=>{
+    const day=new Date(m.match_date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+    if(!acc[day]) acc[day]=[];
+    acc[day].push(m);
+    return acc;
+  },{});
+
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:16 }}>MATCHS</div>
 
@@ -67,10 +75,18 @@ export default function MatchesPage({ matches, onBet, onAddToParlay, loading, se
     </>}
 
     {upcoming.length>0&&<>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"#10b981" }}>À VENIR</div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
-        {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} onAddToParlay={onAddToParlay} />)}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#10b981" }}>📅 À VENIR — {upcoming.length} match{upcoming.length>1?"s":""}</div>
+        {onAddToParlay&&<div style={{ fontSize:11, color:"rgba(245,158,11,0.7)", background:"rgba(245,158,11,0.08)", padding:"4px 10px", borderRadius:20, border:"1px solid rgba(245,158,11,0.2)" }}>🎯 Clique + combiné pour parier à l'avance</div>}
       </div>
+      {Object.entries(upcomingByDay).map(([day,dayMatches])=>(
+        <div key={day} style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8, paddingLeft:4 }}>{day}</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
+            {dayMatches.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} onAddToParlay={onAddToParlay} />)}
+          </div>
+        </div>
+      ))}
     </>}
     {!loading&&finished.length>0&&live.length===0&&upcoming.length===0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"rgba(241,245,249,0.3)" }}>MATCHS TERMINÉS</div>

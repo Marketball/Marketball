@@ -2,7 +2,7 @@ import { useState } from "react";
 import { calcLiveMatchOdds } from "../lib/amm.js";
 import { compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 
-export default function MatchCard({ match, onBet, onStats }) {
+export default function MatchCard({ match, onBet, onStats, onAddToParlay }) {
   const [hover,setHover]=useState(false);
   const [imgErr,setImgErr]=useState({});
   const cc=compColor(match.competition);
@@ -38,13 +38,17 @@ export default function MatchCard({ match, onBet, onStats }) {
     </div>
     {!isFinished&&<div style={{ display:"flex", gap:6, marginBottom:12 }}>
       {[{l:"1",o:odds.oddsHome,c:"#10b981",pred:match.home_team},{l:"X",o:odds.oddsDraw,c:"#94a3b8",pred:"Nul"},{l:"2",o:odds.oddsAway,c:"#ef4444",pred:match.away_team}].map(item=>(
-        <button key={item.l} className="btn-animated" onClick={e=>{e.stopPropagation();!isFinished&&onBet(match,item.pred);}}
-          style={{ flex:1, textAlign:"center", background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:9, padding:"7px 0", cursor:"pointer", transition:"all 0.2s" }}
-          onMouseEnter={e=>{e.currentTarget.style.background=`${item.c}12`;e.currentTarget.style.borderColor=`${item.c}40`;}}
-          onMouseLeave={e=>{e.currentTarget.style.background="rgba(241,245,249,0.03)";e.currentTarget.style.borderColor="rgba(241,245,249,0.06)";}}>
-          <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", marginBottom:1, letterSpacing:1 }}>{item.l}</div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:item.c, letterSpacing:1 }}>{item.o}</div>
-        </button>
+        <div key={item.l} style={{ flex:1, display:"flex", flexDirection:"column", gap:3 }}>
+          <button className="btn-animated" onClick={e=>{e.stopPropagation();!isFinished&&onBet(match,item.pred);}}
+            style={{ textAlign:"center", background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:9, padding:"7px 0", cursor:"pointer", transition:"all 0.2s" }}
+            onMouseEnter={e=>{e.currentTarget.style.background=`${item.c}12`;e.currentTarget.style.borderColor=`${item.c}40`;}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(241,245,249,0.03)";e.currentTarget.style.borderColor="rgba(241,245,249,0.06)";}}>
+            <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", marginBottom:1, letterSpacing:1 }}>{item.l}</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:item.c, letterSpacing:1 }}>{item.o}</div>
+          </button>
+          {onAddToParlay&&<button className="btn-animated" onClick={e=>{e.stopPropagation();onAddToParlay({matchTitle:`${match.home_team} vs ${match.away_team}`,prediction:item.pred,odds:item.o,betTypeLabel:"Vainqueur",matchId:match.id});}}
+            style={{ padding:"4px 0", borderRadius:7, border:`1px solid rgba(245,158,11,0.35)`, background:"rgba(245,158,11,0.07)", color:"#f59e0b", fontSize:10, fontWeight:800, cursor:"pointer" }}>🎯 +combiné</button>}
+        </div>
       ))}
     </div>}
     <div style={{ display:"flex", gap:6 }}>

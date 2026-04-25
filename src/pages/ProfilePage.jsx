@@ -9,12 +9,20 @@ import SubBadge from "../components/ui/SubBadge.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
 import { req } from "../lib/supabase.js";
 
+// Génère un code déterministe depuis l'id (toujours le même pour le même user)
+function makeRefCode(id, name) {
+  const base = (name||id||"USER").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6).padEnd(3,"X");
+  const suffix = (id||"XXXX").replace(/-/g,"").slice(0,4).toUpperCase();
+  return `${base}-${suffix}`;
+}
+
 export default function ProfilePage({ profile, username, onLogout, onNavigate, session }) {
   const [friendCount, setFriendCount] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [referralCount, setReferralCount] = useState(null);
   const [codeCopied, setCodeCopied] = useState(false);
-  const [localRefCode, setLocalRefCode] = useState(profile?.referral_code||null);
+  // Code généré immédiatement, sans attendre Supabase
+  const refCode = profile?.referral_code || makeRefCode(profile?.id, username);
 
   useEffect(() => {
     if(!profile?.id) return;
@@ -22,22 +30,12 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
       .then(d => setFriendCount((d||[]).length)).catch(()=>{});
     req(`friendships?recipient_id=eq.${profile.id}&status=eq.pending&select=id`, { _token: session?.token })
       .then(d => setPendingCount((d||[]).length)).catch(()=>{});
-
-    // Charger le profil frais depuis Supabase pour avoir referral_code
-    req(`profiles?id=eq.${profile.id}&select=referral_code,referral_sc_earned,referred_by`, { _token: session?.token })
-      .then(d => {
-        if(!d?.[0]) return;
-        let code = d[0].referral_code;
-        if(!code && session?.token) {
-          // Générer un code si manquant
-          const base = (username||profile.id).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6).padEnd(3,"X");
-          const suffix = Math.random().toString(36).slice(2,6).toUpperCase();
-          code = `${base}-${suffix}`;
-          req(`profiles?id=eq.${profile.id}`, { method:"PATCH", _token:session.token, body:JSON.stringify({referral_code:code, referral_sc_earned:0, updated_at:new Date().toISOString()}) }).catch(()=>{});
-        }
-        setLocalRefCode(code);
-        if(code) req(`profiles?referred_by=eq.${code}&select=id`).then(r=>setReferralCount((r||[]).length)).catch(()=>{});
-      }).catch(()=>{});
+    // Sauvegarder le code en arrière-plan si pas encore en DB (seulement referral_code)
+    if(!profile?.referral_code && session?.token) {
+      req(`profiles?id=eq.${profile.id}`, { method:"PATCH", _token:session.token, body:JSON.stringify({referral_code:refCode, updated_at:new Date().toISOString()}) }).catch(()=>{});
+    }
+    // Compter les filleuls
+    req(`profiles?referred_by=eq.${refCode}&select=id`).then(r=>setReferralCount((r||[]).length)).catch(()=>{});
   }, [profile?.id]);
   const level=getLevel(profile?.xp||0), badge=getBadge(level);
   const wr=profile?.total_bets>0?Math.round((profile.total_wins/profile.total_bets)*100):0;
@@ -124,13 +122,13 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         Partage ton code — ton filleul reçoit 3000 MC de départ, tu gagnes des SC !<br/>
         <span style={{ color:"#10b981" }}>5 SC</span> filleul Free · <span style={{ color:"#3b82f6" }}>10 SC</span> Standard · <span style={{ color:"#a78bfa" }}>20 SC</span> Premium
       </div>
-      {localRefCode?(
+      {refCode?(
         <>
           <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
             <div style={{ flex:1, background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color:"#f59e0b", textAlign:"center" }}>
-              {localRefCode}
+              {refCode}
             </div>
-            <button onClick={()=>{navigator.clipboard.writeText(localRefCode);setCodeCopied(true);setTimeout(()=>setCodeCopied(false),2000);}}
+            <button onClick={()=>{navigator.clipboard.writeText(refCode);setCodeCopied(true);setTimeout(()=>setCodeCopied(false),2000);}}
               style={{ padding:"10px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:codeCopied?"rgba(245,158,11,0.15)":"transparent", color:codeCopied?"#f59e0b":"rgba(241,245,249,0.5)", fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
               {codeCopied?"Copié ✓":"Copier"}
             </button>
