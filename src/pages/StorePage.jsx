@@ -41,6 +41,7 @@ export default function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe,
     {["starter","pro","elite"].map(planId=>{
       const planInfo=SUBSCRIPTION_PLANS.find(p=>p.id===planId);
       const items=STORE_ITEMS.filter(r=>r.plan===planId);
+      if(items.length===0) return null;
       const planOrder=["starter","pro","elite"];
       const userOrder=planOrder.indexOf(currentSub);
       const planOrderIdx=planOrder.indexOf(planId);

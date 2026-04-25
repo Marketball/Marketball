@@ -11,66 +11,95 @@ export const BADGES = [
 export const XP_PER_LEVEL = 100;
 
 // ============================================================
-// STORE — 1€ = 1 SC
+// STORE — 1 SC = 0,10 € de cadeau (valeur réelle × 10 = prix SC)
 // ============================================================
 export const STORE_ITEMS = [
-  { id: "s1", name: "Carte cadeau Amazon", cost: 50, emoji: "🛒", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
-  { id: "s2", name: "Carte cadeau JD Sport", cost: 80, emoji: "👟", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "10€", description: "Code envoyé par email sous 48h" },
-  { id: "s3", name: "Points FIFA", cost: 100, emoji: "🎮", plan: "starter", planLabel: "Starter", planColor: "#94a3b8", value: "10€", description: "Code envoyé par email sous 48h" },
-  { id: "s4", name: "Maillot de foot officiel", cost: 400, emoji: "👕", plan: "pro", planLabel: "Pro", planColor: "#3b82f6", value: "Replica officielle", description: "Taille au choix, livraison sous 7j" },
-  { id: "s5", name: "Carte cadeau Unisport", cost: 350, emoji: "⚽", plan: "pro", planLabel: "Pro", planColor: "#3b82f6", value: "50€", description: "Code envoyé par email sous 48h" },
-  { id: "s6", name: "Maillot dédicacé", cost: 1200, emoji: "✍️", plan: "elite", planLabel: "Elite", planColor: "#f59e0b", value: "Signature originale", description: "Maillot officiel signé par un joueur pro" },
-  { id: "s7", name: "Place VIP match", cost: 2000, emoji: "🏟️", plan: "elite", planLabel: "Elite", planColor: "#f59e0b", value: "Expérience unique", description: "Tribune VIP + accès coulisses sur demande" },
+  // ── TIER 1 — Free (30-70 SC) ───────────────────────────────
+  { id: "s1",  name: "Booster Topps Match Attax", cost: 30,  emoji: "🃏", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~3€", description: "8 cartes UCL ou Liga, livraison sous 10j" },
+  { id: "s2",  name: "Booster Topps UCL", cost: 40,  emoji: "🏆", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~4€", description: "6 cartes + 1 rare Champions League" },
+  { id: "s3",  name: "Carte cadeau Amazon 5€", cost: 50,  emoji: "🛒", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
+  { id: "s4",  name: "Carte cadeau Fanatics 5€", cost: 50,  emoji: "👟", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
+  { id: "s5",  name: "Pack 3 boosters Topps", cost: 70,  emoji: "📦", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~7€", description: "3 boosters Topps au choix, livraison sous 10j" },
+  // ── TIER 2 — Standard (100-320 SC) ────────────────────────
+  { id: "s6",  name: "Boîte Topps Match Attax", cost: 100, emoji: "🎁", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~10€", description: "18 boosters UCL ou Liga, livraison sous 10j" },
+  { id: "s7",  name: "Blaster Box Topps Bundesliga", cost: 130, emoji: "🃏", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~13€", description: "Blaster Box Topps Chrome Bundesliga" },
+  { id: "s8",  name: "Carte cadeau Amazon 15€", cost: 150, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€", description: "Code envoyé par email sous 48h" },
+  { id: "s9",  name: "Carte cadeau Fanatics 15€", cost: 150, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€", description: "Code envoyé par email sous 48h" },
+  { id: "s10", name: "Blaster Box Topps Premier League", cost: 150, emoji: "🏴", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~15€", description: "Blaster Box Topps Chrome Premier League" },
+  { id: "s11", name: "Hobby Box Topps Ligue 1", cost: 280, emoji: "🇫🇷", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~28€", description: "24 boosters + relics garantis, livraison sous 14j" },
+  { id: "s12", name: "Carte cadeau Amazon 30€", cost: 300, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "30€", description: "Code envoyé par email sous 48h" },
+  { id: "s13", name: "Hobby Box Topps UCL", cost: 320, emoji: "🏆", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~32€", description: "Hobby Box Topps UEFA Champions League" },
+  { id: "s14", name: "Place match tribune", cost: 450, emoji: "🏟️", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~45€", description: "Tribune standard, clubs partenaires" },
+  { id: "s15", name: "Carte cadeau Fanatics 50€", cost: 500, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "50€", description: "Code envoyé par email sous 48h" },
+  // ── TIER 3-5 — Premium (700+ SC) ──────────────────────────
+  { id: "s16", name: "Carte Topps autographe Ligue 1", cost: 700,  emoji: "✍️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~70€", description: "Autographe joueur Ligue 1 certifié, livraison assurée" },
+  { id: "s17", name: "Carte cadeau Amazon 75€", cost: 750,  emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "75€", description: "Code envoyé par email sous 48h" },
+  { id: "s18", name: "Maillot de foot officiel", cost: 800,  emoji: "👕", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€", description: "Maillot officiel au choix, taille au choix, livraison sous 14j" },
+  { id: "s19", name: "Pack 2 places match premium", cost: 800,  emoji: "🎟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€", description: "2 places catégorie premium, clubs partenaires" },
+  { id: "s20", name: "Visite stade + vestiaires", cost: 900,  emoji: "🏟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~90€", description: "Visite exclusive stade + vestiaires, clubs partenaires" },
+  { id: "s21", name: "Carte cadeau Fanatics 100€", cost: 1000, emoji: "👟", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "100€", description: "Code envoyé par email sous 48h" },
+  { id: "s22", name: "Autographe superstar (Mbappé, Vini...)", cost: 1500, emoji: "⭐", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~150€", description: "Carte Topps autographe superstar certifiée" },
+  { id: "s23", name: "Maillot signé + certificat", cost: 2000, emoji: "🏅", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Maillot officiel signé joueur pro + certificat d'authenticité" },
+  { id: "s24", name: "Pack VIP match + hospitalité", cost: 2000, emoji: "🥂", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Pack VIP + hospitalité club, expérience unique" },
+  { id: "s25", name: "Carte cadeau Amazon 200€", cost: 2000, emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "200€", description: "Code envoyé par email sous 48h" },
+  { id: "s26", name: "Week-end supporter VIP", cost: 2500, emoji: "✈️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Hôtel + 2 places match, week-end supporter complet" },
+  { id: "s27", name: "Carte Topps 1/1 — One of One", cost: 2500, emoji: "💎", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Exemplaire unique, numéroté 1/1, certifié Topps" },
+  { id: "s28", name: "Séance photo avec joueurs pros", cost: 3000, emoji: "📸", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~300€", description: "Partenariat club, séance photo exclusive avec joueurs" },
 ];
 
 export const SUBSCRIPTION_PLANS = [
   {
     id: "starter",
-    label: "Ligue Starter",
+    label: "Ligue Free",
     price: 0,
     priceLabel: "Gratuit",
     color: "#94a3b8",
     emoji: "🌱",
-    mcBoost: 100,
-    features: ["100 MC chaque lundi","Roue quotidienne","Récompenses standard (cartes cadeaux 5-10€)","Pubs récompensées"],
+    mcBoost: 1000,
+    bonusMC: 3000,
+    features: ["1 000 MC chaque lundi","3 000 MC bonus à l'inscription","Roue quotidienne (1-3 SC)","Récompenses Tier 1 (boosters Topps, Amazon 5€)","Pubs récompensées"],
     noFeatures: ["Cashout","Marchés exclusifs","Support prioritaire"],
   },
   {
     id: "pro",
-    label: "Ligue Pro",
-    price: 4.99,
-    priceLabel: "4.99€/mois",
+    label: "Ligue Standard",
+    price: 5,
+    priceLabel: "5€/mois",
     color: "#3b82f6",
     emoji: "⚡",
-    mcBoost: 150,
-    priceId: "price_1TOJWuIB3HPK0xH5DzsgINcE", // Ligue Pro
-    features: ["150 MC chaque lundi","Option Cashout","Récompenses Premium (maillots, tech)","Sans pub"],
+    mcBoost: 3000,
+    bonusMC: 9000,
+    priceId: "price_1TOJWuIB3HPK0xH5DzsgINcE",
+    features: ["3 000 MC chaque lundi","9 000 MC bonus à l'inscription","Option Cashout","Récompenses Tier 2 (Hobby Box, Amazon 30€)","Sans pub"],
     popular: true,
   },
   {
     id: "elite",
-    label: "Ligue Elite",
-    price: 14.99,
-    priceLabel: "14.99€/mois",
+    label: "Ligue Premium",
+    price: 15,
+    priceLabel: "15€/mois",
     color: "#f59e0b",
     emoji: "👑",
-    mcBoost: 250,
-    priceId: "price_1TOJYAIB3HPK0xH5AusdEOFn", // Ligue Elite
-    features: ["250 MC chaque lundi","Accès marchés exclusifs","Récompenses de luxe (VIP, dédicaces)","Sans pub","Support prioritaire"],
+    mcBoost: 8000,
+    bonusMC: 24000,
+    priceId: "price_1TOJYAIB3HPK0xH5AusdEOFn",
+    features: ["8 000 MC chaque lundi","24 000 MC bonus à l'inscription","Accès marchés exclusifs","Récompenses Tier 3-5 (maillots signés, VIP, séance photo)","Sans pub","Support prioritaire"],
   },
 ];
 
 export const WEEKLY_MC_LIMIT = 200;
+// Taux de conversion MC → SC (fin de semaine, volontairement défavorable)
+export const MC_TO_SC_RATE = 500; // 500 MC = 1 SC
 
 export const SPIN_SEGMENTS = [
-  { label: "10 MC", value: 10, type: "mc", color: "#3b82f6" },
-  { label: "20 MC", value: 20, type: "mc", color: "#8b5cf6" },
-  { label: "1 SC", value: 1, type: "sc", color: "#10b981" },
-  { label: "50 MC", value: 50, type: "mc", color: "#f59e0b" },
-  { label: "10 MC", value: 10, type: "mc", color: "#3b82f6" },
-  { label: "100 MC", value: 100, type: "mc", color: "#ef4444" },
-  { label: "20 MC", value: 20, type: "mc", color: "#8b5cf6" },
-  { label: "CASHOUT", value: 1, type: "cashout", color: "#f97316" },
+  { label: "1 SC",   value: 1, type: "sc", color: "#10b981" },
+  { label: "50 MC",  value: 50, type: "mc", color: "#3b82f6" },
+  { label: "2 SC",   value: 2, type: "sc", color: "#34d399" },
+  { label: "100 MC", value: 100, type: "mc", color: "#8b5cf6" },
+  { label: "1 SC",   value: 1, type: "sc", color: "#10b981" },
+  { label: "200 MC", value: 200, type: "mc", color: "#f59e0b" },
+  { label: "3 SC",   value: 3, type: "sc", color: "#fbbf24" },
+  { label: "5 SC 🎰", value: 5, type: "sc", color: "#ef4444" },
 ];
 
 export const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];

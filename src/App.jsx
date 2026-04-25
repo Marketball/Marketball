@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 // Lib
 import { req, authReq } from "./lib/supabase.js";
 import { resolveBet } from "./lib/amm.js";
-import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT } from "./lib/constants.js";
+import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "./lib/constants.js";
 import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds } from "./lib/helpers.js";
 
 // UI components
@@ -182,7 +182,7 @@ export default function App() {
       const data=await req(`profiles?id=eq.${userId}&select=*`,{_token:token});
       if(data?.[0]){setProfile(data[0]);profileRef.current=data[0];}
       else{
-        const np={id:userId,coins:500,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
       }
@@ -394,6 +394,15 @@ export default function App() {
     if((profile?.store_coins||0)<amount){showToast("Pas assez de SC !","error");return;}
     await updateProfile({coins:(profile?.coins||0)+mcAmount,store_coins:(profile?.store_coins||0)-amount,weekly_mc_purchased:wp+mcAmount,weekly_reset_date:wk},session.token,session.user.id);
     showToast(`${amount} SC → ${mcAmount} MC !`);
+  };
+
+  // Conversion MC → SC (500 MC = 1 SC, taux volontairement défavorable selon le concept)
+  const handleConvertMCtoSC=async(amount)=>{
+    if(!session) return;
+    const mcCost=amount*MC_TO_SC_RATE;
+    if((profile?.coins||0)<mcCost){showToast("Pas assez de MC !","error");return;}
+    await updateProfile({coins:(profile?.coins||0)-mcCost,store_coins:(profile?.store_coins||0)+amount},session.token,session.user.id);
+    showToast(`${mcCost} MC → ${amount} SC !`);
   };
 
   const handleSubscribe=async(planId)=>{
@@ -625,7 +634,7 @@ export default function App() {
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={setBetModal} onNavigate={navigateTo} matches={matches} onMatchBet={setMatchBetModal} profile={profile} leaderboard={leaderboard} session={session} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={setMatchBetModal} loading={matchesLoading} session={session} profile={profile} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={setBetModal} profile={profile} session={session} showToast={showToast} />}
-      {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
+      {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
       {page==="leaderboard"&&publicProfileUser&&<PublicProfilePage username={publicProfileUser} onBack={()=>setPublicProfileUser(null)} leaderboard={leaderboard} session={session} profile={profile} showToast={showToast} />}
       {page==="store"&&<StorePage coins={coins} sc={sc} profile={profile} onRedeemSC={handleRedeemSC} onSubscribe={handleSubscribe} onNavigate={navigateTo} />}

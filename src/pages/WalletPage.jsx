@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { AMM } from "../lib/amm.js";
-import { WEEKLY_MC_LIMIT } from "../lib/constants.js";
+import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
@@ -35,8 +35,9 @@ function ChartSVG({ points }) {
   );
 }
 
-export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onCashout, markets, session, showToast }) {
+export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onConvertMCtoSC, onCashout, markets, session, showToast }) {
   const [convertAmount,setConvertAmount]=useState(1);
+  const [mcConvertAmount,setMcConvertAmount]=useState(1);
   const [cashoutConfirm,setCashoutConfirm]=useState(null);
   const [betFilter,setBetFilter]=useState("tous");
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
@@ -106,7 +107,25 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
       ))}
     </div>
 
-    {/* Convertir SC */}
+    {/* Convertir MC → SC */}
+    <div style={{ background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:14, padding:"16px 18px", marginBottom:14 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#10b981", marginBottom:4 }}>CONVERTIR MC → SC</div>
+      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>{MC_TO_SC_RATE} MC = 1 SC · {fmt(coins)} MC disponibles</div>
+      <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+        <div style={{ flex:1 }}>
+          <input type="number" value={mcConvertAmount} min={1} max={Math.floor(coins/MC_TO_SC_RATE)||1} onChange={e=>setMcConvertAmount(Math.max(1,Math.min(Math.floor(coins/MC_TO_SC_RATE)||1,+e.target.value||1)))}
+            style={{ width:"100%", padding:"9px 12px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:10, color:"#f1f5f9", fontSize:16, fontWeight:700, outline:"none", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>= {mcConvertAmount * MC_TO_SC_RATE} MC utilisés → {mcConvertAmount} SC</div>
+        </div>
+        <button onClick={()=>coins>=mcConvertAmount*MC_TO_SC_RATE&&onConvertMCtoSC?.(mcConvertAmount)}
+          disabled={coins<mcConvertAmount*MC_TO_SC_RATE}
+          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=mcConvertAmount*MC_TO_SC_RATE?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=mcConvertAmount*MC_TO_SC_RATE?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
+          Convertir →
+        </button>
+      </div>
+    </div>
+
+    {/* Convertir SC → MC */}
     <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 18px", marginBottom:14 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#60a5fa", marginBottom:4 }}>CONVERTIR SC EN MC</div>
       <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>1 SC = 10 MC · {remainingLimit} MC disponibles cette semaine</div>
@@ -127,7 +146,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
     {/* Roue */}
     <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, marginBottom:4 }}>ROUE QUOTIDIENNE</div>
-      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>Jusqu'a 200 MC ou 1 SC par jour !</div>
+      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>Gagne entre 1 et 5 SC ou jusqu'à 200 MC par jour !</div>
       <SpinWheel onSpin={onSpin} canSpin={canSpin} />
     </div>
 
