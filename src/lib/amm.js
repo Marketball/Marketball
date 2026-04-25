@@ -38,19 +38,26 @@ export const calcLiveMatchOdds = (match) => {
     pHome = remProb * (base.pHome / baseSum);
     pAway = remProb * (base.pAway / baseSum);
   } else {
-    // Écart au score : le retard devient exponentiellemement improbable
-    const gap = Math.abs(scoreDiff);
-    const timePressure = 1 - remaining / 92; // 0 au début → 1 à la fin
-    const comebackProb = Math.exp(-gap * 2.2 * timePressure);
-    if (scoreDiff > 0) {
-      pHome = Math.min(0.97, base.pHome + (1 - base.pHome) * (1 - comebackProb));
-      pDraw  = Math.max(0.005, base.pDraw * comebackProb);
-      pAway  = Math.max(0.005, 1 - pHome - pDraw);
-    } else {
-      pAway = Math.min(0.97, base.pAway + (1 - base.pAway) * (1 - comebackProb));
-      pDraw  = Math.max(0.005, base.pDraw * comebackProb);
-      pHome  = Math.max(0.005, 1 - pAway - pDraw);
+    // Écart au score : calcul Poisson sur les buts restants
+    // Garantit que pDraw > pAway quand l'équipe mène d'un but (ex: 85min 3-2)
+    const poi = (l, k) => { let r = Math.exp(-l); for (let i = 0; i < k; i++) r *= l / (i + 1); return r; };
+    const lH = base.pHome * 2.2 + base.pDraw * 1.1;
+    const lA = base.pAway * 2.2 + base.pDraw * 1.1;
+    const lH_rem = lH * remaining / 90;
+    const lA_rem = lA * remaining / 90;
+    let pHomeWin = 0, pDrawProb = 0, pAwayWin = 0;
+    for (let h = 0; h <= 7; h++) {
+      for (let a = 0; a <= 7; a++) {
+        const prob = poi(lH_rem, h) * poi(lA_rem, a);
+        const finalDiff = scoreDiff + h - a;
+        if (finalDiff > 0) pHomeWin += prob;
+        else if (finalDiff === 0) pDrawProb += prob;
+        else pAwayWin += prob;
+      }
     }
+    pHome = Math.max(0.005, pHomeWin);
+    pDraw = Math.max(0.005, pDrawProb);
+    pAway = Math.max(0.005, pAwayWin);
   }
 
   const total = pHome + pDraw + pAway;

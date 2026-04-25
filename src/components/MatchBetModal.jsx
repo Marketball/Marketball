@@ -3,7 +3,19 @@ import { calcLiveMatchOdds, calcExactScoreOdds, calcScorerOdds, calcOverUnderOdd
 import { fmt } from "../lib/helpers.js";
 import { squadReq } from "../lib/supabase.js";
 
-export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
+// Vérifie si un pari over/under est déjà garanti (gain ou perte) en live
+const isOverUnderSettled = (predLabel, match) => {
+  const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
+  if (!isLive || match.home_score == null) return false;
+  const total = (match.home_score ?? 0) + (match.away_score ?? 0);
+  const line = predLabel.includes("1.5") ? 1.5 : predLabel.includes("3.5") ? 3.5 : 2.5;
+  const isOver = predLabel.startsWith("Plus");
+  if (isOver && total > line) return "win"; // Déjà garanti gagnant
+  if (!isOver && total > line) return "loss"; // Impossible de gagner
+  return false;
+};
+
+export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFrozenUntil }) {
   const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(""),[amount,setAmount]=useState("");
   const [scorerTeam,setScorerTeam]=useState("home"),[homePlayers,setHomePlayers]=useState([]),[awayPlayers,setAwayPlayers]=useState([]),[loadingPlayers,setLoadingPlayers]=useState(false);
   const [homeGoals,setHomeGoals]=useState(1),[awayGoals,setAwayGoals]=useState(1);
@@ -35,7 +47,9 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
   const amtNum=parseInt(amount)||0;
   const gain=Math.round(amtNum*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
-  const canBet=finalPred&&amtNum>=1&&amtNum<=coins;
+  const isFrozen=betsFrozenUntil&&Date.now()<betsFrozenUntil;
+  const ouSettled=betType==="over_under"&&prediction?isOverUnderSettled(prediction,match):false;
+  const canBet=!isFrozen&&!ouSettled&&finalPred&&amtNum>=1&&amtNum<=coins;
 
   const BET_TYPES=[
     {id:"winner",label:"🏆 Vainqueur",desc:"1X2"},
@@ -91,7 +105,11 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
     if(betType==="over_under") return <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
       {[{l:"Plus de 1.5",ln:1.5,ov:true},{l:"Moins de 1.5",ln:1.5,ov:false},{l:"Plus de 2.5",ln:2.5,ov:true},{l:"Moins de 2.5",ln:2.5,ov:false},{l:"Plus de 3.5",ln:3.5,ov:true},{l:"Moins de 3.5",ln:3.5,ov:false}].map(opt=>{
         const o=calcOverUnderOdds(opt.ln,opt.ov,odds),sel=prediction===opt.l;
-        return <button key={opt.l} onClick={()=>setPrediction(opt.l)} style={{ flex:"1 1 45%", padding:"10px 10px", borderRadius:11, border:`2px solid ${sel?"#f59e0b":"rgba(241,245,249,0.07)"}`, background:sel?"rgba(245,158,11,0.1)":"transparent", color:sel?"#f59e0b":"rgba(241,245,249,0.4)", fontWeight:700, fontSize:11, cursor:"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.2s" }}><span>{opt.l} buts</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>x{o}</span></button>;
+        const settled=isOverUnderSettled(opt.l,match);
+        return <button key={opt.l} onClick={()=>!settled&&setPrediction(opt.l)} style={{ flex:"1 1 45%", padding:"10px 10px", borderRadius:11, border:`2px solid ${settled?"rgba(241,245,249,0.04)":sel?"#f59e0b":"rgba(241,245,249,0.07)"}`, background:settled?"rgba(241,245,249,0.02)":sel?"rgba(245,158,11,0.1)":"transparent", color:settled?"rgba(241,245,249,0.2)":sel?"#f59e0b":"rgba(241,245,249,0.4)", fontWeight:700, fontSize:11, cursor:settled?"not-allowed":"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.2s", opacity:settled?0.5:1 }}>
+          <span>{opt.l} buts{settled===true&&" 🔒"}</span>
+          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{settled?"—":`x${o}`}</span>
+        </button>;
       })}
     </div>;
   };
@@ -114,8 +132,11 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins }) {
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Cote</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:18, letterSpacing:1 }}>x{currentOdds}</span></div>
         <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:1 }}>+{fmt(gain)} 🪙</span></div>
       </div>
+      {isFrozen&&<div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#fbbf24", fontWeight:700, textAlign:"center" }}>⏳ Paris suspendus — score en cours de mise à jour</div>}
+      {ouSettled==="win"&&<div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#10b981", fontWeight:700, textAlign:"center" }}>✅ Issue déjà garantie — pari non disponible</div>}
+      {ouSettled==="loss"&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Issue impossible — pari non disponible</div>}
       <button onClick={()=>canBet&&onConfirm(match,betType,finalPred,amtNum,gain,currentOdds)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
-        {!finalPred?"Choisir une prediction":coins<amount?"Pas assez de MC":"CONFIRMER →"}
+        {isFrozen?"Paris suspendus ⏳":ouSettled?"Non disponible":!finalPred?"Choisir une prediction":coins<amount?"Pas assez de MC":"CONFIRMER →"}
       </button>
     </div>
   </div>;

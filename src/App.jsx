@@ -51,6 +51,8 @@ export default function App() {
   const intervalsRef=useRef([]);
   const [betModal,setBetModal]=useState(null);
   const [matchBetModal,setMatchBetModal]=useState(null);
+  const [betsFrozenUntil,setBetsFrozenUntil]=useState(0);
+  const matchesRef=useRef([]);
   const [toast,setToast]=useState(null);
   const [showConfetti,setShowConfetti]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
@@ -142,6 +144,7 @@ export default function App() {
         results.forEach(r=>{if(r.status==="fulfilled") allMatches.push(...r.value);});
       }
       allMatches.sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
+      matchesRef.current=allMatches;
       setMatches(allMatches);
     }catch(e){console.error("loadMatches error",e);}
     setMatchesLoading(false);
@@ -246,7 +249,8 @@ export default function App() {
     }catch{}
   },[]);
 
-  const handleAuth=async(token,user)=>{
+  const handleAuth=async(token,user,refreshToken)=>{
+    if(refreshToken) localStorage.setItem("mb_auth",JSON.stringify({access_token:token,refresh_token:refreshToken,user}));
     setSession({token,user});
     const favClub=user.user_metadata?.favorite_club||null;
     await loadProfile(token,user.id,favClub);
@@ -260,12 +264,37 @@ export default function App() {
     if(!localStorage.getItem("mb_onboarded"))setShowOnboarding(true);
     // Interval unique 60s : recharge matchs + résout les paris terminés
     const interval=setInterval(async()=>{
+      const prevMatches=matchesRef.current||[];
       const lm=await loadMatches();
+      // Détecter un changement de score → geler les paris 30s pour éviter la triche
+      const scoreChanged=lm.some(m=>{
+        const prev=prevMatches.find(p=>p.id===m.id);
+        return prev&&(m.status==="IN_PLAY"||m.status==="PAUSED")&&
+          (prev.home_score!==m.home_score||prev.away_score!==m.away_score);
+      });
+      if(scoreChanged) setBetsFrozenUntil(Date.now()+30000);
       const pendingMB=await loadMatchBets(token,user.id);
       if(pendingMB?.some(b=>b.status==="pending")) await checkAndResolveBets(token,user.id,lm,pendingMB);
     },60*1000);
     intervalsRef.current=[interval];
   };
+
+  // Restauration automatique de session au chargement de la page
+  useEffect(()=>{
+    const saved=localStorage.getItem("mb_auth");
+    if(!saved) return;
+    let parsed;
+    try{parsed=JSON.parse(saved);}catch{localStorage.removeItem("mb_auth");return;}
+    const {refresh_token,user}=parsed;
+    if(!refresh_token||!user) return;
+    authReq("token?grant_type=refresh_token",{refresh_token})
+      .then(data=>{
+        if(!data.access_token) throw new Error("no token");
+        localStorage.setItem("mb_auth",JSON.stringify({access_token:data.access_token,refresh_token:data.refresh_token,user:data.user||user}));
+        handleAuth(data.access_token,data.user||user,data.refresh_token);
+      })
+      .catch(()=>{localStorage.removeItem("mb_auth");});
+  },[]);
 
   const updateProfile=async(updates,token,userId)=>{
     try{await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch{}
@@ -419,6 +448,7 @@ export default function App() {
     // Nettoyer les intervals pour éviter les fuites mémoire
     intervalsRef.current.forEach(clearInterval);
     intervalsRef.current=[];
+    localStorage.removeItem("mb_auth");
     try{await authReq("logout",{});}catch{}
     setSession(null);setProfile(null);setBets([]);setMatchBets([]);profileRef.current=null;
   };
@@ -633,7 +663,7 @@ export default function App() {
   ?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} />
   :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} />
 )}
-    {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} />}
+    {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
     {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} />}

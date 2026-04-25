@@ -25,11 +25,11 @@ export default function AuthPage({ onAuth, onClose, modal }) {
         const d=await authReq("signup",{email,password,data:{username,favorite_club:favoriteClub||null}});
         if(d.user){
           const ld=await authReq("token?grant_type=password",{email,password});
-          onAuth(ld.access_token,ld.user);
+          onAuth(ld.access_token,ld.user,ld.refresh_token);
         }
       }else{
         const d=await authReq("token?grant_type=password",{email,password});
-        onAuth(d.access_token,d.user);
+        onAuth(d.access_token,d.user,d.refresh_token);
       }
     }catch(e){setError(e.message);}
     setLoading(false);
