@@ -1,27 +1,24 @@
 export const AMM = {
-  // Formule stable numériquement — pas de cap sur q_yes/q_no
-  // P(yes) = sigmoid((qY - qN) / b) → fonctionne même avec qY=50 000 vs qN=100
+  // P(yes) = qY / (qY + qN) — parimutuel simple
+  // q_yes et q_no représentent les MC investis sur chaque côté (pas des parts)
   probYes: (qY, qN) => {
-    const diff = (qN - qY) / 100; // si qY >> qN : diff très négatif → prob proche de 1
-    if (diff < -20) return 0.98;
-    if (diff > 20) return 0.02;
-    return Math.max(0.02, Math.min(0.98, 1 / (1 + Math.exp(diff))));
+    const total = (qY || 100) + (qN || 100);
+    return Math.max(0.02, Math.min(0.98, (qY || 100) / total));
   },
-  costToBuy: (qY, qN, shares, side) => {
-    const b = 100;
-    // log-sum-exp stable : log(exp(a) + exp(c)) = max + log(1 + exp(min - max))
-    const lse = (a, c) => { const m = Math.max(a, c); return m + Math.log(1 + Math.exp(Math.min(a, c) - m)); };
-    const before = b * lse(qY / b, qN / b);
-    const after = side === "yes"
-      ? b * lse((qY + shares) / b, qN / b)
-      : b * lse(qY / b, (qN + shares) / b);
-    return Math.max(1, Math.round(after - before));
+  // Le coût = le montant misé (1 MC = 1 MC investi)
+  // `amount` est le montant en MC, pas des parts
+  costToBuy: (qY, qN, amount, side) => Math.max(1, Math.round(amount)),
+  // Gain potentiel si victoire : montant / probabilité côté choisi
+  potentialGain: (qY, qN, amount, side) => {
+    const p = AMM.probYes(qY, qN);
+    const prob = side === "yes" ? p : 1 - p;
+    return Math.max(amount + 1, Math.round(amount / Math.max(prob, 0.02)));
   },
-  // Cashout : valeur actuelle des parts selon les cotes du moment
-  cashoutValue: (qY, qN, shares, side) => {
+  // Cashout : valeur actuelle = montant * (proba actuelle / proba d'achat) * 0.95
+  cashoutValue: (qY, qN, amount, side) => {
     const p = AMM.probYes(qY, qN);
     const currentProb = side === "yes" ? p : 1 - p;
-    return Math.max(1, Math.round(shares * currentProb * 0.95)); // 5% frais cashout
+    return Math.max(1, Math.round(amount * currentProb * 0.95));
   },
 };
 
