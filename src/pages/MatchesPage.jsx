@@ -22,6 +22,7 @@ export default function MatchesPage({ matches, onBet, onAddToParlay, loading, se
   const filtered=subComp==="Tous"?activeMatches:activeMatches.filter(m=>m.competition===subComp);
   const live=filtered.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED");
   const upcoming=filtered.filter(m=>m.status==="SCHEDULED");
+  const finished=filtered.filter(m=>m.status==="FINISHED").slice(0,6);
 
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:16 }}>MATCHS</div>
@@ -47,10 +48,10 @@ export default function MatchesPage({ matches, onBet, onAddToParlay, loading, se
 
     {loading&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2, fontSize:16 }}>CHARGEMENT...</div>}
 
-    {!loading&&live.length===0&&upcoming.length===0&&(
+    {!loading&&live.length===0&&upcoming.length===0&&finished.length===0&&(
       <div style={{ textAlign:"center", padding:60 }}>
         <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.25)", letterSpacing:2 }}>AUCUN MATCH À VENIR</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.25)", letterSpacing:2 }}>AUCUN MATCH DISPONIBLE</div>
         <div style={{ fontSize:12, color:"rgba(241,245,249,0.15)", marginTop:6 }}>Reviens bientôt !</div>
       </div>
     )}
@@ -70,6 +71,13 @@ export default function MatchesPage({ matches, onBet, onAddToParlay, loading, se
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
         {upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} onAddToParlay={onAddToParlay} />)}
       </div>
+    </>}
+    {!loading&&finished.length>0&&live.length===0&&upcoming.length===0&&<>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"rgba(241,245,249,0.3)" }}>MATCHS TERMINÉS</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:12 }}>
+        {finished.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+      </div>
+      <div style={{ textAlign:"center", padding:"16px 0 8px", color:"rgba(241,245,249,0.2)", fontSize:12 }}>📅 Les paris ouvrent dès les prochains matchs programmés</div>
     </>}
     {statsMatch&&<MatchBetsModal match={statsMatch} onClose={()=>setStatsMatch(null)} onBet={(m)=>{setStatsMatch(null);onBet(m);}} session={session} profile={profile} />}
   </div>;

@@ -196,18 +196,22 @@ export default function App() {
   const loadProfile=useCallback(async(token,userId,favoriteClub=null,referralCode=null)=>{
     try{
       const data=await req(`profiles?id=eq.${userId}&select=*`,{_token:token});
-      if(data?.[0]){setProfile(data[0]);profileRef.current=data[0];}
-      else{
-        const username=token&&userId?undefined:undefined; // sera pris de user_metadata
+      if(data?.[0]){
+        let p=data[0];
+        // Si le profil existe mais n'a pas de code parrain, en générer un maintenant
+        if(!p.referral_code){
+          const refCode=generateReferralCode(p.username||userId.slice(0,6));
+          try{await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({referral_code:refCode,referral_sc_earned:0,updated_at:new Date().toISOString()})});}catch{}
+          p={...p,referral_code:refCode,referral_sc_earned:0};
+        }
+        setProfile(p);profileRef.current=p;
+      }else{
         const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
         const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
-        // Appliquer le code parrain si fourni
         if(referralCode){
-          try{
-            await fetch("/api/referral",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode,newUserId:userId})});
-          }catch{}
+          try{await fetch("/api/referral",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode,newUserId:userId})});}catch{}
         }
       }
     }catch{}
