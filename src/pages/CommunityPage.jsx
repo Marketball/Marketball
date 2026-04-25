@@ -424,11 +424,13 @@ function ChallengesTab({ profile, session, showToast }) {
   if (!userId) return <div style={{ textAlign: "center", padding: 40, color: "rgba(241,245,249,0.25)", fontSize: 13 }}>Connecte-toi pour voir tes défis</div>;
 
   const received = challenges.filter(c => c.challenged_id === userId && c.status === "pending");
-  const sent = challenges.filter(c => c.challenger_id === userId && ["pending", "accepted"].includes(c.status));
+  const inProgress = challenges.filter(c => c.status === "accepted");
+  const sent = challenges.filter(c => c.challenger_id === userId && c.status === "pending");
   const history = challenges.filter(c => ["resolved", "declined", "cancelled"].includes(c.status));
 
   const SUBTABS = [
     { id: "recus", label: `📬 Reçus${received.length ? ` (${received.length})` : ""}` },
+    { id: "encours", label: `⚔️ En cours${inProgress.length ? ` (${inProgress.length})` : ""}` },
     { id: "envoyes", label: `📤 Envoyés${sent.length ? ` (${sent.length})` : ""}` },
     { id: "historique", label: "📜 Historique" },
   ];
@@ -491,8 +493,12 @@ function ChallengesTab({ profile, session, showToast }) {
         ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>⚔️</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI REÇU</div></div>
         : received.map(c => <ChallengeCard key={c.id} c={c} showActions="accept" />)
       )}
+      {subtab === "encours" && (inProgress.length === 0
+        ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>⚔️</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI EN COURS</div></div>
+        : inProgress.map(c => <ChallengeCard key={c.id} c={c} showActions={null} />)
+      )}
       {subtab === "envoyes" && (sent.length === 0
-        ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>📤</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI ENVOYÉ</div></div>
+        ? <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 36, marginBottom: 10 }}>📤</div><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, color: "rgba(241,245,249,0.25)" }}>AUCUN DÉFI EN ATTENTE</div></div>
         : sent.map(c => <ChallengeCard key={c.id} c={c} showActions="cancel" />)
       )}
       {subtab === "historique" && (history.length === 0
