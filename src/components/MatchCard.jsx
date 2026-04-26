@@ -2,7 +2,7 @@ import { useState } from "react";
 import { calcLiveMatchOdds } from "../lib/amm.js";
 import { compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 
-export default function MatchCard({ match, onBet, onStats, onAddToParlay }) {
+export default function MatchCard({ match, onBet, onStats }) {
   const [hover,setHover]=useState(false);
   const [imgErr,setImgErr]=useState({});
   const cc=compColor(match.competition);
@@ -46,8 +46,6 @@ export default function MatchCard({ match, onBet, onStats, onAddToParlay }) {
             <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", marginBottom:1, letterSpacing:1 }}>{item.l}</div>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:item.c, letterSpacing:1 }}>{item.o}</div>
           </button>
-          {onAddToParlay&&<button className="btn-animated" onClick={e=>{e.stopPropagation();onAddToParlay({matchTitle:`${match.home_team} vs ${match.away_team}`,prediction:item.pred,odds:item.o,betTypeLabel:"Vainqueur",matchId:match.id});}}
-            style={{ padding:"4px 0", borderRadius:7, border:`1px solid rgba(245,158,11,0.35)`, background:"rgba(245,158,11,0.07)", color:"#f59e0b", fontSize:10, fontWeight:800, cursor:"pointer" }}>🎯 +combiné</button>}
         </div>
       ))}
     </div>}
