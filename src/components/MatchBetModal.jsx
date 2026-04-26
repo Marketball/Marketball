@@ -21,6 +21,12 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const [homeGoals,setHomeGoals]=useState(1),[awayGoals,setAwayGoals]=useState(1);
   const odds=calcLiveMatchOdds(match);
 
+  const isLive=match.status==="IN_PLAY"||match.status==="PAUSED";
+  const liveHome=match.home_score??0, liveAway=match.away_score??0;
+  const totalGoals=liveHome+liveAway;
+  // Noms des buteurs déjà marqués
+  const alreadyScored=new Set((match.scorers||[]).map(s=>s.name));
+
   useEffect(()=>{
     if(!match.home_team_id&&!match.away_team_id) return;
     setLoadingPlayers(true);
@@ -49,12 +55,16 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
   const isFrozen=betsFrozenUntil&&Date.now()<betsFrozenUntil;
   const ouSettled=betType==="over_under"&&prediction?isOverUnderSettled(prediction,match):false;
-  const canBet=!isFrozen&&!ouSettled&&finalPred&&amtNum>=1&&amtNum<=coins;
+  // 1er buteur désactivé si déjà un but en live
+  const firstScorerLocked=isLive&&totalGoals>0;
+  // Score exact impossible si en dessous du score actuel
+  const exactScoreImpossible=isLive&&(homeGoals<liveHome||awayGoals<liveAway);
+  const canBet=!isFrozen&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins;
 
   const BET_TYPES=[
     {id:"winner",label:"🏆 Vainqueur",desc:"1X2"},
     {id:"exact_score",label:"🎯 Score exact",desc:"Cotes Poisson"},
-    {id:"first_scorer",label:"⚽ 1er buteur",desc:"x2.5 min"},
+    {id:"first_scorer",label:"⚽ 1er buteur",desc:firstScorerLocked?"🔒 But déjà marqué":"x2.5 min",locked:firstScorerLocked},
     {id:"scorer",label:"🥅 Buteur",desc:"x1.5 min"},
     {id:"over_under",label:"📊 +/- buts",desc:"Over/Under"},
   ];
@@ -82,7 +92,11 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
         {[[1,0],[2,0],[2,1],[1,1],[0,1],[0,2],[3,1],[3,0]].map(([h,a])=>{
           const o=calcExactScoreOdds(h,a,odds,match),sel=homeGoals===h&&awayGoals===a;
-          return <button key={`${h}-${a}`} onClick={()=>{setHomeGoals(h);setAwayGoals(a);}} style={{ padding:"5px 10px", borderRadius:8, border:`1px solid ${sel?"#10b981":"rgba(241,245,249,0.07)"}`, background:sel?"rgba(16,185,129,0.1)":"transparent", color:sel?"#10b981":"rgba(241,245,249,0.4)", fontSize:11, fontWeight:700, cursor:"pointer" }}>{h}-{a} <span style={{ color:"#fbbf24", fontFamily:"'Bebas Neue',sans-serif" }}>x{o}</span></button>;
+          const impossible=isLive&&(h<liveHome||a<liveAway);
+          return <button key={`${h}-${a}`} onClick={()=>{if(impossible)return;setHomeGoals(h);setAwayGoals(a);}}
+            style={{ padding:"5px 10px", borderRadius:8, border:`1px solid ${impossible?"rgba(241,245,249,0.03)":sel?"#10b981":"rgba(241,245,249,0.07)"}`, background:impossible?"rgba(241,245,249,0.01)":sel?"rgba(16,185,129,0.1)":"transparent", color:impossible?"rgba(241,245,249,0.15)":sel?"#10b981":"rgba(241,245,249,0.4)", fontSize:11, fontWeight:700, cursor:impossible?"not-allowed":"pointer", opacity:impossible?0.4:1 }}>
+            {h}-{a} <span style={{ color:impossible?"rgba(241,245,249,0.15)":"#fbbf24", fontFamily:"'Bebas Neue',sans-serif" }}>{impossible?"✗":`x${o}`}</span>
+          </button>;
         })}
       </div>
     </div>;
@@ -97,7 +111,12 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
               const name = typeof p === "object" ? p.name : p;
               const pos = typeof p === "object" ? p.position : "";
               const o=calcScorerOdds(name,betType==="first_scorer",pos);
-              return <button key={name} onClick={()=>setPrediction(name)} style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${prediction===name?"#10b981":"rgba(241,245,249,0.06)"}`, background:prediction===name?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:prediction===name?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.15s" }}><span>{name}</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:12 }}>x{o}</span></button>;
+              const hasScored=alreadyScored.has(name);
+              return <button key={name} onClick={()=>!hasScored&&setPrediction(name)}
+                style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${hasScored?"rgba(239,68,68,0.15)":prediction===name?"#10b981":"rgba(241,245,249,0.06)"}`, background:hasScored?"rgba(239,68,68,0.05)":prediction===name?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:hasScored?"rgba(239,68,68,0.4)":prediction===name?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:hasScored?"not-allowed":"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.15s", opacity:hasScored?0.5:1 }}>
+                <span>{name}{hasScored?" ⚽":""}</span>
+                <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:hasScored?"rgba(241,245,249,0.2)":"#fbbf24", fontSize:12 }}>{hasScored?"—":`x${o}`}</span>
+              </button>;
             })}
           </div>
         ):<div style={{ fontSize:12, color:"rgba(241,245,249,0.25)", textAlign:"center", padding:16 }}>Joueurs non disponibles</div>}
@@ -122,7 +141,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
         <div style={{ textAlign:"center", flex:1 }}><div style={{ fontWeight:800, fontSize:13 }}>{match.away_team}</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"#ef4444", letterSpacing:1, marginTop:2 }}>x{odds.oddsAway}</div></div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:16 }}>
-        {BET_TYPES.map(t=><button key={t.id} onClick={()=>{setBetType(t.id);setPrediction("");setScorerTeam("home");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"left", transition:"all 0.2s" }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
+        {BET_TYPES.map(t=><button key={t.id} onClick={()=>{if(t.locked)return;setBetType(t.id);setPrediction("");setScorerTeam("home");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${t.locked?"rgba(241,245,249,0.03)":betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:t.locked?"rgba(241,245,249,0.01)":betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:t.locked?"rgba(241,245,249,0.2)":betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:t.locked?"not-allowed":"pointer", textAlign:"left", transition:"all 0.2s", opacity:t.locked?0.5:1 }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
       </div>
       <div style={{ marginBottom:16 }}>{renderInputs()}</div>
       <input type="number" value={amount} placeholder="Ex: 200" min={1} max={coins} onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(coins,Math.max(1,parseInt(v)||1)).toString());}}} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
@@ -133,6 +152,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
         <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:1 }}>+{fmt(gain)} 🪙</span></div>
       </div>
       {isFrozen&&<div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#fbbf24", fontWeight:700, textAlign:"center" }}>⏳ Paris suspendus — score en cours de mise à jour</div>}
+      {exactScoreImpossible&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Score impossible — le match est à {liveHome}-{liveAway}</div>}
       {ouSettled==="win"&&<div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#10b981", fontWeight:700, textAlign:"center" }}>✅ Issue déjà garantie — pari non disponible</div>}
       {ouSettled==="loss"&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Issue impossible — pari non disponible</div>}
       <button onClick={()=>canBet&&onConfirm(match,betType,finalPred,amtNum,gain,currentOdds)} disabled={!canBet} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>

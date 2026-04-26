@@ -36,7 +36,7 @@ function ChartSVG({ points }) {
 }
 
 export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onConvertMCtoSC, onCashout, markets, session, showToast }) {
-  const [scWanted,setScWanted]=useState(1);
+  const [mcConvertAmount,setMcConvertAmount]=useState(500);
   const [cashoutConfirm,setCashoutConfirm]=useState(null);
   const [betFilter,setBetFilter]=useState("tous");
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
@@ -111,14 +111,14 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
       <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>{MC_TO_SC_RATE} MC = 1 SC · {fmt(coins)} MC disponibles</div>
       <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
         <div style={{ flex:1 }}>
-          <input type="number" value={scWanted} min={1} max={Math.floor(coins/MC_TO_SC_RATE)||1} placeholder="Ex: 2"
-            onChange={e=>setScWanted(Math.max(1,Math.min(Math.floor(coins/MC_TO_SC_RATE)||1,parseInt(e.target.value)||1)))}
+          <input type="number" value={mcConvertAmount} min={MC_TO_SC_RATE} step={MC_TO_SC_RATE} placeholder={`Ex: ${MC_TO_SC_RATE}`}
+            onChange={e=>setMcConvertAmount(Math.max(MC_TO_SC_RATE,Math.min(coins,parseInt(e.target.value)||MC_TO_SC_RATE)))}
             style={{ width:"100%", padding:"9px 12px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:10, color:"#f1f5f9", fontSize:16, fontWeight:700, outline:"none", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
-          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>{scWanted} SC = {fmt(scWanted*MC_TO_SC_RATE)} MC utilisés</div>
+          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>{fmt(mcConvertAmount)} MC → {Math.floor(mcConvertAmount/MC_TO_SC_RATE)} SC</div>
         </div>
-        <button onClick={()=>coins>=scWanted*MC_TO_SC_RATE&&onConvertMCtoSC?.(scWanted)}
-          disabled={coins<scWanted*MC_TO_SC_RATE}
-          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=scWanted*MC_TO_SC_RATE?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=scWanted*MC_TO_SC_RATE?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
+        <button onClick={()=>coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1&&onConvertMCtoSC?.(Math.floor(mcConvertAmount/MC_TO_SC_RATE))}
+          disabled={coins<mcConvertAmount||Math.floor(mcConvertAmount/MC_TO_SC_RATE)<1}
+          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
           Convertir →
         </button>
       </div>
