@@ -526,7 +526,7 @@ export default function App() {
     {id:"markets",icon:"📊",label:"Marchés"},
     {id:"community",icon:"💬",label:"Communauté"},
     {id:"wallet",icon:"💰",label:"Wallet"},
-    {id:"leaderboard",icon:"🏆",label:"Top"},
+    {id:"leaderboard",icon:"🏆",label:"Classement"},
     {id:"store",icon:"🎁",label:"Store"},
     {id:"subscription",icon:"👑",label:"Ligues"},
     {id:"howto",icon:"❓",label:"Guide"},
@@ -603,7 +603,7 @@ export default function App() {
       </div>
       {/* Bottom nav mobile visiteur */}
       <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,7,18,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(241,245,249,0.07)", paddingBottom:"env(safe-area-inset-bottom)" }}>
-        {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"},{id:"community",icon:"💬",label:"Communauté"},{id:"leaderboard",icon:"🏆",label:"Top"}].map(n=>(
+        {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"},{id:"community",icon:"💬",label:"Communauté"},{id:"leaderboard",icon:"🏆",label:"Classement"}].map(n=>(
           <button key={n.id} onClick={()=>setPage(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
             {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
             <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>

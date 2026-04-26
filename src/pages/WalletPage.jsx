@@ -36,8 +36,7 @@ function ChartSVG({ points }) {
 }
 
 export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onConvertMCtoSC, onCashout, markets, session, showToast }) {
-  const [convertAmount,setConvertAmount]=useState(1);
-  const [mcConvertAmount,setMcConvertAmount]=useState(1);
+  const [mcConvertAmount,setMcConvertAmount]=useState(500);
   const [cashoutConfirm,setCashoutConfirm]=useState(null);
   const [betFilter,setBetFilter]=useState("tous");
   const lastSpin=profile?.last_spin?new Date(profile.last_spin).getTime():0;
@@ -48,7 +47,6 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const weekKey=getWeekKey();
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
-  const mcFromConvert=convertAmount*10;
 
   const allBets=[
     ...(matchBets||[]).map(b=>({...b,isMatch:true})),
@@ -113,31 +111,15 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
       <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>{MC_TO_SC_RATE} MC = 1 SC · {fmt(coins)} MC disponibles</div>
       <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
         <div style={{ flex:1 }}>
-          <input type="number" value={mcConvertAmount} min={1} max={Math.floor(coins/MC_TO_SC_RATE)||1} onChange={e=>setMcConvertAmount(Math.max(1,Math.min(Math.floor(coins/MC_TO_SC_RATE)||1,+e.target.value||1)))}
+          <input type="number" value={mcConvertAmount} min={MC_TO_SC_RATE} step={MC_TO_SC_RATE} max={Math.floor(coins/MC_TO_SC_RATE)*MC_TO_SC_RATE||MC_TO_SC_RATE}
+            placeholder={`Ex: ${MC_TO_SC_RATE}`}
+            onChange={e=>setMcConvertAmount(Math.max(MC_TO_SC_RATE,Math.min(Math.floor(coins/MC_TO_SC_RATE)*MC_TO_SC_RATE||MC_TO_SC_RATE,+e.target.value||MC_TO_SC_RATE)))}
             style={{ width:"100%", padding:"9px 12px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:10, color:"#f1f5f9", fontSize:16, fontWeight:700, outline:"none", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
-          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>= {mcConvertAmount * MC_TO_SC_RATE} MC utilisés → {mcConvertAmount} SC</div>
+          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>{mcConvertAmount} MC → {Math.floor(mcConvertAmount/MC_TO_SC_RATE)} SC</div>
         </div>
-        <button onClick={()=>coins>=mcConvertAmount*MC_TO_SC_RATE&&onConvertMCtoSC?.(mcConvertAmount)}
-          disabled={coins<mcConvertAmount*MC_TO_SC_RATE}
-          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=mcConvertAmount*MC_TO_SC_RATE?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=mcConvertAmount*MC_TO_SC_RATE?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
-          Convertir →
-        </button>
-      </div>
-    </div>
-
-    {/* Convertir SC → MC */}
-    <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 18px", marginBottom:14 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#60a5fa", marginBottom:4 }}>CONVERTIR SC EN MC</div>
-      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>1 SC = 10 MC · {remainingLimit} MC disponibles cette semaine</div>
-      <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
-        <div style={{ flex:1 }}>
-          <input type="number" value={convertAmount} min={1} max={Math.min(sc,Math.floor(remainingLimit/10))} onChange={e=>setConvertAmount(Math.max(1,Math.min(sc,Math.floor(remainingLimit/10),+e.target.value||1)))}
-            style={{ width:"100%", padding:"9px 12px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:10, color:"#f1f5f9", fontSize:16, fontWeight:700, outline:"none", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
-          <div style={{ fontSize:11, color:"#10b981", marginTop:4 }}>= {mcFromConvert} MC</div>
-        </div>
-        <button onClick={()=>sc>=convertAmount&&remainingLimit>=mcFromConvert&&onConvertSC(convertAmount)}
-          disabled={sc<convertAmount||remainingLimit<mcFromConvert}
-          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:sc>=convertAmount&&remainingLimit>=mcFromConvert?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.04)", color:sc>=convertAmount&&remainingLimit>=mcFromConvert?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
+        <button onClick={()=>coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1&&onConvertMCtoSC?.(Math.floor(mcConvertAmount/MC_TO_SC_RATE))}
+          disabled={coins<mcConvertAmount||Math.floor(mcConvertAmount/MC_TO_SC_RATE)<1}
+          style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
           Convertir →
         </button>
       </div>
