@@ -83,12 +83,12 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
       <div style={{ display:"flex", alignItems:"center", gap:16, justifyContent:"center", marginBottom:12 }}>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginBottom:6 }}>{match.home_team}</div>
-          <input type="number" min={0} max={15} value={homeGoals} onChange={e=>{setHomeGoals(Math.max(0,Math.min(15,+e.target.value)));setTriedConfirm(false);}}} style={{ width:62, padding:"10px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:11, color:"#f1f5f9", fontSize:24, fontWeight:800, outline:"none", textAlign:"center", fontFamily:"'Bebas Neue',sans-serif" }} />
+          <input type="number" min={0} max={15} value={homeGoals} onChange={e=>{setHomeGoals(Math.max(0,Math.min(15,+e.target.value)));setTriedConfirm(false);}} style={{ width:62, padding:"10px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:11, color:"#f1f5f9", fontSize:24, fontWeight:800, outline:"none", textAlign:"center", fontFamily:"'Bebas Neue',sans-serif" }} />
         </div>
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"rgba(241,245,249,0.2)", marginTop:18 }}>—</div>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginBottom:6 }}>{match.away_team}</div>
-          <input type="number" min={0} max={15} value={awayGoals} onChange={e=>{setAwayGoals(Math.max(0,Math.min(15,+e.target.value)));setTriedConfirm(false);}}} style={{ width:62, padding:"10px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:11, color:"#f1f5f9", fontSize:24, fontWeight:800, outline:"none", textAlign:"center", fontFamily:"'Bebas Neue',sans-serif" }} />
+          <input type="number" min={0} max={15} value={awayGoals} onChange={e=>{setAwayGoals(Math.max(0,Math.min(15,+e.target.value)));setTriedConfirm(false);}} style={{ width:62, padding:"10px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:11, color:"#f1f5f9", fontSize:24, fontWeight:800, outline:"none", textAlign:"center", fontFamily:"'Bebas Neue',sans-serif" }} />
         </div>
       </div>
       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
