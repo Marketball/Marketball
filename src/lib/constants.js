@@ -8,43 +8,46 @@ export const BADGES = [
   { id: "pro", label: "Pro", minLevel: 51, maxLevel: 80, color: "#fbbf24", emoji: "⚡", glow: "rgba(251,191,36,0.25)" },
   { id: "legend", label: "Legend", minLevel: 81, maxLevel: 999, color: "#34d399", emoji: "👑", glow: "rgba(52,211,153,0.3)" },
 ];
-export const XP_PER_LEVEL = 100;
+export const XP_PER_LEVEL = 100; // legacy — ne plus utiliser directement
+// Nouveau système : niveau N nécessite xpForLevel(N) XP cumulés
+// Niveau 1→2 : 100 XP, puis +50 par niveau (150, 200, 250...)
+// Formule : xpForLevel(N) = 25 × (N-1) × (N+2)
 
 // ============================================================
 // STORE — 1 SC = 0,10 € de cadeau (valeur réelle × 10 = prix SC)
 // ============================================================
 export const STORE_ITEMS = [
   // ── TIER 1 — Free (30-70 SC) ───────────────────────────────
-  { id: "s1",  name: "Booster Topps Match Attax", cost: 30,  emoji: "🃏", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~3€", description: "8 cartes UCL ou Liga, livraison sous 10j" },
-  { id: "s2",  name: "Booster Topps UCL", cost: 40,  emoji: "🏆", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~4€", description: "6 cartes + 1 rare Champions League" },
-  { id: "s3",  name: "Carte cadeau Amazon 5€", cost: 50,  emoji: "🛒", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
-  { id: "s4",  name: "Carte cadeau Fanatics 5€", cost: 50,  emoji: "👟", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€", description: "Code envoyé par email sous 48h" },
-  { id: "s5",  name: "Pack 3 boosters Topps", cost: 70,  emoji: "📦", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~7€", description: "3 boosters Topps au choix, livraison sous 10j" },
+  { id: "s1",  name: "Booster Topps Match Attax",       name_en: "Topps Match Attax Booster Pack",    cost: 30,  emoji: "🃏", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~3€", description: "8 cartes UCL ou Liga, livraison sous 10j",                           description_en: "8 UCL or Liga cards, delivered within 10 days" },
+  { id: "s2",  name: "Booster Topps UCL",               name_en: "Topps UCL Booster Pack",            cost: 40,  emoji: "🏆", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~4€", description: "6 cartes + 1 rare Champions League",                                description_en: "6 cards + 1 rare Champions League card" },
+  { id: "s3",  name: "Carte cadeau Amazon 5€",          name_en: "Amazon Gift Card €5",               cost: 50,  emoji: "🛒", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s4",  name: "Carte cadeau Fanatics 5€",        name_en: "Fanatics Gift Card €5",             cost: 50,  emoji: "👟", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s5",  name: "Pack 3 boosters Topps",           name_en: "3 Topps Booster Packs",             cost: 70,  emoji: "📦", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~7€", description: "3 boosters Topps au choix, livraison sous 10j",                     description_en: "3 Topps boosters of your choice, delivered within 10 days" },
   // ── TIER 2 — Standard (100-320 SC) ────────────────────────
-  { id: "s6",  name: "Boîte Topps Match Attax", cost: 100, emoji: "🎁", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~10€", description: "18 boosters UCL ou Liga, livraison sous 10j" },
-  { id: "s7",  name: "Blaster Box Topps Bundesliga", cost: 130, emoji: "🃏", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~13€", description: "Blaster Box Topps Chrome Bundesliga" },
-  { id: "s8",  name: "Carte cadeau Amazon 15€", cost: 150, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€", description: "Code envoyé par email sous 48h" },
-  { id: "s9",  name: "Carte cadeau Fanatics 15€", cost: 150, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€", description: "Code envoyé par email sous 48h" },
-  { id: "s10", name: "Blaster Box Topps Premier League", cost: 150, emoji: "🏴", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~15€", description: "Blaster Box Topps Chrome Premier League" },
-  { id: "s11", name: "Hobby Box Topps Ligue 1", cost: 280, emoji: "🇫🇷", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~28€", description: "24 boosters + relics garantis, livraison sous 14j" },
-  { id: "s12", name: "Carte cadeau Amazon 30€", cost: 300, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "30€", description: "Code envoyé par email sous 48h" },
-  { id: "s13", name: "Hobby Box Topps UCL", cost: 320, emoji: "🏆", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~32€", description: "Hobby Box Topps UEFA Champions League" },
-  { id: "s14", name: "Place match tribune", cost: 450, emoji: "🏟️", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~45€", description: "Tribune standard, clubs partenaires" },
-  { id: "s15", name: "Carte cadeau Fanatics 50€", cost: 500, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "50€", description: "Code envoyé par email sous 48h" },
+  { id: "s6",  name: "Boîte Topps Match Attax",         name_en: "Topps Match Attax Box",             cost: 100, emoji: "🎁", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~10€", description: "18 boosters UCL ou Liga, livraison sous 10j",                      description_en: "18 UCL or Liga boosters, delivered within 10 days" },
+  { id: "s7",  name: "Blaster Box Topps Bundesliga",    name_en: "Topps Bundesliga Blaster Box",      cost: 130, emoji: "🃏", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~13€", description: "Blaster Box Topps Chrome Bundesliga",                               description_en: "Topps Chrome Bundesliga Blaster Box" },
+  { id: "s8",  name: "Carte cadeau Amazon 15€",         name_en: "Amazon Gift Card €15",              cost: 150, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s9",  name: "Carte cadeau Fanatics 15€",       name_en: "Fanatics Gift Card €15",            cost: 150, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s10", name: "Blaster Box Topps Premier League",name_en: "Topps Premier League Blaster Box",  cost: 150, emoji: "🏴", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~15€", description: "Blaster Box Topps Chrome Premier League",                          description_en: "Topps Chrome Premier League Blaster Box" },
+  { id: "s11", name: "Hobby Box Topps Ligue 1",         name_en: "Topps Ligue 1 Hobby Box",           cost: 280, emoji: "🇫🇷", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~28€", description: "24 boosters + relics garantis, livraison sous 14j",               description_en: "24 boosters + guaranteed relics, delivered within 14 days" },
+  { id: "s12", name: "Carte cadeau Amazon 30€",         name_en: "Amazon Gift Card €30",              cost: 300, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "30€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s13", name: "Hobby Box Topps UCL",             name_en: "Topps UCL Hobby Box",               cost: 320, emoji: "🏆", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~32€", description: "Hobby Box Topps UEFA Champions League",                            description_en: "Topps UEFA Champions League Hobby Box" },
+  { id: "s14", name: "Place match tribune",             name_en: "Stadium Stand Ticket",              cost: 450, emoji: "🏟️", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~45€", description: "Tribune standard, clubs partenaires",                              description_en: "Standard stand, partner clubs" },
+  { id: "s15", name: "Carte cadeau Fanatics 50€",       name_en: "Fanatics Gift Card €50",            cost: 500, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "50€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
   // ── TIER 3-5 — Premium (700+ SC) ──────────────────────────
-  { id: "s16", name: "Carte Topps autographe Ligue 1", cost: 700,  emoji: "✍️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~70€", description: "Autographe joueur Ligue 1 certifié, livraison assurée" },
-  { id: "s17", name: "Carte cadeau Amazon 75€", cost: 750,  emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "75€", description: "Code envoyé par email sous 48h" },
-  { id: "s18", name: "Maillot de foot officiel", cost: 800,  emoji: "👕", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€", description: "Maillot officiel au choix, taille au choix, livraison sous 14j" },
-  { id: "s19", name: "Pack 2 places match premium", cost: 800,  emoji: "🎟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€", description: "2 places catégorie premium, clubs partenaires" },
-  { id: "s20", name: "Visite stade + vestiaires", cost: 900,  emoji: "🏟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~90€", description: "Visite exclusive stade + vestiaires, clubs partenaires" },
-  { id: "s21", name: "Carte cadeau Fanatics 100€", cost: 1000, emoji: "👟", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "100€", description: "Code envoyé par email sous 48h" },
-  { id: "s22", name: "Autographe superstar (Mbappé, Vini...)", cost: 1500, emoji: "⭐", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~150€", description: "Carte Topps autographe superstar certifiée" },
-  { id: "s23", name: "Maillot signé + certificat", cost: 2000, emoji: "🏅", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Maillot officiel signé joueur pro + certificat d'authenticité" },
-  { id: "s24", name: "Pack VIP match + hospitalité", cost: 2000, emoji: "🥂", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Pack VIP + hospitalité club, expérience unique" },
-  { id: "s25", name: "Carte cadeau Amazon 200€", cost: 2000, emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "200€", description: "Code envoyé par email sous 48h" },
-  { id: "s26", name: "Week-end supporter VIP", cost: 2500, emoji: "✈️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Hôtel + 2 places match, week-end supporter complet" },
-  { id: "s27", name: "Carte Topps 1/1 — One of One", cost: 2500, emoji: "💎", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Exemplaire unique, numéroté 1/1, certifié Topps" },
-  { id: "s28", name: "Séance photo avec joueurs pros", cost: 3000, emoji: "📸", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~300€", description: "Partenariat club, séance photo exclusive avec joueurs" },
+  { id: "s16", name: "Carte Topps autographe Ligue 1",  name_en: "Topps Ligue 1 Autograph Card",      cost: 700,  emoji: "✍️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~70€",  description: "Autographe joueur Ligue 1 certifié, livraison assurée",          description_en: "Certified Ligue 1 player autograph, insured delivery" },
+  { id: "s17", name: "Carte cadeau Amazon 75€",         name_en: "Amazon Gift Card €75",              cost: 750,  emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "75€",   description: "Code envoyé par email sous 48h",                                  description_en: "Code sent by email within 48h" },
+  { id: "s18", name: "Maillot de foot officiel",        name_en: "Official Football Jersey",          cost: 800,  emoji: "👕", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€",  description: "Maillot officiel au choix, taille au choix, livraison sous 14j", description_en: "Official jersey of your choice, any size, delivered within 14 days" },
+  { id: "s19", name: "Pack 2 places match premium",     name_en: "2 Premium Match Tickets",           cost: 800,  emoji: "🎟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~80€",  description: "2 places catégorie premium, clubs partenaires",                   description_en: "2 premium category seats, partner clubs" },
+  { id: "s20", name: "Visite stade + vestiaires",       name_en: "Stadium & Locker Room Tour",        cost: 900,  emoji: "🏟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~90€",  description: "Visite exclusive stade + vestiaires, clubs partenaires",         description_en: "Exclusive stadium + locker room tour, partner clubs" },
+  { id: "s21", name: "Carte cadeau Fanatics 100€",      name_en: "Fanatics Gift Card €100",           cost: 1000, emoji: "👟", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "100€",  description: "Code envoyé par email sous 48h",                                  description_en: "Code sent by email within 48h" },
+  { id: "s22", name: "Autographe superstar (Mbappé, Vini...)", name_en: "Superstar Autograph (Mbappé, Vini...)", cost: 1500, emoji: "⭐", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~150€", description: "Carte Topps autographe superstar certifiée",             description_en: "Certified Topps superstar autograph card" },
+  { id: "s23", name: "Maillot signé + certificat",      name_en: "Signed Jersey + Certificate",       cost: 2000, emoji: "🏅", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Maillot officiel signé joueur pro + certificat d'authenticité",  description_en: "Official jersey signed by a pro player + certificate of authenticity" },
+  { id: "s24", name: "Pack VIP match + hospitalité",    name_en: "VIP Match + Hospitality Pack",      cost: 2000, emoji: "🥂", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~200€", description: "Pack VIP + hospitalité club, expérience unique",                  description_en: "VIP pack + club hospitality, unique experience" },
+  { id: "s25", name: "Carte cadeau Amazon 200€",        name_en: "Amazon Gift Card €200",             cost: 2000, emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "200€",  description: "Code envoyé par email sous 48h",                                  description_en: "Code sent by email within 48h" },
+  { id: "s26", name: "Week-end supporter VIP",          name_en: "VIP Fan Weekend",                   cost: 2500, emoji: "✈️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Hôtel + 2 places match, week-end supporter complet",             description_en: "Hotel + 2 match tickets, full supporter weekend" },
+  { id: "s27", name: "Carte Topps 1/1 — One of One",   name_en: "Topps 1/1 — One of One Card",       cost: 2500, emoji: "💎", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~250€", description: "Exemplaire unique, numéroté 1/1, certifié Topps",                description_en: "Unique copy, numbered 1/1, Topps certified" },
+  { id: "s28", name: "Séance photo avec joueurs pros",  name_en: "Photo Session with Pro Players",    cost: 3000, emoji: "📸", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~300€", description: "Partenariat club, séance photo exclusive avec joueurs",          description_en: "Club partnership, exclusive photo session with players" },
 ];
 
 export const SUBSCRIPTION_PLANS = [
@@ -130,50 +133,85 @@ export const COMP_INFO = {
   "U21UEFA":  { name: "Euro U21 Qualif.",           emoji: "🇪🇺", color: "#60a5fa" },
 };
 
+// Clubs affichés par défaut (grille)
 export const POPULAR_CLUBS = [
-  // 🇫🇷 Ligue 1
   { name:"Paris Saint-Germain", flag:"🇫🇷" },
   { name:"Marseille",           flag:"🇫🇷" },
   { name:"Lyon",                flag:"🇫🇷" },
   { name:"Monaco",              flag:"🇫🇷" },
-  { name:"Lens",                flag:"🇫🇷" },
   { name:"Lille",               flag:"🇫🇷" },
   { name:"Nice",                flag:"🇫🇷" },
-  { name:"Rennes",              flag:"🇫🇷" },
-  { name:"Strasbourg",          flag:"🇫🇷" },
-  // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League
   { name:"Arsenal",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name:"Chelsea",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { name:"Liverpool",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { name:"Manchester City",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { name:"Manchester United",   flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name:"Tottenham",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name:"Newcastle",           flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name:"Aston Villa",         flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  // 🇪🇸 Liga
+  { name:"Chelsea",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { name:"Real Madrid",         flag:"🇪🇸" },
   { name:"Barcelona",           flag:"🇪🇸" },
   { name:"Atletico Madrid",     flag:"🇪🇸" },
-  { name:"Sevilla",             flag:"🇪🇸" },
-  { name:"Villarreal",          flag:"🇪🇸" },
-  // 🇩🇪 Bundesliga
   { name:"Bayern Munich",       flag:"🇩🇪" },
   { name:"Borussia Dortmund",   flag:"🇩🇪" },
-  { name:"Bayer Leverkusen",    flag:"🇩🇪" },
-  { name:"RB Leipzig",          flag:"🇩🇪" },
-  // 🇮🇹 Serie A
   { name:"Juventus",            flag:"🇮🇹" },
   { name:"Inter Milan",         flag:"🇮🇹" },
   { name:"AC Milan",            flag:"🇮🇹" },
   { name:"Napoli",              flag:"🇮🇹" },
-  { name:"Roma",                flag:"🇮🇹" },
-  { name:"Lazio",               flag:"🇮🇹" },
-  // 🌍 Autres
-  { name:"Ajax",                flag:"🇳🇱" },
-  { name:"Porto",               flag:"🇵🇹" },
-  { name:"Benfica",             flag:"🇵🇹" },
-  { name:"Celtic",              flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
-  { name:"Feyenoord",           flag:"🇳🇱" },
+];
+
+// Liste complète pour la recherche
+export const ALL_CLUBS = [
+  // 🇫🇷 Ligue 1
+  { name:"Paris Saint-Germain", flag:"🇫🇷" }, { name:"Marseille", flag:"🇫🇷" }, { name:"Lyon", flag:"🇫🇷" },
+  { name:"Monaco", flag:"🇫🇷" }, { name:"Lille", flag:"🇫🇷" }, { name:"Nice", flag:"🇫🇷" },
+  { name:"Lens", flag:"🇫🇷" }, { name:"Rennes", flag:"🇫🇷" }, { name:"Strasbourg", flag:"🇫🇷" },
+  { name:"Nantes", flag:"🇫🇷" }, { name:"Toulouse", flag:"🇫🇷" }, { name:"Montpellier", flag:"🇫🇷" },
+  { name:"Le Havre", flag:"🇫🇷" }, { name:"Brest", flag:"🇫🇷" }, { name:"Reims", flag:"🇫🇷" },
+  { name:"Metz", flag:"🇫🇷" }, { name:"Lorient", flag:"🇫🇷" }, { name:"Auxerre", flag:"🇫🇷" },
+  { name:"Angers", flag:"🇫🇷" }, { name:"Saint-Etienne", flag:"🇫🇷" }, { name:"Bordeaux", flag:"🇫🇷" },
+  { name:"Paris FC", flag:"🇫🇷" }, { name:"Stade de Reims", flag:"🇫🇷" }, { name:"Clermont Foot", flag:"🇫🇷" },
+  // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League
+  { name:"Arsenal", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Chelsea", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Liverpool", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Manchester City", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Manchester United", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Tottenham", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Newcastle", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Aston Villa", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Brighton", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"West Ham", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Crystal Palace", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Brentford", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Fulham", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Wolverhampton", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Everton", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Leicester City", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Nottingham Forest", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Southampton", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { name:"Leeds United", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name:"Ipswich Town", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  // 🇪🇸 Liga
+  { name:"Real Madrid", flag:"🇪🇸" }, { name:"Barcelona", flag:"🇪🇸" }, { name:"Atletico Madrid", flag:"🇪🇸" },
+  { name:"Sevilla", flag:"🇪🇸" }, { name:"Villarreal", flag:"🇪🇸" }, { name:"Real Sociedad", flag:"🇪🇸" },
+  { name:"Athletic Bilbao", flag:"🇪🇸" }, { name:"Valencia", flag:"🇪🇸" }, { name:"Betis", flag:"🇪🇸" },
+  { name:"Osasuna", flag:"🇪🇸" }, { name:"Celta Vigo", flag:"🇪🇸" }, { name:"Girona", flag:"🇪🇸" },
+  { name:"Getafe", flag:"🇪🇸" }, { name:"Las Palmas", flag:"🇪🇸" }, { name:"Alaves", flag:"🇪🇸" },
+  // 🇩🇪 Bundesliga
+  { name:"Bayern Munich", flag:"🇩🇪" }, { name:"Borussia Dortmund", flag:"🇩🇪" }, { name:"Bayer Leverkusen", flag:"🇩🇪" },
+  { name:"RB Leipzig", flag:"🇩🇪" }, { name:"Eintracht Frankfurt", flag:"🇩🇪" }, { name:"Wolfsburg", flag:"🇩🇪" },
+  { name:"Borussia Mönchengladbach", flag:"🇩🇪" }, { name:"Stuttgart", flag:"🇩🇪" }, { name:"Freiburg", flag:"🇩🇪" },
+  { name:"Hoffenheim", flag:"🇩🇪" }, { name:"Schalke 04", flag:"🇩🇪" }, { name:"Hamburger SV", flag:"🇩🇪" },
+  // 🇮🇹 Serie A
+  { name:"Juventus", flag:"🇮🇹" }, { name:"Inter Milan", flag:"🇮🇹" }, { name:"AC Milan", flag:"🇮🇹" },
+  { name:"Napoli", flag:"🇮🇹" }, { name:"Roma", flag:"🇮🇹" }, { name:"Lazio", flag:"🇮🇹" },
+  { name:"Fiorentina", flag:"🇮🇹" }, { name:"Atalanta", flag:"🇮🇹" }, { name:"Torino", flag:"🇮🇹" },
+  { name:"Bologna", flag:"🇮🇹" }, { name:"Sampdoria", flag:"🇮🇹" }, { name:"Udinese", flag:"🇮🇹" },
+  { name:"Cagliari", flag:"🇮🇹" }, { name:"Venezia", flag:"🇮🇹" }, { name:"Genoa", flag:"🇮🇹" },
+  // 🇵🇹 Portugal
+  { name:"Benfica", flag:"🇵🇹" }, { name:"Porto", flag:"🇵🇹" }, { name:"Sporting CP", flag:"🇵🇹" },
+  { name:"Braga", flag:"🇵🇹" }, { name:"Vitoria SC", flag:"🇵🇹" },
+  // 🇳🇱 Pays-Bas
+  { name:"Ajax", flag:"🇳🇱" }, { name:"Feyenoord", flag:"🇳🇱" }, { name:"PSV Eindhoven", flag:"🇳🇱" },
+  { name:"AZ Alkmaar", flag:"🇳🇱" }, { name:"Utrecht", flag:"🇳🇱" },
+  // 🇧🇪 Belgique
+  { name:"Anderlecht", flag:"🇧🇪" }, { name:"Club Bruges", flag:"🇧🇪" }, { name:"Gent", flag:"🇧🇪" },
+  // 🇹🇷 Turquie
+  { name:"Galatasaray", flag:"🇹🇷" }, { name:"Fenerbahce", flag:"🇹🇷" }, { name:"Besiktas", flag:"🇹🇷" },
+  // 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Écosse
+  { name:"Celtic", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿" }, { name:"Rangers", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
+  // 🇧🇷 Brésil
+  { name:"Flamengo", flag:"🇧🇷" }, { name:"Palmeiras", flag:"🇧🇷" }, { name:"São Paulo", flag:"🇧🇷" },
+  { name:"Corinthians", flag:"🇧🇷" }, { name:"Santos", flag:"🇧🇷" }, { name:"Fluminense", flag:"🇧🇷" },
+  // 🇦🇷 Argentine
+  { name:"Boca Juniors", flag:"🇦🇷" }, { name:"River Plate", flag:"🇦🇷" },
+  // 🇺🇸 MLS
+  { name:"LA Galaxy", flag:"🇺🇸" }, { name:"Inter Miami", flag:"🇺🇸" }, { name:"New York City FC", flag:"🇺🇸" },
 ];
 
 export const CLUB_COLORS = {
@@ -196,6 +234,10 @@ export const GLOBAL_CSS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { overflow-x: hidden; max-width: 100vw; }
   body { background: #030712; color: #f1f5f9; font-family: 'DM Sans', sans-serif; touch-action: pan-y; }
+  /* Bloquer le scroll du fond quand une modale est ouverte */
+  body:has(.modal-overlay) { overflow: hidden; }
+  /* L'overlay lui-même est scrollable (au cas où le contenu dépasse) */
+  .modal-overlay { overflow-y: auto; }
   body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events: none; z-index: 999; opacity: 0.35; }
   input::placeholder { color: rgba(241,245,249,0.2); }
   input:focus { border-color: rgba(16,185,129,0.5) !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
@@ -246,8 +288,8 @@ export const GLOBAL_CSS = `
     .card-hover { padding: 13px 14px !important; border-radius: 14px !important; }
 
     /* Modales bottom-sheet */
-    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
-    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 20px 20px 0 0 !important; max-height: 92vh !important; padding: 18px 16px max(18px, env(safe-area-inset-bottom)) !important; }
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; overflow-y: hidden !important; }
+    .modal-inner { width: 100% !important; max-width: 100vw !important; border-radius: 20px 20px 0 0 !important; max-height: min(92vh, 92svh) !important; overflow-y: auto !important; padding: 18px 16px max(18px, env(safe-area-inset-bottom)) !important; }
 
     /* Réduire les grands chiffres dans les cartes */
     .prob-pct { font-size: 26px !important; }
