@@ -21,6 +21,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
 
   const [betType,setBetType]=useState("winner"),[prediction,setPrediction]=useState(initialPrediction||""),[amount,setAmount]=useState("");
   const [scorerTeam,setScorerTeam]=useState("home"),[homePlayers,setHomePlayers]=useState([]),[awayPlayers,setAwayPlayers]=useState([]),[loadingPlayers,setLoadingPlayers]=useState(false);
+  const [selectedPlayerPos,setSelectedPlayerPos]=useState("");
   // Initialiser au score actuel si live, sinon 1-0
   const [homeGoals,setHomeGoals]=useState(isLive?liveHome:1),[awayGoals,setAwayGoals]=useState(isLive?liveAway:1);
   const [triedConfirm,setTriedConfirm]=useState(false);
@@ -46,8 +47,8 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const getOdds=()=>{
     if(betType==="winner"){if(prediction===match.home_team)return odds.oddsHome;if(prediction==="Nul")return odds.oddsDraw;if(prediction===match.away_team)return odds.oddsAway;return 2;}
     if(betType==="exact_score") return calcExactScoreOdds(homeGoals,awayGoals,odds,match);
-    if(betType==="first_scorer") return prediction?calcScorerOdds(prediction,true):5;
-    if(betType==="scorer") return prediction?calcScorerOdds(prediction,false):3;
+    if(betType==="first_scorer") return prediction?calcScorerOdds(prediction,true,selectedPlayerPos):5;
+    if(betType==="scorer") return prediction?calcScorerOdds(prediction,false,selectedPlayerPos):3;
     if(betType==="over_under"){const line=prediction.includes("1.5")?1.5:prediction.includes("3.5")?3.5:2.5;return calcOverUnderOdds(line,prediction.startsWith("Plus"),odds);}
     return 2;
   };
@@ -106,7 +107,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
     </div>;
     if(betType==="first_scorer"||betType==="scorer") return <div>
       <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-        {["home","away"].map(t=><button key={t} onClick={()=>{setScorerTeam(t);setPrediction("");}} style={{ flex:1, padding:"8px", borderRadius:10, border:`1px solid ${scorerTeam===t?"#10b981":"rgba(241,245,249,0.07)"}`, background:scorerTeam===t?"rgba(16,185,129,0.08)":"transparent", color:scorerTeam===t?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer" }}>{t==="home"?match.home_team:match.away_team}</button>)}
+        {["home","away"].map(t=><button key={t} onClick={()=>{setScorerTeam(t);setPrediction("");setSelectedPlayerPos("");}} style={{ flex:1, padding:"8px", borderRadius:10, border:`1px solid ${scorerTeam===t?"#10b981":"rgba(241,245,249,0.07)"}`, background:scorerTeam===t?"rgba(16,185,129,0.08)":"transparent", color:scorerTeam===t?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer" }}>{t==="home"?match.home_team:match.away_team}</button>)}
       </div>
       {loadingPlayers?<div style={{ textAlign:"center", padding:20, color:"rgba(241,245,249,0.3)", fontSize:13 }}>Chargement joueurs...</div>
         :currentPlayers.length>0?(
@@ -116,7 +117,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
               const pos = typeof p === "object" ? p.position : "";
               const o=calcScorerOdds(name,betType==="first_scorer",pos);
               const hasScored=alreadyScored.has(name);
-              return <button key={name} onClick={()=>!hasScored&&setPrediction(name)}
+              return <button key={name} onClick={()=>!hasScored&&(setPrediction(name),setSelectedPlayerPos(pos))}
                 style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${hasScored?"rgba(239,68,68,0.15)":prediction===name?"#10b981":"rgba(241,245,249,0.06)"}`, background:hasScored?"rgba(239,68,68,0.05)":prediction===name?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:hasScored?"rgba(239,68,68,0.4)":prediction===name?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:hasScored?"not-allowed":"pointer", display:"flex", justifyContent:"space-between", transition:"all 0.15s", opacity:hasScored?0.5:1 }}>
                 <span>{name}{hasScored?" ⚽":""}</span>
                 <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:hasScored?"rgba(241,245,249,0.2)":"#fbbf24", fontSize:12 }}>{hasScored?"—":`x${o}`}</span>
@@ -145,7 +146,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
         <div style={{ textAlign:"center", flex:1 }}><div style={{ fontWeight:800, fontSize:13 }}>{match.away_team}</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"#ef4444", letterSpacing:1, marginTop:2 }}>x{odds.oddsAway}</div></div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:16 }}>
-        {BET_TYPES.map(t=><button key={t.id} onClick={()=>{if(t.locked)return;setBetType(t.id);setPrediction("");setScorerTeam("home");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${t.locked?"rgba(241,245,249,0.03)":betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:t.locked?"rgba(241,245,249,0.01)":betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:t.locked?"rgba(241,245,249,0.2)":betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:t.locked?"not-allowed":"pointer", textAlign:"left", transition:"all 0.2s", opacity:t.locked?0.5:1 }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
+        {BET_TYPES.map(t=><button key={t.id} onClick={()=>{if(t.locked)return;setBetType(t.id);setPrediction("");setScorerTeam("home");setSelectedPlayerPos("");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${t.locked?"rgba(241,245,249,0.03)":betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:t.locked?"rgba(241,245,249,0.01)":betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:t.locked?"rgba(241,245,249,0.2)":betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:t.locked?"not-allowed":"pointer", textAlign:"left", transition:"all 0.2s", opacity:t.locked?0.5:1 }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
       </div>
       <div style={{ marginBottom:16 }}>{renderInputs()}</div>
       <input type="number" value={amount} placeholder="Ex: 200" min={1} max={coins} onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(coins,Math.max(1,parseInt(v)||1)).toString());}}} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
