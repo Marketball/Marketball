@@ -57,19 +57,24 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const gain=Math.round(amtNum*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
   const isFrozen=betsFrozenUntil&&Date.now()<betsFrozenUntil;
+  const isFinished=match.status==="FINISHED";
+  const elapsed=match.elapsed||0;
+  // Bloquer vainqueur + score exact à partir de la 85e min (trop manipulable)
+  const lateStageLocked=isLive&&elapsed>=85&&(betType==="winner"||betType==="exact_score");
   const ouSettled=betType==="over_under"&&prediction?isOverUnderSettled(prediction,match):false;
   // 1er buteur désactivé si déjà un but en live
   const firstScorerLocked=isLive&&totalGoals>0;
   // Score exact impossible si en dessous du score actuel
   const exactScoreImpossible=isLive&&(homeGoals<liveHome||awayGoals<liveAway);
-  const canBet=!isFrozen&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins;
+  const canBet=!isFrozen&&!isFinished&&!lateStageLocked&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins;
 
+  const lateStage=isLive&&elapsed>=85;
   const BET_TYPES=[
-    {id:"winner",label:"🏆 Vainqueur",desc:"1X2"},
-    {id:"exact_score",label:"🎯 Score exact",desc:"Cotes Poisson"},
-    {id:"first_scorer",label:"⚽ 1er buteur",desc:firstScorerLocked?"🔒 But déjà marqué":"x2.5 min",locked:firstScorerLocked},
-    {id:"scorer",label:"🥅 Buteur",desc:"x1.5 min"},
-    {id:"over_under",label:"📊 +/- buts",desc:"Over/Under"},
+    {id:"winner",label:"🏆 Vainqueur",desc:lateStage?"🔒 Fermé (85e+)":"1X2",locked:isFinished||lateStage},
+    {id:"exact_score",label:"🎯 Score exact",desc:lateStage?"🔒 Fermé (85e+)":"Cotes Poisson",locked:isFinished||lateStage},
+    {id:"first_scorer",label:"⚽ 1er buteur",desc:isFinished?"🔒 Terminé":firstScorerLocked?"🔒 But déjà marqué":"x2.5 min",locked:isFinished||firstScorerLocked},
+    {id:"scorer",label:"🥅 Buteur",desc:isFinished?"🔒 Terminé":"x1.5 min",locked:isFinished},
+    {id:"over_under",label:"📊 +/- buts",desc:isFinished?"🔒 Terminé":"Over/Under",locked:isFinished},
   ];
 
   const renderInputs=()=>{
@@ -156,7 +161,9 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Cote</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:18, letterSpacing:1 }}>x{currentOdds}</span></div>
         <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Gain potentiel</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#10b981", letterSpacing:1 }}>+{fmt(gain)} 🪙</span></div>
       </div>
-      {isFrozen&&<div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#fbbf24", fontWeight:700, textAlign:"center" }}>⏳ Paris suspendus — score en cours de mise à jour</div>}
+      {isFinished&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>🔒 Match terminé — aucun pari possible</div>}
+      {lateStageLocked&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>🔒 Paris fermés ({elapsed}e min) — trop proche de la fin</div>}
+      {isFrozen&&!isFinished&&!lateStageLocked&&<div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#fbbf24", fontWeight:700, textAlign:"center" }}>⏳ Paris suspendus — score en cours de mise à jour</div>}
       {exactScoreImpossible&&triedConfirm&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Score impossible — le match est à {liveHome}-{liveAway}</div>}
       {ouSettled==="win"&&<div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#10b981", fontWeight:700, textAlign:"center" }}>✅ Issue déjà garantie — pari non disponible</div>}
       {ouSettled==="loss"&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Issue impossible — pari non disponible</div>}

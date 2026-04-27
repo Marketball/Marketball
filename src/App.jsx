@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // Lib
+import { LanguageProvider, useLang } from "./lib/i18n.jsx";
 import { req, authReq } from "./lib/supabase.js";
 import { resolveBet } from "./lib/amm.js";
 import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "./lib/constants.js";
-import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds } from "./lib/helpers.js";
+import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds, calcLevelUpRewards } from "./lib/helpers.js";
 
 // UI components
 import SubBadge from "./components/ui/SubBadge.jsx";
@@ -37,6 +38,11 @@ import LeaguesPage from "./pages/LeaguesPage.jsx";
 import { PublicProfilePage } from "./pages/LeaderboardPage.jsx";
 
 export default function App() {
+  return <LanguageProvider><AppInner /></LanguageProvider>;
+}
+
+function AppInner() {
+  const { lang, setLang, t } = useLang();
   const [session,setSession]=useState(null);
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
@@ -105,19 +111,23 @@ export default function App() {
         setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:newStatus}:b));
         if(won){
           const gain=bet.potential_gain||0;
-          newCoins+=gain;newXP+=Math.floor(gain/10)+10;newProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
+          newCoins+=gain;newProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
           showToast(`🏆 PARI GAGNE ! +${fmt(gain)} MC — ${bet.match_title||""}`, "win");
         }
       }catch{}
     }
 
     if(profileUpdated){
+      const oldXP=profileRef.current?.xp||0;
       const newLevel=getLevel(newXP);
+      const {scBonus,messages}=calcLevelUpRewards(oldXP,newXP);
+      const newSC=(profileRef.current?.store_coins||0)+scBonus;
       try{
-        await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({coins:newCoins,xp:newXP,level:newLevel,total_profit:newProfit,total_wins:newWins,updated_at:new Date().toISOString()})});
+        await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins,updated_at:new Date().toISOString()})});
       }catch{}
-      setProfile(p=>({...p,coins:newCoins,xp:newXP,level:newLevel,total_profit:newProfit,total_wins:newWins}));
-      profileRef.current={...profileRef.current,coins:newCoins,xp:newXP,level:newLevel,total_profit:newProfit,total_wins:newWins};
+      setProfile(p=>({...p,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins}));
+      profileRef.current={...profileRef.current,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins};
+      messages.forEach(m=>setTimeout(()=>showToast(m,"win"),500));
       await loadLeaderboard(token);
     }
   },[loadLeaderboard]);
@@ -231,11 +241,12 @@ export default function App() {
       if(newStreak===7){bonusCoins=100;bonusMsg="🔥🔥 STREAK 7 JOURS ! +100 MC !";}
       if(newStreak>7&&newStreak%7===0){bonusCoins=100;bonusMsg=`🔥🔥 STREAK ${newStreak} JOURS ! +100 MC !`;}
       const newCoins=(p.coins||0)+bonusCoins;
-      const newXP=(p.xp||0)+5;
-      await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:getLevel(newXP),updated_at:new Date().toISOString()})});
-      setProfile(pr=>({...pr,last_login:today,streak:newStreak,coins:newCoins,xp:newXP}));
-      profileRef.current={...profileRef.current,last_login:today,streak:newStreak,coins:newCoins,xp:newXP};
+      const {newXP,newLevel,newSC,messages}=applyXPGain(p.xp,3);
+      await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,updated_at:new Date().toISOString()})});
+      setProfile(pr=>({...pr,last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC}));
+      profileRef.current={...profileRef.current,last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC};
       showToast(bonusMsg);
+      messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
     }catch{}
   };
 
@@ -289,10 +300,10 @@ export default function App() {
         return prev&&(m.status==="IN_PLAY"||m.status==="PAUSED")&&
           (prev.home_score!==m.home_score||prev.away_score!==m.away_score);
       });
-      if(scoreChanged) setBetsFrozenUntil(Date.now()+30000);
+      if(scoreChanged) setBetsFrozenUntil(Date.now()+90000);
       const pendingMB=await loadMatchBets(token,user.id);
       if(pendingMB?.some(b=>b.status==="pending")) await checkAndResolveBets(token,user.id,lm,pendingMB);
-    },60*1000);
+    },30*1000);
     intervalsRef.current=[interval];
   };
 
@@ -319,11 +330,19 @@ export default function App() {
     profileRef.current={...profileRef.current,...updates};
   };
 
+  const applyXPGain=(oldXP,addXP)=>{
+    const newXP=(oldXP||0)+addXP;
+    const newLevel=getLevel(newXP);
+    const {scBonus,messages}=calcLevelUpRewards(oldXP||0,newXP);
+    const newSC=(profile?.store_coins||0)+scBonus;
+    return {newXP,newLevel,newSC,scBonus,messages};
+  };
+
   const handleBetConfirm=async(side,amount,cost,gain)=>{
     if(!session) return;
     const newCoins=(profile?.coins||0)-cost;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
-    const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
+    const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       const safeGain=Math.max(cost+1, gain||cost+1);
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending"})});
@@ -335,9 +354,10 @@ export default function App() {
         const newQNo=side==="no"?updMarket.q_no+amount:updMarket.q_no;
         try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({q_yes:newQYes,q_no:newQNo,total_volume:updMarket.total_volume+cost,participants:updMarket.participants+1})});}catch(e){console.warn("[bet] PATCH custom_markets failed:",e.message);}
       }
-      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
+      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prediction placee ! +5 XP");
+      messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       setTimeout(()=>loadBets(session.token,session.user.id),500);
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
@@ -347,15 +367,16 @@ export default function App() {
     if(!session) return;
     const newCoins=(profile?.coins||0)-cost;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
-    const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
+    const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
       const upd=markets.map(m=>m.id===betModal.id?{...m,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
       try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}
-      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
+      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prediction placee ! +5 XP");
+      messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       setTimeout(()=>loadBets(session.token,session.user.id),500);
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
@@ -365,14 +386,15 @@ export default function App() {
     if(!session) return;
     const newCoins=(profile?.coins||0)-amount;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
-    const newXP=(profile?.xp||0)+5,newLevel=getLevel(newXP);
+    const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       const res=await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",match_id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"})});
       const newBet=res?.[0]||{id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"};
       setMatchBets(prev=>[newBet,...prev]);
-      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
+      await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setMatchBetModal(null);
       showToast("Pari place ! +5 XP");
+      messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
   };
@@ -484,16 +506,24 @@ export default function App() {
   const username=profile?.username||session?.user?.user_metadata?.username||session?.user?.email?.split("@")[0]||"Joueur";
 
   const NAV=[
-    {id:"home",icon:"⚡",label:"Accueil"},
-    {id:"matches",icon:"⚽",label:"Matchs"},
-    {id:"markets",icon:"📊",label:"Marchés"},
-    {id:"community",icon:"💬",label:"Communauté"},
-    {id:"wallet",icon:"💰",label:"Wallet"},
-    {id:"leaderboard",icon:"🏆",label:"Classement"},
-    {id:"store",icon:"🎁",label:"Store"},
-    {id:"subscription",icon:"👑",label:"Ligues"},
-    {id:"howto",icon:"❓",label:"Guide"},
+    {id:"home",icon:"⚡",label:t("nav.home")},
+    {id:"matches",icon:"⚽",label:t("nav.matches")},
+    {id:"markets",icon:"📊",label:t("nav.markets")},
+    {id:"community",icon:"💬",label:t("nav.community")},
+    {id:"wallet",icon:"💰",label:t("nav.wallet")},
+    {id:"leaderboard",icon:"🏆",label:t("nav.leaderboard")},
+    {id:"store",icon:"🎁",label:t("nav.store")},
+    {id:"subscription",icon:"👑",label:t("nav.subscription")},
+    {id:"howto",icon:"❓",label:t("nav.howto")},
   ];
+
+  const LangToggle = () => (
+    <button onClick={()=>setLang(lang==="fr"?"en":"fr")}
+      style={{ padding:"4px 10px", borderRadius:7, border:"1px solid rgba(241,245,249,0.12)", background:"rgba(241,245,249,0.04)", color:"rgba(241,245,249,0.6)", fontWeight:700, fontSize:11, cursor:"pointer", letterSpacing:0.5, flexShrink:0, transition:"all 0.2s" }}
+      title={lang==="fr"?"Switch to English":"Passer en français"}>
+      {lang==="fr"?"🇬🇧 EN":"🇫🇷 FR"}
+    </button>
+  );
 
   const [showAuthModal,setShowAuthModal]=useState(false);
 
@@ -523,14 +553,16 @@ export default function App() {
               </button>
             ))}
           </nav>
-          <div className="hide-mobile" style={{ flexShrink:0 }}>
+          <div className="hide-mobile" style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
+            <LangToggle />
             <button onClick={()=>setShowAuthModal(true)} style={{ padding:"6px 16px", borderRadius:8, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:0.5 }}>
-              👤 Se connecter
+              {t("auth.login_btn")}
             </button>
           </div>
-          <div className="show-mobile" style={{ display:"none" }}>
+          <div className="show-mobile" style={{ display:"none", gap:6, alignItems:"center" }}>
+            <LangToggle />
             <button onClick={()=>setShowAuthModal(true)} style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(16,185,129,0.4)", background:"rgba(16,185,129,0.08)", color:"#10b981", fontWeight:700, fontSize:11, cursor:"pointer" }}>
-              Se connecter
+              {t("auth.login_btn_mobile")}
             </button>
           </div>
         </div>
@@ -545,8 +577,8 @@ export default function App() {
       </div>
       {/* Bannière CTA */}
       <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.06))", borderBottom:"1px solid rgba(16,185,129,0.12)", padding:"10px 20px", textAlign:"center" }}>
-        <span style={{ fontSize:13, color:"rgba(241,245,249,0.7)" }}>Rejoins MarketBall — parie des <strong style={{color:"#fbbf24"}}>MC</strong> sur les transferts et matchs, gagne des <strong style={{color:"#10b981"}}>récompenses réelles</strong> </span>
-        <button onClick={()=>setShowAuthModal(true)} style={{ marginLeft:10, padding:"4px 14px", borderRadius:6, border:"none", background:"#10b981", color:"#030712", fontWeight:700, fontSize:12, cursor:"pointer" }}>Créer un compte</button>
+        <span style={{ fontSize:13, color:"rgba(241,245,249,0.7)" }}>{t("auth.cta_banner")} </span>
+        <button onClick={()=>setShowAuthModal(true)} style={{ marginLeft:10, padding:"4px 14px", borderRadius:6, border:"none", background:"#10b981", color:"#030712", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("auth.create_account")}</button>
       </div>
       {/* Contenu public */}
       <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
@@ -558,24 +590,24 @@ export default function App() {
         {(page==="wallet"||page==="store"||page==="subscription"||page==="profile"||page==="howto")&&(
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
             <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
-            <div style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Connecte-toi pour accéder</div>
-            <div style={{ fontSize:14, color:"rgba(241,245,249,0.4)", marginBottom:24 }}>Cette section est réservée aux membres MarketBall</div>
-            <button onClick={()=>setShowAuthModal(true)} style={{ padding:"12px 32px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>Créer un compte gratuit</button>
+            <div style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>{t("auth.locked_title")}</div>
+            <div style={{ fontSize:14, color:"rgba(241,245,249,0.4)", marginBottom:24 }}>{t("auth.locked_sub")}</div>
+            <button onClick={()=>setShowAuthModal(true)} style={{ padding:"12px 32px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>{t("auth.create_free")}</button>
           </div>
         )}
       </div>
       {/* Bottom nav mobile visiteur */}
       <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,7,18,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(241,245,249,0.07)", paddingBottom:"env(safe-area-inset-bottom)" }}>
-        {[{id:"home",icon:"⚡",label:"Accueil"},{id:"matches",icon:"⚽",label:"Matchs"},{id:"markets",icon:"📊",label:"Marchés"},{id:"community",icon:"💬",label:"Communauté"},{id:"leaderboard",icon:"🏆",label:"Classement"}].map(n=>(
+        {[{id:"home",icon:"⚡",labelKey:"nav.home"},{id:"matches",icon:"⚽",labelKey:"nav.matches"},{id:"markets",icon:"📊",labelKey:"nav.markets"},{id:"community",icon:"💬",labelKey:"nav.com_short"},{id:"leaderboard",icon:"🏆",labelKey:"nav.leaderboard"}].map(n=>(
           <button key={n.id} onClick={()=>setPage(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
             {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
             <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>
-            <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{n.label}</span>
+            <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{t(n.labelKey)}</span>
           </button>
         ))}
         <button onClick={()=>setShowAuthModal(true)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:"#10b981", cursor:"pointer" }}>
           <span style={{ fontSize:20, lineHeight:1 }}>👤</span>
-          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>Connexion</span>
+          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{t("nav.login")}</span>
         </button>
       </div>
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
@@ -611,6 +643,7 @@ export default function App() {
             <span style={{ color:"rgba(241,245,249,0.5)", fontWeight:600, fontSize:11 }}>{username}</span>
           </button>
           {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
+          <LangToggle />
           <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
           </div>
@@ -631,18 +664,18 @@ export default function App() {
       {/* Ligne 2 mobile : nav horizontale scrollable */}
       <div className="mobile-header-nav" style={{ display:"none", overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px" }}>
         {[
-          {id:"home",icon:"⚡",label:"Accueil"},
-          {id:"matches",icon:"⚽",label:"Matchs"},
-          {id:"markets",icon:"📊",label:"Marchés"},
-          {id:"community",icon:"💬",label:"Communauté"},
-          {id:"wallet",icon:"💰",label:"Wallet"},
-          {id:"leaderboard",icon:"🏆",label:"Top"},
-          {id:"store",icon:"🎁",label:"Store"},
-          {id:"profile",icon:"👤",label:"Profil"},
+          {id:"home",icon:"⚡",labelKey:"nav.home"},
+          {id:"matches",icon:"⚽",labelKey:"nav.matches"},
+          {id:"markets",icon:"📊",labelKey:"nav.markets"},
+          {id:"community",icon:"💬",labelKey:"nav.community"},
+          {id:"wallet",icon:"💰",labelKey:"nav.wallet"},
+          {id:"leaderboard",icon:"🏆",labelKey:"nav.top_short"},
+          {id:"store",icon:"🎁",labelKey:"nav.store"},
+          {id:"profile",icon:"👤",labelKey:"nav.profile"},
         ].map(n=>(
           <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2, transition:"all 0.15s" }}>
             <span>{n.icon}</span>
-            <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{n.label}</span>
+            <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{t(n.labelKey)}</span>
           </button>
         ))}
       </div>
@@ -667,13 +700,13 @@ export default function App() {
     {/* Bottom nav mobile */}
     <div className="mobile-bottom-nav" style={{ display:"none", position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,7,18,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(241,245,249,0.07)", paddingBottom:"env(safe-area-inset-bottom)" }}>
       {[
-        {id:"home",icon:"⚡",label:"Accueil"},
-        {id:"matches",icon:"⚽",label:"Matchs"},
-        {id:"markets",icon:"📊",label:"Marchés"},
-        {id:"community",icon:"💬",label:"Com."},
-        {id:"wallet",icon:"💰",label:"Wallet"},
-        {id:"leaderboard",icon:"🏆",label:"Top"},
-        {id:"profile",icon:"👤",label:"Profil"},
+        {id:"home",icon:"⚡",labelKey:"nav.home"},
+        {id:"matches",icon:"⚽",labelKey:"nav.matches"},
+        {id:"markets",icon:"📊",labelKey:"nav.markets"},
+        {id:"community",icon:"💬",labelKey:"nav.com_short"},
+        {id:"wallet",icon:"💰",labelKey:"nav.wallet"},
+        {id:"leaderboard",icon:"🏆",labelKey:"nav.top_short"},
+        {id:"profile",icon:"👤",labelKey:"nav.profile"},
       ].map(n=>(
         <button key={n.id} onClick={()=>navigateTo(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"9px 2px 7px", border:"none", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.38)", cursor:"pointer", transition:"all 0.15s", position:"relative" }}>
           {page===n.id&&<div style={{ position:"absolute", top:0, left:"50%", transform:"translateX(-50%)", width:28, height:2, background:"#10b981", borderRadius:"0 0 2px 2px" }} />}
@@ -681,7 +714,7 @@ export default function App() {
             {n.icon}
             {n.id==="community"&&pendingFriendCount>0&&<span style={{ position:"absolute", top:-2, right:-4, width:8, height:8, borderRadius:"50%", background:"#ef4444", border:"1.5px solid #030712" }} />}
           </span>
-          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{n.label}</span>
+          <span style={{ fontSize:9, fontWeight:700, marginTop:3, letterSpacing:0.3 }}>{t(n.labelKey)}</span>
         </button>
       ))}
     </div>
@@ -690,7 +723,7 @@ export default function App() {
   ?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} />
   :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} initialSide={betInitialSide} />
 )}
-    {matchBetModal&&<MatchBetModal match={matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} />}
+    {matchBetModal&&<MatchBetModal match={matches.find(m=>m.id===matchBetModal.id)||matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} />}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
     {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} />}
