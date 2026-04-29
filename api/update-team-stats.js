@@ -92,10 +92,7 @@ export default async function handler(req, res) {
 
   for (const league of LEAGUES) {
     try {
-      // 1. Récupérer les stats d'équipes de la ligue (forme + attaque/défense)
-      const data = await apiFetch(`/teams/statistics?league=${league.id}&season=${season}`);
-      // Note : cet endpoint retourne les stats d'UNE équipe
-      // On utilise plutôt /standings pour avoir TOUTES les équipes d'un coup
+      // 1 seul appel par ligue — standings contient forme + stats attaque/défense
       const standings = await apiFetch(`/standings?league=${league.id}&season=${season}`);
 
       const teams = standings?.response?.[0]?.league?.standings?.[0] || [];
@@ -115,19 +112,8 @@ export default async function handler(req, res) {
         const formString = standing.form || "";
         const formScore = calcFormScore(formString);
 
-        // 4. Blessures actuelles
-        let injuryCount = 0, injuryPenalty = 0;
-        try {
-          const injData = await apiFetch(`/injuries?team=${teamId}&league=${league.id}&season=${season}`);
-          const injuries = injData?.response || [];
-          // Garder uniquement les blessures en cours (pas de date de retour dépassée)
-          const activeInjuries = injuries.filter(i => {
-            const reason = i.player?.reason?.toLowerCase() || "";
-            return reason.includes("injur") || reason.includes("bless") || reason.includes("miss") || reason.includes("doubt");
-          });
-          injuryCount = activeInjuries.length;
-          injuryPenalty = calcInjuryPenalty(activeInjuries);
-        } catch {}
+        // Blessures : récupérées séparément via /api/injuries-today pour éviter le rate limit
+        const injuryCount = 0, injuryPenalty = 0;
 
         // 5. Force calculée finale
         // base_strength : on garde la valeur existante si déjà en base, sinon 65
