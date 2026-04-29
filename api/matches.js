@@ -1,5 +1,6 @@
 const cache = {};
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const CACHE_DURATION_LIVE = 5 * 60 * 1000;  // 5 min si match en cours
+const CACHE_DURATION_NORMAL = 15 * 60 * 1000; // 15 min sinon
 
 const COMPETITIONS = [
   // Clubs
@@ -68,8 +69,12 @@ export default async function handler(req, res) {
   if (!comp) return res.status(400).json({ error: "Compétition inconnue", matches: [] });
 
   const cacheKey = `matches_${comp.id}_${comp.slug}`;
-  if (cache[cacheKey] && Date.now() - cache[cacheKey].ts < CACHE_DURATION) {
-    return res.status(200).json(cache[cacheKey].data);
+  if (cache[cacheKey]) {
+    const hasLive = cache[cacheKey].data.matches.some(m => m.status === "IN_PLAY" || m.status === "PAUSED");
+    const duration = hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
+    if (Date.now() - cache[cacheKey].ts < duration) {
+      return res.status(200).json(cache[cacheKey].data);
+    }
   }
 
   try {
