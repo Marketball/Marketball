@@ -1,6 +1,6 @@
 const cache = {};
-const CACHE_DURATION_LIVE = 5 * 60 * 1000;  // 5 min si match en cours
-const CACHE_DURATION_NORMAL = 15 * 60 * 1000; // 15 min sinon
+const CACHE_DURATION_LIVE = 2 * 60 * 1000;   // 2 min si match en cours
+const CACHE_DURATION_NORMAL = 60 * 60 * 1000; // 1h sinon
 
 const COMPETITIONS = [
   // Clubs
