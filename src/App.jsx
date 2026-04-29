@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 // Lib
 import { LanguageProvider, useLang } from "./lib/i18n.jsx";
-import { req, authReq } from "./lib/supabase.js";
+import { req, authReq, SUPABASE_URL, SUPABASE_KEY } from "./lib/supabase.js";
 import { resolveBet } from "./lib/amm.js";
 import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "./lib/constants.js";
 import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds, calcLevelUpRewards } from "./lib/helpers.js";
@@ -67,6 +67,8 @@ function AppInner() {
   const [publicProfileUser,setPublicProfileUser]=useState(null);
   const [pendingFriendCount,setPendingFriendCount]=useState(0);
   const profileRef=useRef(null);
+  const [googlePendingUser,setGooglePendingUser]=useState(null);
+  const [googleUsername,setGoogleUsername]=useState("");
 
   const showToast=(msg,type="success")=>{setToast({msg,type});if(type==="win")setShowConfetti(true);};
 
@@ -332,6 +334,40 @@ function AppInner() {
     intervalsRef.current=[interval];
   };
 
+  // Détection du retour Google OAuth (hash #access_token=...)
+  useEffect(()=>{
+    const hash=window.location.hash;
+    if(!hash||!hash.includes("access_token=")) return;
+    const params=new URLSearchParams(hash.startsWith("#")?hash.slice(1):hash);
+    const accessToken=params.get("access_token");
+    const refreshToken=params.get("refresh_token");
+    if(!accessToken) return;
+    window.history.replaceState({},"","/");
+    fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${accessToken}`}})
+      .then(r=>r.json())
+      .then(async(user)=>{
+        if(!user?.id) return;
+        const data=await req(`profiles?id=eq.${user.id}&select=id,username`,{_token:accessToken}).catch(()=>null);
+        if(data?.[0]?.username){
+          // Utilisateur existant → connexion directe
+          handleAuth(accessToken,user,refreshToken);
+        }else{
+          // Nouvel utilisateur → choisir un pseudo
+          setGooglePendingUser({token:accessToken,user,refreshToken});
+        }
+      })
+      .catch(()=>{});
+  },[]);
+
+  const finishGoogleSignup=async(username)=>{
+    const{token,user,refreshToken}=googlePendingUser;
+    setGooglePendingUser(null);setGoogleUsername("");
+    const refCode=generateReferralCode(username);
+    const np={id:user.id,username,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:null,referral_code:refCode,referral_sc_earned:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
+    await handleAuth(token,user,refreshToken);
+  };
+
   // Restauration automatique de session au chargement de la page
   useEffect(()=>{
     const saved=localStorage.getItem("mb_auth");
@@ -556,6 +592,33 @@ function AppInner() {
     if(!session){setShowAuthModal(true);return false;}
     return true;
   };
+
+  if(googlePendingUser) return (
+    <div style={{ minHeight:"100vh", background:"#030712", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ width:"100%", maxWidth:420, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.07)", borderRadius:22, padding:"36px 28px", textAlign:"center", boxShadow:"0 40px 80px rgba(0,0,0,0.4)" }}>
+        <div style={{ fontSize:44, marginBottom:16 }}>🎉</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:3, marginBottom:6 }}>BIENVENUE !</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28, lineHeight:1.6 }}>Compte Google connecté.<br/>Choisis ton pseudo MarketBall.</div>
+        <input
+          value={googleUsername}
+          onChange={e=>setGoogleUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,"").slice(0,20))}
+          onKeyDown={e=>e.key==="Enter"&&googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())}
+          placeholder="MonPseudo"
+          autoFocus
+          style={{ width:"100%", padding:"14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:12, color:"#f1f5f9", fontSize:18, outline:"none", boxSizing:"border-box", marginBottom:10, textAlign:"center", fontFamily:"'DM Sans',sans-serif", letterSpacing:1 }}
+        />
+        <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginBottom:20 }}>Lettres, chiffres, _ · 3 à 20 caractères</div>
+        <button onClick={()=>googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())} disabled={googleUsername.trim().length<3}
+          style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:googleUsername.trim().length>=3?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.05)", color:googleUsername.trim().length>=3?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:googleUsername.trim().length>=3?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:googleUsername.trim().length>=3?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
+          CONTINUER →
+        </button>
+        <div style={{ marginTop:16, fontSize:13, color:"rgba(241,245,249,0.3)" }}>
+          Tu recevras <span style={{ color:"#fbbf24", fontWeight:700 }}>3 000 🪙 MC</span> gratuits !
+        </div>
+      </div>
+    </div>
+  );
 
   if(showAuthModal&&!session) return <AuthPage onAuth={handleAuth} />;
   if(!session) return (

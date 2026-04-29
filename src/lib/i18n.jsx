@@ -47,6 +47,7 @@ const T = {
     "auth.err_pseudo": "Pseudo requis",
     "auth.err_password": "Mot de passe trop court (6 car. min)",
     "auth.referral_placeholder": "Ex: MARTIN-4X2B",
+    "auth.google_btn": "Continuer avec Google",
 
     // HomePage
     "home.welcome": "BIENVENUE,",
@@ -555,6 +556,7 @@ const T = {
     "auth.err_pseudo": "Username required",
     "auth.err_password": "Password too short (min 6 characters)",
     "auth.referral_placeholder": "Ex: MARTIN-4X2B",
+    "auth.google_btn": "Continue with Google",
 
     // HomePage
     "home.welcome": "WELCOME,",
