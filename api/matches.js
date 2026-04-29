@@ -1,5 +1,5 @@
 const cache = {};
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
 const COMPETITIONS = [
   // Clubs
