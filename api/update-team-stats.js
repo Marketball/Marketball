@@ -88,69 +88,49 @@ export default async function handler(req, res) {
   }
 
   const season = getSeason();
-  const results = { updated: 0, errors: [] };
+  let totalUpdated = 0;
+  const errors = [];
 
-  for (const league of LEAGUES) {
+  // Traiter toutes les ligues en parallèle pour rester sous le timeout Vercel (10s)
+  await Promise.all(LEAGUES.map(async (league) => {
     try {
-      // 1 seul appel par ligue — standings contient forme + stats attaque/défense
       const standings = await apiFetch(`/standings?league=${league.id}&season=${season}`);
-
       const teams = standings?.response?.[0]?.league?.standings?.[0] || [];
 
-      for (const standing of teams) {
-        const teamId = standing.team.id;
-        const teamName = standing.team.name;
-
-        // 2. Stats d'attaque/défense depuis le classement
+      const rows = teams.map(standing => {
         const played = standing.all.played || 1;
         const goalsScored = standing.all.goals.for || 0;
         const goalsConceded = standing.all.goals.against || 0;
-        const goalsScored_avg = Math.round((goalsScored / played) * 100) / 100;
-        const goalsConceded_avg = Math.round((goalsConceded / played) * 100) / 100;
-
-        // 3. Forme récente (string "WDLWW")
         const formString = standing.form || "";
-        const formScore = calcFormScore(formString);
-
-        // Blessures : récupérées séparément via /api/injuries-today pour éviter le rate limit
-        const injuryCount = 0, injuryPenalty = 0;
-
-        // 5. Force calculée finale
-        // base_strength : on garde la valeur existante si déjà en base, sinon 65
-        // computed_strength = base_strength + formScore - injuryPenalty
-        // (base_strength sera mis à jour manuellement ou via une future migration ELO)
-        const row = {
-          team_id: teamId,
-          team_name: teamName,
+        return {
+          team_id: standing.team.id,
+          team_name: standing.team.name,
           league_id: league.id,
           form_string: formString,
-          form_score: formScore,
-          goals_scored_avg: goalsScored_avg,
-          goals_conceded_avg: goalsConceded_avg,
-          injury_count: injuryCount,
-          injury_penalty: injuryPenalty,
+          form_score: calcFormScore(formString),
+          goals_scored_avg: Math.round((goalsScored / played) * 100) / 100,
+          goals_conceded_avg: Math.round((goalsConceded / played) * 100) / 100,
+          injury_count: 0,
+          injury_penalty: 0,
           updated_at: new Date().toISOString(),
         };
+      });
 
-        await supabaseUpsert([row]);
-        results.updated++;
-
-        // Rate limiting : pause 200ms entre chaque équipe pour ne pas dépasser les limites API
-        await new Promise(r => setTimeout(r, 200));
+      // Upsert toutes les équipes de la ligue en un seul appel
+      if (rows.length > 0) {
+        await supabaseUpsert(rows);
+        totalUpdated += rows.length;
       }
 
     } catch (e) {
-      results.errors.push(`${league.name}: ${e.message}`);
+      errors.push(`${league.name}: ${e.message}`);
     }
-
-    // Pause 1s entre chaque ligue
-    await new Promise(r => setTimeout(r, 1000));
-  }
+  }));
 
   return res.status(200).json({
     success: true,
-    updated: results.updated,
-    errors: results.errors,
+    updated: totalUpdated,
+    errors,
     timestamp: new Date().toISOString(),
   });
 }
