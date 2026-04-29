@@ -60,8 +60,8 @@ export const SUBSCRIPTION_PLANS = [
     emoji: "🌱",
     mcBoost: 1000,
     bonusMC: 3000,
-    features: ["1 000 MC chaque lundi","3 000 MC bonus à l'inscription","Roue quotidienne (1-3 SC)","Récompenses Tier 1 (boosters Topps, Amazon 5€)","Pubs récompensées"],
-    noFeatures: ["Cashout","Marchés exclusifs","Support prioritaire"],
+    features: ["sub.feat.mc_1000_monday","sub.feat.mc_3000_signup","sub.feat.daily_wheel","sub.feat.rewards_t1","sub.feat.rewarded_ads"],
+    noFeatures: ["sub.nofeat.cashout","sub.nofeat.exclusive_markets","sub.nofeat.priority_support"],
   },
   {
     id: "pro",
@@ -73,7 +73,7 @@ export const SUBSCRIPTION_PLANS = [
     mcBoost: 3000,
     bonusMC: 9000,
     priceId: "price_1TOJWuIB3HPK0xH5DzsgINcE",
-    features: ["3 000 MC chaque lundi","9 000 MC bonus à l'inscription","Option Cashout","Récompenses Tier 2 (Hobby Box, Amazon 30€)","Sans pub"],
+    features: ["sub.feat.mc_3000_monday","sub.feat.mc_9000_signup","sub.feat.cashout_option","sub.feat.rewards_t2","sub.feat.no_ads"],
     popular: true,
   },
   {
@@ -86,7 +86,7 @@ export const SUBSCRIPTION_PLANS = [
     mcBoost: 8000,
     bonusMC: 24000,
     priceId: "price_1TOJYAIB3HPK0xH5AusdEOFn",
-    features: ["8 000 MC chaque lundi","24 000 MC bonus à l'inscription","Accès marchés exclusifs","Récompenses Tier 3-5 (maillots signés, VIP, séance photo)","Sans pub","Support prioritaire"],
+    features: ["sub.feat.mc_8000_monday","sub.feat.mc_24000_signup","sub.feat.exclusive_markets","sub.feat.rewards_t35","sub.feat.no_ads","sub.feat.priority_support"],
   },
 ];
 

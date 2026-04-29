@@ -76,24 +76,24 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
                 <div style={{ width:18, height:18, borderRadius:5, background:`${color}20`, border:`1px solid ${color}35`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <span style={{ color, fontSize:10, fontWeight:800 }}>✓</span>
                 </div>
-                {f}
+                {t(f)}
               </div>)}
               {(plan.noFeatures||[]).map(f=><div key={f} style={{ display:"flex", alignItems:"center", gap:9, fontSize:12, color:"rgba(241,245,249,0.18)" }}>
                 <div style={{ width:18, height:18, borderRadius:5, background:"rgba(241,245,249,0.03)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <span style={{ fontSize:10 }}>✗</span>
                 </div>
-                {f}
+                {t(f)}
               </div>)}
             </div>
             {isCurrent?(
               <div style={{ display:"flex", gap:8 }}>
-                <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>✓ Plan actuel</div>
-                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Résilier</button>}
-                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(245,158,11,0.3)" }}>Passer Elite 👑</button>}
+                <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>{t("sub.current_label")}</div>
+                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("sub.cancel_sub")}</button>}
+                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(245,158,11,0.3)" }}>{t("sub.upgrade_elite")}</button>}
               </div>
             ):(
               <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"14px 0", borderRadius:13, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.04)":`linear-gradient(135deg,${color},${color}aa)`, color:plan.id==="starter"?"rgba(241,245,249,0.25)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 10px 30px ${color}30`:"none", letterSpacing:plan.id!=="starter"?0.5:0, transition:"all 0.2s" }}>
-                {plan.id==="starter"?"Plan gratuit par défaut":`S'abonner — ${plan.priceLabel} →`}
+                {plan.id==="starter"?t("sub.free_default"):`${t("sub.subscribe_cta")} — ${plan.priceLabel} →`}
               </button>
             )}
           </div>
