@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { req } from "../lib/supabase.js";
-import { fmt } from "../lib/helpers.js";
+import { fmt, mTitle } from "../lib/helpers.js";
+import { useLang } from "../lib/i18n.jsx";
 import Avatar from "./ui/Avatar.jsx";
 
 export default function ChallengeModal({ market, profile, session, onClose, showToast }) {
+  const { lang } = useLang();
   const [friends, setFriends] = useState([]);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [mySide, setMySide] = useState("yes");
@@ -84,7 +86,7 @@ export default function ChallengeModal({ market, profile, session, onClose, show
       <div onClick={e => e.stopPropagation()} style={{ background: "rgba(15,20,40,0.97)", border: "1px solid rgba(241,245,249,0.08)", borderRadius: 22, padding: 24, width: 420, maxWidth: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 50px 100px rgba(0,0,0,0.6)", animation: "fadeInUp 0.3s ease" }}>
 
         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 2, marginBottom: 4 }}>⚔️ DÉFIER UN AMI</div>
-        <div style={{ fontSize: 12, color: "rgba(241,245,249,0.35)", marginBottom: 18 }}>{market.title}</div>
+        <div style={{ fontSize: 12, color: "rgba(241,245,249,0.35)", marginBottom: 18 }}>{mTitle(market,lang)}</div>
 
         {/* Mon camp */}
         <div style={{ marginBottom: 18 }}>

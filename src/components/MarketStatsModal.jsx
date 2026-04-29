@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { req } from "../lib/supabase.js";
-import { fmt, fmtPct } from "../lib/helpers.js";
+import { fmt, fmtPct, mTitle } from "../lib/helpers.js";
+import { useLang } from "../lib/i18n.jsx";
 import { AMM } from "../lib/amm.js";
 import CommentsSection from "./ui/CommentsSection.jsx";
 
@@ -83,6 +84,7 @@ function MiniDonut({ entries }) {
 }
 
 export default function MarketStatsModal({ market, onClose, onBet, session, profile }) {
+  const { lang } = useLang();
   const [bets, setBets] = useState(null);
   const [tab, setTab] = useState("repartition");
   const isMulti = market.market_type === "multi";
@@ -128,7 +130,7 @@ export default function MarketStatsModal({ market, onClose, onBet, session, prof
       <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:24, width:430, maxWidth:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", animation:"fadeInUp 0.3s ease" }}>
 
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:3 }}>STATISTIQUES</div>
-        <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:16, lineHeight:1.4 }}>{market.title}</div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:16, lineHeight:1.4 }}>{mTitle(market,lang)}</div>
 
         {/* Stats globales */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>

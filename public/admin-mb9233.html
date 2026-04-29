@@ -184,8 +184,12 @@
 
     <div class="form-grid">
       <div class="form-group full">
-        <label>TITRE DU MARCHE *</label>
+        <label>🇫🇷 TITRE DU MARCHE (FR) *</label>
         <input class="form-inp" id="mTitle" placeholder="Ex: Qui va gagner le Ballon d'Or 2026 ?" />
+      </div>
+      <div class="form-group full">
+        <label>🇬🇧 TITRE DU MARCHE (EN) <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
+        <input class="form-inp" id="mTitleEn" placeholder="Ex: Who will win the 2026 Ballon d'Or?" />
       </div>
       <div class="form-group">
         <label>CATEGORIE</label>
@@ -278,8 +282,12 @@
     <input type="hidden" id="editId" />
     <input type="hidden" id="editMarketType" value="binary" />
     <div class="form-group" style="margin-bottom:14px">
-      <label>TITRE</label>
-      <textarea class="form-inp" id="editTitle" rows="3" style="resize:none;line-height:1.5"></textarea>
+      <label>🇫🇷 TITRE (FR)</label>
+      <textarea class="form-inp" id="editTitle" rows="2" style="resize:none;line-height:1.5"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>🇬🇧 TITRE (EN) <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
+      <textarea class="form-inp" id="editTitleEn" rows="2" style="resize:none;line-height:1.5" placeholder="English version..."></textarea>
     </div>
     <div class="form-group" style="margin-bottom:14px">
       <label>CATÉGORIE</label>
@@ -560,8 +568,8 @@ function renderProposed() {
         </div>
         ${p.status === "pending" ? `
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="approve-btn" onclick="approveProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}')">✅ Approuver & Publier</button>
-          <button class="edit-btn" onclick="editProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}')">✏️ Modifier & Publier</button>
+          <button class="approve-btn" onclick="approveProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}','${(p.title_en||"").replace(/'/g,"\\'")}')">✅ Approuver & Publier</button>
+          <button class="edit-btn" onclick="editProposed('${p.id}','${p.title.replace(/'/g,"\\'")}','${p.category}','${(p.title_en||"").replace(/'/g,"\\'")}')">✏️ Modifier & Publier</button>
           <button class="reject-btn" onclick="rejectProposed('${p.id}')">❌ Refuser</button>
         </div>` : `
         <div style="display:flex;gap:8px">
@@ -572,17 +580,17 @@ function renderProposed() {
   }).join("");
 }
 
-async function approveProposed(id, title, category) {
+async function approveProposed(id, title, category, titleEn) {
   if (!confirm(`Approuver et publier ce marché ?\n\n"${title}"`)) return;
   try {
-    // Créer dans custom_markets
-    const ratio = 1; const q_no = 100; const q_yes = 100;
+    const proposedItem = allProposed.find(p => p.id === id);
     await sbReq("custom_markets", {
       method: "POST",
       body: JSON.stringify({
-        title, category, source: "Proposé par " + (proposedItem?.proposed_by || "Elite"),
+        title, title_en: titleEn || null, category,
+        source: "Proposé par " + (proposedItem?.proposed_by || "Elite"),
         closes_at: new Date(Date.now() + 14 * 86400000).toISOString(),
-        q_yes, q_no, total_volume: 0, participants: 0,
+        q_yes: 100, q_no: 100, total_volume: 0, participants: 0,
         status: "open", created_by: "elite_proposed",
       }),
     });
@@ -611,10 +619,11 @@ function toggleEditNoDate() {
 }
 
 let editProposedId = null;
-function editProposed(id, title, category) {
+function editProposed(id, title, category, titleEn) {
   editProposedId = id;
   document.getElementById("editId").value = id;
   document.getElementById("editTitle").value = title;
+  document.getElementById("editTitleEn").value = titleEn || "";
   document.getElementById("editCategory").value = category;
   document.getElementById("editSource").value = "MarketBall — Elite";
   document.getElementById("editProb").value = "50";
@@ -631,6 +640,7 @@ async function saveEdit() {
   const id = document.getElementById("editId").value;
   const marketType = document.getElementById("editMarketType").value;
   const title = document.getElementById("editTitle").value.trim();
+  const titleEn = document.getElementById("editTitleEn").value.trim() || null;
   const category = document.getElementById("editCategory").value;
   const source = document.getElementById("editSource").value.trim();
   const noDate = document.getElementById("editNoDateCheck").checked;
@@ -649,11 +659,11 @@ async function saveEdit() {
       if (label) options.push({ label, pct, odds });
     }
     if (options.length < 2) { showToast("Minimum 2 options requises", "error"); return; }
-    patch = { title, category, source, options, closes_at: noDate ? null : new Date(closes).toISOString() };
+    patch = { title, title_en: titleEn, category, source, options, closes_at: noDate ? null : new Date(closes).toISOString() };
   } else {
     const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
     const q_yes = Math.round(100 * prob / (100 - prob));
-    patch = { title, category, source, q_yes, q_no: 100, closes_at: noDate ? null : new Date(closes).toISOString() };
+    patch = { title, title_en: titleEn, category, source, q_yes, q_no: 100, closes_at: noDate ? null : new Date(closes).toISOString() };
   }
 
   if (editProposedId) {
@@ -713,6 +723,7 @@ async function deleteProposed(id) {
 // ============================================================
 async function createMarket() {
   const title = document.getElementById("mTitle").value.trim();
+  const titleEn = document.getElementById("mTitleEn").value.trim() || null;
   const category = document.getElementById("mCategory").value;
   const source = document.getElementById("mSource").value.trim() || "MarketBall";
   const noDate = document.getElementById("noDateCheck").checked;
@@ -726,7 +737,7 @@ async function createMarket() {
   if (currentMarketType === "binary") {
     const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
     const q_yes = Math.round(100 * prob / (100 - prob));
-    marketPayload = { title, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "binary" };
+    marketPayload = { title, title_en: titleEn, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "binary" };
   } else {
     const optionDivs = document.getElementById("optionsList").children;
     const options = [];
@@ -734,11 +745,11 @@ async function createMarket() {
       const id = div.id.replace("opt-", "");
       const label = (document.getElementById(`opt-label-${id}`)?.value || "").trim();
       const pct = Math.max(1, Math.min(99, parseFloat(document.getElementById(`opt-pct-${id}`)?.value) || 33));
-      const odds = Math.round((100 / pct) * 100) / 100; // ex: 40% → ×2.5
+      const odds = Math.round((100 / pct) * 100) / 100;
       if (label) options.push({ label, pct, odds });
     }
     if (options.length < 2) { showToast("Au moins 2 options avec un nom sont requises", "error"); return; }
-    marketPayload = { title, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
+    marketPayload = { title, title_en: titleEn, category, source, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
   }
 
   const btn = document.getElementById("submitBtn");
@@ -748,6 +759,7 @@ async function createMarket() {
     await sbReq("custom_markets", { method: "POST", body: JSON.stringify(marketPayload) });
     showToast("✅ Marché publié !");
     document.getElementById("mTitle").value = "";
+    document.getElementById("mTitleEn").value = "";
     document.getElementById("mSource").value = "MarketBall";
     document.getElementById("mProb").value = "50";
     document.getElementById("mCategory").value = "Rumeurs";
@@ -764,6 +776,16 @@ async function createMarket() {
   } catch (e) { showToast("Erreur : " + e.message, "error"); }
 
   btn.disabled = false; btn.textContent = "PUBLIER LE MARCHE →";
+}
+
+async function saveTitleEn(id) {
+  const val = document.getElementById("en-"+id)?.value.trim() || null;
+  try {
+    await sbReq(`custom_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ title_en: val || null }) });
+    showToast(val ? "✅ Titre EN sauvegardé !" : "🗑 Titre EN supprimé");
+    const m = allMarkets.find(m => m.id === id);
+    if (m) m.title_en = val;
+  } catch(e) { showToast("Erreur : " + e.message, "error"); }
 }
 
 async function closeMarket(id) {
@@ -911,26 +933,33 @@ function renderMarkets() {
 
     const isMulti = m.market_type === "multi";
     return `
-      <div class="market-item" style="opacity:${isClosed ? 0.6 : 1}">
-        <div style="flex:1;min-width:0">
-          <div class="market-item-title">${isMulti ? "🎯 " : ""}${m.title}</div>
-          <div class="market-item-meta">
-            <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
-            ${isMulti ? `<span class="cat-badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">Multi-choix · ${(m.options||[]).length} options</span>` : `OUI: ${prob}%`}
-            · ${m.source || "MarketBall"} · Clôture: ${closes}
-            ${isClosed ? ' · <span style="color:#6b7280;font-weight:700">FERMÉ</span>' : ''}
-            ${m.created_by === "elite_proposed" ? ' · <span style="color:#f59e0b;font-weight:700">👑 Elite</span>' : ''}
+      <div class="market-item" style="opacity:${isClosed ? 0.6 : 1};flex-direction:column;align-items:stretch">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div class="market-item-title">${isMulti ? "🎯 " : ""}${m.title}</div>
+            <div class="market-item-meta">
+              <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
+              ${isMulti ? `<span class="cat-badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">Multi-choix · ${(m.options||[]).length} options</span>` : `OUI: ${prob}%`}
+              · ${m.source || "MarketBall"} · Clôture: ${closes}
+              ${isClosed ? ' · <span style="color:#6b7280;font-weight:700">FERMÉ</span>' : ''}
+              ${m.created_by === "elite_proposed" ? ' · <span style="color:#f59e0b;font-weight:700">👑 Elite</span>' : ''}
+            </div>
+          </div>
+          <div class="actions">
+            <button class="edit-btn" onclick="openEditMarket('${m.id}')">✏️</button>
+            ${!isClosed
+              ? (isMulti
+                  ? `<button class="approve-btn" onclick="openResolveModal('${m.id}')">🎯 Résoudre</button>`
+                  : `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`)
+              : `<button class="reopen-btn" onclick="reopenMarket('${m.id}')">Rouvrir</button>`
+            }
+            <button class="delete-btn" onclick="deleteMarket('${m.id}')">🗑</button>
           </div>
         </div>
-        <div class="actions">
-          <button class="edit-btn" onclick="openEditMarket('${m.id}')">✏️</button>
-          ${!isClosed
-            ? (isMulti
-                ? `<button class="approve-btn" onclick="openResolveModal('${m.id}')">🎯 Résoudre</button>`
-                : `<button class="close-btn" onclick="closeMarket('${m.id}')">Fermer</button>`)
-            : `<button class="reopen-btn" onclick="reopenMarket('${m.id}')">Rouvrir</button>`
-          }
-          <button class="delete-btn" onclick="deleteMarket('${m.id}')">🗑</button>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+          <span style="font-size:13px;flex-shrink:0">🇬🇧</span>
+          <input id="en-${m.id}" value="${(m.title_en||'').replace(/"/g,'&quot;')}" placeholder="Titre EN (laisser vide = pas de traduction)" style="flex:1;padding:7px 10px;background:rgba(241,245,249,0.04);border:1px solid rgba(241,245,249,0.1);border-radius:8px;color:#f1f5f9;font-size:12px;font-family:'DM Sans',sans-serif;outline:none" />
+          <button onclick="saveTitleEn('${m.id}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(16,185,129,0.25);background:rgba(16,185,129,0.08);color:#10b981;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">💾 Sauver EN</button>
         </div>
       </div>
     `;

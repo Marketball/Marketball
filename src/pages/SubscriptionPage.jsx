@@ -1,15 +1,17 @@
 import { SUBSCRIPTION_PLANS } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost } from "../lib/helpers.js";
+import { useLang } from "../lib/i18n.jsx";
 
 export default function SubscriptionPage({ profile, onSubscribe }) {
   const currentSub=getSubPlan(profile);
+  const { t } = useLang();
   return <div className="page-enter">
     {/* HERO */}
     <div style={{ position:"relative", textAlign:"center", padding:"32px 20px 28px", marginBottom:32, background:"linear-gradient(180deg,rgba(16,185,129,0.06),transparent)", borderRadius:24, border:"1px solid rgba(16,185,129,0.08)", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, left:"50%", transform:"translateX(-50%)", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.07),transparent 65%)", pointerEvents:"none" }} />
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:11, letterSpacing:4, color:"#10b981", marginBottom:10 }}>CHOISIR TA LIGUE</div>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:38, letterSpacing:3, marginBottom:8 }}>TES <span style={{ color:"#10b981" }}>AVANTAGES</span></div>
-      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", maxWidth:380, margin:"0 auto", lineHeight:1.6 }}>Plus ta ligue est élevée, plus tu reçois de MC chaque lundi et plus tes récompenses sont exclusives.</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:11, letterSpacing:4, color:"#10b981", marginBottom:10 }}>{t("sub.choose_league")}</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:38, letterSpacing:3, marginBottom:8 }}>{t("sub.your_advantages")}</div>
+      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", maxWidth:380, margin:"0 auto", lineHeight:1.6 }}>{t("sub.advantages_desc")}</div>
       {/* Barre progression */}
       <div style={{ marginTop:20, position:"relative" }}>
         <div style={{ height:4, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden", margin:"0 20px" }}>
@@ -29,12 +31,12 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
     {/* Hero plan actuel */}
     <div style={{ position:"relative", background:`linear-gradient(135deg,${getSubColor(currentSub)}18,rgba(3,7,18,0.95))`, border:`1px solid ${getSubColor(currentSub)}35`, borderRadius:22, padding:"24px 22px", marginBottom:32, overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-40, right:-40, width:180, height:180, borderRadius:"50%", background:`radial-gradient(circle,${getSubColor(currentSub)}20,transparent 70%)`, pointerEvents:"none" }} />
-      <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:2, marginBottom:10 }}>TON ABONNEMENT ACTUEL</div>
+      <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:2, marginBottom:10 }}>{t("sub.current_plan")}</div>
       <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
         <div style={{ width:56, height:56, borderRadius:16, background:`${getSubColor(currentSub)}20`, border:`2px solid ${getSubColor(currentSub)}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0, boxShadow:`0 0 20px ${getSubColor(currentSub)}25` }}>{getSubEmoji(currentSub)}</div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:getSubColor(currentSub), letterSpacing:2 }}>{getSubLabel(currentSub)}</div>
-          <div style={{ fontSize:12, color:"rgba(241,245,249,0.45)", marginTop:2 }}>{getMCBoost(currentSub)} MarketCoins offerts chaque lundi</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.45)", marginTop:2 }}>{getMCBoost(currentSub)} {t("sub.mc_monday")}</div>
         </div>
       </div>
       <div style={{ height:3, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden" }}>
@@ -52,9 +54,9 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
         return <div key={plan.id} style={{ position:"relative", borderRadius:22, overflow:"hidden", border:`1px solid ${isCurrent?color+"50":plan.popular?"rgba(59,130,246,0.2)":"rgba(241,245,249,0.06)"}`, boxShadow:isCurrent?`0 8px 40px ${color}20`:plan.popular?"0 8px 30px rgba(59,130,246,0.1)":"none" }}>
           <div style={{ height:4, background:isCurrent?`linear-gradient(90deg,${color},${color}88)`:plan.popular?"linear-gradient(90deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.06)" }} />
           <div style={{ background:isCurrent?`linear-gradient(145deg,${color}10,rgba(3,7,18,0.98))`:"rgba(241,245,249,0.02)", padding:"20px 22px 22px" }}>
-            {plan.popular&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#60a5fa", letterSpacing:1 }}>⚡ POPULAIRE</div>}
-            {isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color, letterSpacing:1 }}>✓ TON PLAN</div>}
-            {plan.id==="elite"&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.2)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#f59e0b", letterSpacing:1 }}>👑 PREMIUM</div>}
+            {plan.popular&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#60a5fa", letterSpacing:1 }}>{t("sub.popular")}</div>}
+            {isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color, letterSpacing:1 }}>{t("sub.your_plan")}</div>}
+            {plan.id==="elite"&&!isCurrent&&<div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.2)", borderRadius:20, padding:"3px 10px", marginBottom:14, fontSize:10, fontWeight:800, color:"#f59e0b", letterSpacing:1 }}>{t("sub.premium")}</div>}
             {plan.id==="starter"&&!isCurrent&&<div style={{ marginBottom:14 }} />}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>

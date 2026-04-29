@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { authReq } from "../lib/supabase.js";
-import { GLOBAL_CSS, POPULAR_CLUBS } from "../lib/constants.js";
+import { GLOBAL_CSS, POPULAR_CLUBS, ALL_CLUBS } from "../lib/constants.js";
+import { useLang } from "../lib/i18n.jsx";
 
 export default function AuthPage({ onAuth, onClose, modal }) {
   const [mode,setMode]=useState("login");
@@ -14,15 +15,16 @@ export default function AuthPage({ onAuth, onClose, modal }) {
   const [error,setError]=useState("");
 
   const filteredClubs=clubSearch.trim()
-    ? POPULAR_CLUBS.filter(c=>c.name.toLowerCase().includes(clubSearch.toLowerCase()))
+    ? ALL_CLUBS.filter(c=>c.name.toLowerCase().includes(clubSearch.toLowerCase()))
     : POPULAR_CLUBS;
+  const { t } = useLang();
 
   const submit=async()=>{
     setError("");setLoading(true);
     try{
       if(mode==="signup"){
-        if(!username.trim()){setError("Pseudo requis");setLoading(false);return;}
-        if(password.length<6){setError("Mot de passe trop court (6 car. min)");setLoading(false);return;}
+        if(!username.trim()){setError(t("auth.err_pseudo"));setLoading(false);return;}
+        if(password.length<6){setError(t("auth.err_password"));setLoading(false);return;}
         const d=await authReq("signup",{email,password,data:{username,favorite_club:favoriteClub||null}});
         if(d.user){
           const ld=await authReq("token?grant_type=password",{email,password});
@@ -45,27 +47,27 @@ export default function AuthPage({ onAuth, onClose, modal }) {
       <div style={{ background:"rgba(10,14,28,0.98)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:22, padding:"28px 24px", boxShadow:"0 40px 80px rgba(0,0,0,0.6)" }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:4 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></div>
-          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:4 }}>Parie sur les transferts et matchs — 100% gratuit</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:4 }}>{t("auth.tagline")}</div>
         </div>
         <div style={{ display:"flex", background:"rgba(241,245,249,0.03)", borderRadius:13, padding:4, marginBottom:20 }}>
           {["login","signup"].map(m=>(
             <button key={m} onClick={()=>{setMode(m);setError("");setFavoriteClub("");setClubSearch("");}}
               style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:mode===m?"rgba(16,185,129,0.15)":"transparent", color:mode===m?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
-              {m==="login"?"Connexion":"Inscription"}
+              {m==="login"?t("auth.tab_login"):t("auth.tab_signup")}
             </button>
           ))}
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {mode==="signup"&&<div><label style={labelStyle}>PSEUDO</label><input value={username} onChange={e=>setUsername(e.target.value)} placeholder="MonPseudo" style={inputStyle} /></div>}
-          <div><label style={labelStyle}>EMAIL</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" style={inputStyle} /></div>
-          <div><label style={labelStyle}>MOT DE PASSE</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()} style={inputStyle} /></div>
-          {mode==="signup"&&<div><label style={labelStyle}>CODE PARRAIN <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>(optionnel)</span></label><input value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase())} placeholder="Ex: MARTIN-4X2B" style={{ ...inputStyle, letterSpacing:2, textTransform:"uppercase" }} /></div>}
+          {mode==="signup"&&<div><label style={labelStyle}>{t("auth.label_pseudo")}</label><input value={username} onChange={e=>setUsername(e.target.value)} placeholder="MonPseudo" style={inputStyle} /></div>}
+          <div><label style={labelStyle}>{t("auth.label_email")}</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t("auth.label_password")}</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()} style={inputStyle} /></div>
+          {mode==="signup"&&<div><label style={labelStyle}>{t("auth.label_referral")} <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>{t("auth.label_referral_opt")}</span></label><input value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase())} placeholder="Ex: MARTIN-4X2B" style={{ ...inputStyle, letterSpacing:2, textTransform:"uppercase" }} /></div>}
         </div>
         {error&&<div style={{ marginTop:14, padding:"11px 14px", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:10, color:"#f87171", fontSize:13 }}>⚠️ {error}</div>}
         <button onClick={submit} disabled={loading} style={{ width:"100%", marginTop:20, padding:"13px 0", borderRadius:12, border:"none", background:loading?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:loading?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:15, cursor:loading?"not-allowed":"pointer", transition:"all 0.2s", boxShadow:loading?"none":"0 8px 25px rgba(16,185,129,0.3)" }}>
-          {loading?"...":mode==="login"?"SE CONNECTER":"CRÉER MON COMPTE →"}
+          {loading?"...":mode==="login"?t("auth.btn_login"):t("auth.btn_signup")}
         </button>
-        <div style={{ marginTop:14, textAlign:"center", fontSize:12, color:"rgba(241,245,249,0.3)" }}>Démarre avec <span style={{ color:"#fbbf24", fontWeight:700 }}>500 🪙 MC</span> gratuits !</div>
+        <div style={{ marginTop:14, textAlign:"center", fontSize:12, color:"rgba(241,245,249,0.3)" }}>{t("auth.free_coins")} <span style={{ color:"#fbbf24", fontWeight:700 }}>500 🪙 MC</span> {t("auth.free_coins2")}</div>
       </div>
     </div>
   </div>;
@@ -80,7 +82,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
       <div style={{ textAlign:"center", marginBottom:32 }}>
         <img src="/favicon.png" alt="MB" style={{ width:64, height:64, borderRadius:20, objectFit:"cover", margin:"0 auto 14px", display:"block", boxShadow:"0 20px 50px rgba(16,185,129,0.25)" }} />
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:42, letterSpacing:4, color:"#f1f5f9" }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></div>
-        <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginTop:5 }}>Prédictions football — 100% gratuit</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginTop:5 }}>{t("auth.tagline2")}</div>
       </div>
 
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.07)", borderRadius:22, padding:"28px 24px", backdropFilter:"blur(20px)", boxShadow:"0 40px 80px rgba(0,0,0,0.4)" }}>
@@ -89,7 +91,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
           {["login","signup"].map(m=>(
             <button key={m} onClick={()=>{setMode(m);setError("");setFavoriteClub("");setClubSearch("");}}
               style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:mode===m?"rgba(16,185,129,0.15)":"transparent", color:mode===m?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.2s" }}>
-              {m==="login"?"Connexion":"Inscription"}
+              {m==="login"?t("auth.tab_login"):t("auth.tab_signup")}
             </button>
           ))}
         </div>
@@ -98,40 +100,40 @@ export default function AuthPage({ onAuth, onClose, modal }) {
           {/* Pseudo (inscription seulement) */}
           {mode==="signup"&&(
             <div>
-              <label style={labelStyle}>PSEUDO</label>
+              <label style={labelStyle}>{t("auth.label_pseudo")}</label>
               <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="MonPseudo" style={inputStyle} />
             </div>
           )}
 
           {/* Email */}
           <div>
-            <label style={labelStyle}>EMAIL</label>
+            <label style={labelStyle}>{t("auth.label_email")}</label>
             <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" style={inputStyle} />
           </div>
 
           {/* Mot de passe */}
           <div>
-            <label style={labelStyle}>MOT DE PASSE</label>
+            <label style={labelStyle}>{t("auth.label_password")}</label>
             <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&!favoriteClub&&submit()} style={inputStyle} />
           </div>
 
           {/* Code parrain (inscription seulement) */}
           {mode==="signup"&&(
             <div>
-              <label style={labelStyle}>CODE PARRAIN <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>(optionnel)</span></label>
+              <label style={labelStyle}>{t("auth.label_referral")} <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>{t("auth.label_referral_opt")}</span></label>
               <input value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase())} placeholder="Ex: MARTIN-4X2B" style={{ ...inputStyle, letterSpacing:2, textTransform:"uppercase" }} />
             </div>
           )}
           {/* Club favori (inscription seulement) */}
           {mode==="signup"&&(
             <div>
-              <label style={labelStyle}>TON CLUB FAVORI <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>(optionnel)</span></label>
+              <label style={labelStyle}>{t("auth.label_club")} <span style={{ color:"rgba(241,245,249,0.25)", fontWeight:400 }}>{t("auth.label_referral_opt")}</span></label>
 
               {/* Recherche */}
               <input
                 value={clubSearch}
                 onChange={e=>setClubSearch(e.target.value)}
-                placeholder="🔍  Chercher un club..."
+                placeholder={t("auth.club_search")}
                 style={{ ...inputStyle, marginBottom:10, fontSize:13 }}
               />
 
@@ -153,7 +155,7 @@ export default function AuthPage({ onAuth, onClose, modal }) {
                     <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
                   </button>
                 ))}
-                {filteredClubs.length===0&&<div style={{ gridColumn:"1/-1", textAlign:"center", padding:"16px 0", color:"rgba(241,245,249,0.25)", fontSize:12 }}>Aucun club trouvé</div>}
+                {filteredClubs.length===0&&<div style={{ gridColumn:"1/-1", textAlign:"center", padding:"16px 0", color:"rgba(241,245,249,0.25)", fontSize:12 }}>{t("auth.club_none")}</div>}
               </div>
             </div>
           )}
@@ -165,12 +167,12 @@ export default function AuthPage({ onAuth, onClose, modal }) {
         {/* Bouton */}
         <button onClick={submit} disabled={loading}
           style={{ width:"100%", marginTop:20, padding:"13px 0", borderRadius:12, border:"none", background:loading?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:loading?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:15, cursor:loading?"not-allowed":"pointer", transition:"all 0.2s", boxShadow:loading?"none":"0 8px 25px rgba(16,185,129,0.3)" }}>
-          {loading?"...":mode==="login"?"SE CONNECTER":"CRÉER MON COMPTE →"}
+          {loading?"...":mode==="login"?t("auth.btn_login"):t("auth.btn_signup")}
         </button>
       </div>
 
       <div style={{ marginTop:16, textAlign:"center", fontSize:13, color:"rgba(241,245,249,0.3)" }}>
-        Démarre avec <span style={{ color:"#fbbf24", fontWeight:700 }}>500 🪙 MC</span> gratuits !
+        {t("auth.free_coins")} <span style={{ color:"#fbbf24", fontWeight:700 }}>500 🪙 MC</span> {t("auth.free_coins2")}
       </div>
     </div>
   </div>;

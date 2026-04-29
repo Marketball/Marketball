@@ -8,11 +8,55 @@ export const getMCBoost = (sub) => ({ starter:1000, pro:3000, elite:8000 })[sub]
 export const isElite = (profile) => profile?.subscription === "elite";
 export const isPro = (profile) => profile?.subscription === "pro" || profile?.subscription === "elite";
 export const getBadge = (level) => BADGES.find(b => level >= b.minLevel && level <= b.maxLevel) || BADGES[0];
-export const getLevel = (xp) => Math.floor((xp || 0) / XP_PER_LEVEL) + 1;
-export const getXPProgress = (xp) => (xp || 0) % XP_PER_LEVEL;
+
+// XP cumulé nécessaire pour atteindre le niveau N
+// Niveau 1→2 : 100 XP, puis +50 par niveau (150, 200, ...)
+export const xpForLevel = (n) => n <= 1 ? 0 : 25 * (n - 1) * (n + 2);
+
+// Niveau actuel depuis XP total
+export const getLevel = (xp) => {
+  let n = 1;
+  while (xpForLevel(n + 1) <= (xp || 0)) n++;
+  return n;
+};
+
+// XP accumulé dans le niveau actuel (pour la barre de progression)
+export const getXPProgress = (xp) => {
+  const lvl = getLevel(xp);
+  return (xp || 0) - xpForLevel(lvl);
+};
+
+// XP total nécessaire pour finir le niveau actuel
+export const xpToNextLevel = (xp) => {
+  const lvl = getLevel(xp);
+  return xpForLevel(lvl + 1) - xpForLevel(lvl);
+};
+
+// Calcule les SC bonus lors d'un gain d'XP (passage de niveau / badge)
+// Retourne { scBonus, messages[] }
+export const calcLevelUpRewards = (oldXP, newXP) => {
+  const oldLevel = getLevel(oldXP);
+  const newLevel = getLevel(newXP);
+  const oldBadge = getBadge(oldLevel);
+  const newBadge = getBadge(newLevel);
+  const levelsGained = newLevel - oldLevel;
+  let scBonus = levelsGained; // +1 SC par niveau
+  const messages = [];
+  if (levelsGained > 0) {
+    messages.push(`⬆️ Niveau ${newLevel} ! +${levelsGained} SC`);
+  }
+  if (oldBadge.id !== newBadge.id) {
+    scBonus += 5;
+    messages.push(`${newBadge.emoji} Badge ${newBadge.label} débloqué ! +5 SC`);
+  }
+  return { scBonus, messages };
+};
 export const getClubColor = (name) => { if (!name) return "#6b7280"; const k = Object.keys(CLUB_COLORS).find(k => name.toLowerCase().includes(k.toLowerCase())); return k ? CLUB_COLORS[k] : "#6b7280"; };
 
 export const fmt = (n) => (n ?? 0).toLocaleString("fr-FR");
+
+// Retourne le titre du marché dans la bonne langue
+export const mTitle = (market, lang) => (lang === "en" && market?.title_en) ? market.title_en : (market?.title || "");
 export const fmtPct = (n) => `${Math.round(n * 100)}%`;
 export const timeLeft = (date) => { const diff = new Date(date) - Date.now(); if (diff < 0) return "Termine"; const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000); return d > 0 ? `${d}j ${h}h` : `${h}h`; };
 export const catColor = (c) => ({ "Transferts": "#3b82f6", "Contrats": "#8b5cf6", "Competitions": "#f59e0b", "Recompenses": "#ec4899", "Performances": "#10b981", "Rumeurs": "#f59e0b" })[c] || "#6b7280";

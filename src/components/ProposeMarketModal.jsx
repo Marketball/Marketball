@@ -3,6 +3,7 @@ import { catColor } from "../lib/helpers.js";
 
 export default function ProposeMarketModal({ profile, onClose, onSubmit }) {
   const [title,setTitle]=useState("");
+  const [titleEn,setTitleEn]=useState("");
   const [category,setCategory]=useState("Transferts");
   const [loading,setLoading]=useState(false);
   const cats=["Transferts","Contrats","Competitions","Performances","Rumeurs"];
@@ -10,7 +11,7 @@ export default function ProposeMarketModal({ profile, onClose, onSubmit }) {
   const submit=async()=>{
     if(!canSubmit) return;
     setLoading(true);
-    await onSubmit({title:title.trim(),category,proposed_by:profile?.username||"Elite"});
+    await onSubmit({title:title.trim(),title_en:titleEn.trim()||null,category,proposed_by:profile?.username||"Elite"});
     setLoading(false);
     onClose();
   };
@@ -21,11 +22,16 @@ export default function ProposeMarketModal({ profile, onClose, onSubmit }) {
         <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2 }}>PROPOSER UN MARCHÉ</div>
       </div>
       <div style={{ fontSize:12,color:"rgba(241,245,249,0.35)",marginBottom:20 }}>Tu proposes, l'admin valide. Si accepté, tu gagnes +50 XP et 2 SC !</div>
-      <div style={{ marginBottom:16 }}>
-        <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>QUESTION DE PRÉDICTION</div>
-        <textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex: Mbappé signera à Arsenal avant le 31 août ?" rows={3}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>🇫🇷 QUESTION EN FRANÇAIS</div>
+        <textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex: Mbappé signera à Arsenal avant le 31 août ?" rows={2}
           style={{ width:"100%",padding:"12px 14px",background:"rgba(241,245,249,0.04)",border:`1px solid ${canSubmit?"rgba(245,158,11,0.3)":"rgba(241,245,249,0.08)"}`,borderRadius:11,color:"#f1f5f9",fontSize:13,outline:"none",resize:"none",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif",lineHeight:1.5 }} />
         <div style={{ fontSize:11,color:"rgba(241,245,249,0.25)",marginTop:4 }}>{title.length}/200 · minimum 10 caractères</div>
+      </div>
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>🇬🇧 QUESTION EN ANGLAIS <span style={{ fontWeight:400,opacity:0.6 }}>(optionnel)</span></div>
+        <textarea value={titleEn} onChange={e=>setTitleEn(e.target.value)} placeholder="Ex: Will Mbappé sign for Arsenal before Aug 31?" rows={2}
+          style={{ width:"100%",padding:"12px 14px",background:"rgba(241,245,249,0.04)",border:"1px solid rgba(241,245,249,0.08)",borderRadius:11,color:"#f1f5f9",fontSize:13,outline:"none",resize:"none",boxSizing:"border-box",fontFamily:"'DM Sans',sans-serif",lineHeight:1.5 }} />
       </div>
       <div style={{ marginBottom:20 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>CATÉGORIE</div>

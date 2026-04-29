@@ -293,6 +293,26 @@ export const calcOverUnderOdds = (line, isOver, odds) => {
   return Math.min(8, Math.max(1.2, +(1.05 / Math.max(p, 0.01)).toFixed(2)));
 };
 
+// Résolution d'un combiné : reçoit le tableau de tous les matchs terminés
+export const resolveParlay = (bet, allFinishedMatches) => {
+  let legs;
+  try { legs = JSON.parse(bet.prediction); } catch { return null; }
+  if (!Array.isArray(legs) || legs.length === 0) return null;
+  let allResolved = true, anyLost = false;
+  for (const leg of legs) {
+    const match = allFinishedMatches.find(m =>
+      leg.matchTitle && m.home_team && m.away_team &&
+      leg.matchTitle.includes(m.home_team) && leg.matchTitle.includes(m.away_team)
+    );
+    if (!match) { allResolved = false; continue; }
+    const winner = match.home_score > match.away_score ? match.home_team : match.away_score > match.home_score ? match.away_team : "Nul";
+    if (leg.prediction !== winner) { anyLost = true; break; }
+  }
+  if (anyLost) return "lost";
+  if (allResolved) return "won";
+  return null; // encore en cours
+};
+
 export const resolveBet = (bet, matchResult) => {
   const { bet_type, prediction } = bet;
   const { homeScore, awayScore, homeTeam, awayTeam, scorers } = matchResult;

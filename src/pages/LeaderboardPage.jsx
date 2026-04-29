@@ -6,6 +6,7 @@ import BadgeTag from "../components/ui/BadgeTag.jsx";
 import SubBadge from "../components/ui/SubBadge.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
+import { useLang } from "../lib/i18n.jsx";
 
 const WEEKLY_REWARDS = [
   { rank: 1, sc: 25, emoji: "🥇", color: "#fbbf24" },
@@ -44,9 +45,11 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
   const [loading, setLoading] = useState(true);
   const [friendStatus, setFriendStatus] = useState(null);
   const [addingFriend, setAddingFriend] = useState(false);
+  const [recentBets, setRecentBets] = useState([]);
 
   const myId = myProfile?.id;
   const token = session?.token;
+  const { t } = useLang();
 
   useEffect(()=>{
     const load = async () => {
@@ -62,6 +65,16 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
               else setFriendStatus("incoming");
             }
           }
+          // Charger les 5 derniers paris (matchs + marchés)
+          const [mb, ub] = await Promise.all([
+            req(`match_bets?user_id=eq.${data[0].id}&select=match_title,prediction,cost,potential_gain,status,created_at,bet_type&order=created_at.desc&limit=5`).catch(()=>[]),
+            req(`user_bets?user_id=eq.${data[0].id}&select=market_title,side,cost,potential_gain,status,created_at&order=created_at.desc&limit=5`).catch(()=>[]),
+          ]);
+          const all = [
+            ...(mb||[]).map(b=>({...b, _type:"match"})),
+            ...(ub||[]).map(b=>({...b, _type:"market"})),
+          ].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+          setRecentBets(all);
         }
       } catch {}
       setLoading(false);
@@ -80,11 +93,11 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
     setAddingFriend(false);
   };
 
-  if(loading) return <div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>CHARGEMENT...</div>;
+  if(loading) return <div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>{t("leaderboard.loading")}</div>;
   if(!profileData) return <div style={{ textAlign:"center", padding:60 }}>
     <div style={{ fontSize:40, marginBottom:12 }}>👤</div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"rgba(241,245,249,0.25)" }}>PROFIL INTROUVABLE</div>
-    <button onClick={onBack} style={{ marginTop:16, padding:"8px 20px", borderRadius:10, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13 }}>← Retour</button>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.not_found")}</div>
+    <button onClick={onBack} style={{ marginTop:16, padding:"8px 20px", borderRadius:10, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13 }}>{t("leaderboard.back")}</button>
   </div>;
 
   const level=getLevel(profileData.xp||0), badge=getBadge(level);
@@ -95,17 +108,17 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
 
   return <div className="page-enter">
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-      <button onClick={onBack} style={{ padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", gap:6 }}>← Retour</button>
+      <button onClick={onBack} style={{ padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", gap:6 }}>{t("leaderboard.back")}</button>
       {myId && profileData?.id !== myId && (
         friendStatus==="accepted" ? (
-          <span style={{ fontSize:12, color:"#10b981", fontWeight:700 }}>✓ Ami</span>
+          <span style={{ fontSize:12, color:"#10b981", fontWeight:700 }}>{t("leaderboard.friend_accepted")}</span>
         ) : friendStatus==="pending" ? (
-          <span style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>Demande envoyée</span>
+          <span style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>{t("leaderboard.request_sent")}</span>
         ) : friendStatus==="incoming" ? (
-          <span style={{ fontSize:12, color:"#fbbf24" }}>Demande reçue</span>
+          <span style={{ fontSize:12, color:"#fbbf24" }}>{t("leaderboard.request_received")}</span>
         ) : (
           <button onClick={addFriend} disabled={addingFriend} style={{ padding:"7px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-            {addingFriend?"...":"+ Ajouter ami"}
+            {addingFriend?"...":t("leaderboard.add_friend")}
           </button>
         )
       )}
@@ -119,23 +132,23 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
           <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap", alignItems:"center" }}>
             <BadgeTag level={level} />
             {sub!=="starter"&&<SubBadge profile={profileData} />}
-            {rankDisplay&&<div style={{ fontSize:10, fontWeight:700, color:"#fbbf24", background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"2px 8px" }}>🏆 #{rankDisplay} cette semaine</div>}
+            {rankDisplay&&<div style={{ fontSize:10, fontWeight:700, color:"#fbbf24", background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"2px 8px" }}>🏆 #{rankDisplay} {t("leaderboard.this_week")}</div>}
           </div>
-          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:5 }}>Niveau {level} · {profileData.xp||0} XP</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:5 }}>{t("profile.level")} {level} · {profileData.xp||0} XP</div>
         </div>
       </div>
       <XPBar xp={profileData.xp||0} />
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
-      {[{label:"PARIS",val:profileData.total_bets||0,color:"#3b82f6"},{label:"WINS",val:profileData.total_wins||0,color:"#10b981"},{label:"PRÉCISION",val:`${wr}%`,color:"#a78bfa"}].map(s=>(
+      {[{label:t("profile.bets_stat"),val:profileData.total_bets||0,color:"#3b82f6"},{label:"WINS",val:profileData.total_wins||0,color:"#10b981"},{label:t("profile.accuracy"),val:`${wr}%`,color:"#a78bfa"}].map(s=>(
         <div key={s.label} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, padding:"16px 10px", textAlign:"center" }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:s.color, letterSpacing:1 }}>{s.val}</div>
           <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", fontWeight:700, letterSpacing:1.5, marginTop:3 }}>{s.label}</div>
         </div>
       ))}
     </div>
-    <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:14, padding:"16px 18px" }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>PROGRESSION</div>
+    <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:14, padding:"16px 18px", marginBottom:18 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>{t("leaderboard.progression")}</div>
       {BADGES.map(b=>(
         <div key={b.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
           <span style={{ fontSize:11, fontWeight:700, color:b.color, background:`${b.color}12`, padding:"3px 9px", borderRadius:20, border:`1px solid ${b.color}25`, minWidth:90, textAlign:"center", boxShadow:level>=b.minLevel?`0 0 8px ${b.glow}`:"none" }}>{b.emoji} {b.label}</span>
@@ -144,6 +157,26 @@ export function PublicProfilePage({ username, onBack, leaderboard, session, prof
         </div>
       ))}
     </div>
+    {recentBets.length>0&&<div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:14, padding:"16px 18px" }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>{t("leaderboard.recent_bets")}</div>
+      {recentBets.map((b,i)=>{
+        const won=b.status==="won", lost=b.status==="lost", pending=b.status==="pending";
+        const title=b.match_title||b.market_title||"Paris";
+        const pred=b.prediction||b.side||"—";
+        return <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 0", borderBottom:i<recentBets.length-1?"1px solid rgba(241,245,249,0.04)":"none" }}>
+          <div style={{ flex:1, minWidth:0, marginRight:10 }}>
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"rgba(241,245,249,0.7)" }}>{pred} <span style={{ fontSize:10, color:"rgba(241,245,249,0.3)", fontWeight:400 }}>· {b.cost} MC</span></div>
+          </div>
+          <div style={{ flexShrink:0, textAlign:"right" }}>
+            {won&&<span style={{ fontSize:11, fontWeight:800, color:"#10b981" }}>+{b.potential_gain} 🏆</span>}
+            {lost&&<span style={{ fontSize:11, fontWeight:800, color:"#ef4444" }}>{t("leaderboard.lost_status")}</span>}
+            {pending&&<span style={{ fontSize:10, fontWeight:700, color:"#fbbf24", background:"rgba(251,191,36,0.1)", padding:"2px 7px", borderRadius:20 }}>{t("leaderboard.pending_status")}</span>}
+            {b.status==="cashed_out"&&<span style={{ fontSize:11, fontWeight:700, color:"#3b82f6" }}>{t("leaderboard.cashed_status")}</span>}
+          </div>
+        </div>;
+      })}
+    </div>}
   </div>;
 }
 
@@ -152,6 +185,7 @@ function FriendsLeaderboard({ profile, session, onViewProfile }) {
   const [friends, setFriends] = useState(null);
   const userId = profile?.id;
   const token = session?.token;
+  const { t } = useLang();
 
   useEffect(() => {
     if(!userId) return;
@@ -172,11 +206,11 @@ function FriendsLeaderboard({ profile, session, onViewProfile }) {
   const topColors = ["#fbbf24","#94a3b8","#cd7f32"];
   const medals = ["🥇","🥈","🥉"];
 
-  if(!friends) return <div style={{ textAlign:"center", padding:40, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>CHARGEMENT...</div>;
+  if(!friends) return <div style={{ textAlign:"center", padding:40, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>{t("leaderboard.loading")}</div>;
   if(friends.length <= 1) return <div style={{ textAlign:"center", padding:40 }}>
     <div style={{ fontSize:40, marginBottom:12 }}>👥</div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.25)", marginBottom:8 }}>AUCUN AMI ENCORE</div>
-    <div style={{ fontSize:12, color:"rgba(241,245,249,0.2)" }}>Ajoute des amis depuis leur profil pour voir le classement ici</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"rgba(241,245,249,0.25)", marginBottom:8 }}>{t("leaderboard.no_friends")}</div>
+    <div style={{ fontSize:12, color:"rgba(241,245,249,0.2)" }}>{t("leaderboard.no_friends_sub")}</div>
   </div>;
 
   return <div>
@@ -191,13 +225,13 @@ function FriendsLeaderboard({ profile, session, onViewProfile }) {
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
             <span onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, color:isMe?"#10b981":"#f1f5f9", fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{p.username}</span>
             <BadgeTag level={getLevel(p.xp||0)} />
-            {isMe&&<span style={{ fontSize:10, color:"#10b981" }}>(Vous)</span>}
+            {isMe&&<span style={{ fontSize:10, color:"#10b981" }}>{t("leaderboard.you")}</span>}
           </div>
-          <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} paris · Niv. {getLevel(p.xp||0)}</div>
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} {t("leaderboard.bets_short")} · {t("profile.lv_short")} {getLevel(p.xp||0)}</div>
         </div>
         <div style={{ textAlign:"right", flexShrink:0 }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.weekly_profit||0)}</div>
-          <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>cette semaine</div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.this_week")}</div>
         </div>
       </div>;
     })}
@@ -218,6 +252,7 @@ function PrivateLeagues({ profile, session, showToast }) {
 
   const userId = profile?.id;
   const token = session?.token;
+  const { t } = useLang();
 
   const loadMyLeagues = async () => {
     if(!userId) return;
@@ -285,16 +320,16 @@ function PrivateLeagues({ profile, session, showToast }) {
   const medals = ["🥇","🥈","🥉"];
 
   if(selectedLeague) return <div>
-    <button onClick={()=>setSelectedLeague(null)} style={{ marginBottom:16, padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13 }}>← Ligues</button>
+    <button onClick={()=>setSelectedLeague(null)} style={{ marginBottom:16, padding:"6px 14px", borderRadius:10, border:"1px solid rgba(241,245,249,0.08)", background:"transparent", color:"rgba(241,245,249,0.4)", cursor:"pointer", fontSize:13 }}>{t("leaderboard.leagues_back")}</button>
     <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.08),rgba(16,185,129,0.02))", border:"1px solid rgba(16,185,129,0.15)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2 }}>{selectedLeague.name}</div>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:6 }}>
-        <span style={{ fontSize:11, color:"rgba(241,245,249,0.4)" }}>Code :</span>
+        <span style={{ fontSize:11, color:"rgba(241,245,249,0.4)" }}>{t("leaderboard.code_label")}</span>
         <span onClick={()=>{ navigator.clipboard?.writeText(selectedLeague.invite_code); showToast?.("Code copié !"); }} style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#10b981", letterSpacing:3, background:"rgba(16,185,129,0.1)", padding:"3px 12px", borderRadius:8, cursor:"pointer" }}>{selectedLeague.invite_code}</span>
-        <span style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>tap pour copier</span>
+        <span style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.tap_copy")}</span>
       </div>
     </div>
-    {loadingMembers ? <div style={{ textAlign:"center", padding:30, color:"rgba(241,245,249,0.25)" }}>Chargement...</div> : membersProfiles.map((m,i) => {
+    {loadingMembers ? <div style={{ textAlign:"center", padding:30, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.loading_short")}</div> : membersProfiles.map((m,i) => {
       const isMe = m.id === userId;
       return <div key={m.id} style={{ display:"flex", alignItems:"center", gap:12, background:isMe?"rgba(16,185,129,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${isMe?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.05)"}`, borderRadius:12, padding:"12px 14px", marginBottom:6 }}>
         <div style={{ width:24, textAlign:"center", fontSize:i<3?18:13, fontFamily:"'Bebas Neue',sans-serif", color:i<3?topColors[i]:"rgba(241,245,249,0.4)" }}>{i<3?medals[i]:i+1}</div>
@@ -303,23 +338,23 @@ function PrivateLeagues({ profile, session, showToast }) {
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <span style={{ fontWeight:700, fontSize:13, color:isMe?"#10b981":"#f1f5f9" }}>{m.username}</span>
             <BadgeTag level={getLevel(m.xp||0)} />
-            {isMe&&<span style={{ fontSize:10, color:"#10b981" }}>(Vous)</span>}
+            {isMe&&<span style={{ fontSize:10, color:"#10b981" }}>{t("leaderboard.you")}</span>}
           </div>
-          <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginTop:2 }}>{m.total_wins||0}/{m.total_bets||0} paris</div>
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginTop:2 }}>{m.total_wins||0}/{m.total_bets||0} {t("leaderboard.bets_short")}</div>
         </div>
         <div style={{ textAlign:"right" }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(m.weekly_profit||0)}</div>
-          <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>cette semaine</div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.this_week")}</div>
         </div>
       </div>;
     })}
-    <button onClick={()=>leaveLeague(selectedLeague.id)} style={{ width:"100%", marginTop:16, padding:"11px 0", borderRadius:11, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"rgba(239,68,68,0.5)", fontWeight:700, fontSize:13, cursor:"pointer" }}>Quitter la ligue</button>
+    <button onClick={()=>leaveLeague(selectedLeague.id)} style={{ width:"100%", marginTop:16, padding:"11px 0", borderRadius:11, border:"1px solid rgba(239,68,68,0.2)", background:"transparent", color:"rgba(239,68,68,0.5)", fontWeight:700, fontSize:13, cursor:"pointer" }}>{t("leaderboard.leave_btn")}</button>
   </div>;
 
   const SUBTABS = [
-    { id:"mes-ligues", label:"🏆 Mes ligues" },
-    { id:"creer", label:"➕ Créer" },
-    { id:"rejoindre", label:"🔗 Rejoindre" },
+    { id:"mes-ligues", label:t("leaderboard.my_leagues") },
+    { id:"creer", label:t("leaderboard.create_tab") },
+    { id:"rejoindre", label:t("leaderboard.join_tab") },
   ];
 
   return <div>
@@ -330,11 +365,11 @@ function PrivateLeagues({ profile, session, showToast }) {
     </div>
 
     {tab==="mes-ligues"&&(
-      myLeagues===null ? <div style={{ textAlign:"center", padding:30, color:"rgba(241,245,249,0.25)" }}>Chargement...</div>
+      myLeagues===null ? <div style={{ textAlign:"center", padding:30, color:"rgba(241,245,249,0.25)" }}>{t("leaderboard.loading_short")}</div>
       : myLeagues.length===0 ? <div style={{ textAlign:"center", padding:40 }}>
           <div style={{ fontSize:36, marginBottom:10 }}>🏆</div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"rgba(241,245,249,0.25)", marginBottom:6 }}>AUCUNE LIGUE</div>
-          <div style={{ fontSize:12, color:"rgba(241,245,249,0.2)" }}>Crée ou rejoins une ligue avec tes amis</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"rgba(241,245,249,0.25)", marginBottom:6 }}>{t("leaderboard.no_leagues")}</div>
+          <div style={{ fontSize:12, color:"rgba(241,245,249,0.2)" }}>{t("leaderboard.no_leagues_sub")}</div>
         </div>
       : myLeagues.map(l=>(
           <div key={l.id} onClick={()=>loadLeagueMembers(l)} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:14, padding:"14px 16px", marginBottom:8, cursor:"pointer" }}>
@@ -350,18 +385,18 @@ function PrivateLeagues({ profile, session, showToast }) {
 
     {tab==="creer"&&(
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:14, padding:20 }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:14 }}>NOUVELLE LIGUE</div>
-        <input value={newLeagueName} onChange={e=>setNewLeagueName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createLeague()} placeholder="Nom de la ligue..." style={{ width:"100%", padding:"12px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:14, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
-        <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:14 }}>Un code d'invitation unique sera généré automatiquement.</div>
-        <button onClick={createLeague} disabled={creating||!newLeagueName.trim()} style={{ width:"100%", padding:"12px 0", borderRadius:11, border:"none", background:creating||!newLeagueName.trim()?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:creating||!newLeagueName.trim()?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:14, cursor:creating||!newLeagueName.trim()?"not-allowed":"pointer" }}>{creating?"...":"CRÉER →"}</button>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:14 }}>{t("leaderboard.new_league")}</div>
+        <input value={newLeagueName} onChange={e=>setNewLeagueName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createLeague()} placeholder={t("leaderboard.league_name_ph")} style={{ width:"100%", padding:"12px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:14, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:14 }}>{t("leaderboard.invite_auto")}</div>
+        <button onClick={createLeague} disabled={creating||!newLeagueName.trim()} style={{ width:"100%", padding:"12px 0", borderRadius:11, border:"none", background:creating||!newLeagueName.trim()?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:creating||!newLeagueName.trim()?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:14, cursor:creating||!newLeagueName.trim()?"not-allowed":"pointer" }}>{creating?"...":t("leaderboard.create_btn")}</button>
       </div>
     )}
 
     {tab==="rejoindre"&&(
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:14, padding:20 }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:14 }}>REJOINDRE UNE LIGUE</div>
-        <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} onKeyDown={e=>e.key==="Enter"&&joinLeague()} placeholder="CODE D'INVITATION" style={{ width:"100%", padding:"12px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:18, outline:"none", boxSizing:"border-box", marginBottom:14, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:4, textAlign:"center" }} />
-        <button onClick={joinLeague} disabled={joining||!joinCode.trim()} style={{ width:"100%", padding:"12px 0", borderRadius:11, border:"none", background:joining||!joinCode.trim()?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:joining||!joinCode.trim()?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:14, cursor:joining||!joinCode.trim()?"not-allowed":"pointer" }}>{joining?"...":"REJOINDRE →"}</button>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:14 }}>{t("leaderboard.join_league")}</div>
+        <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} onKeyDown={e=>e.key==="Enter"&&joinLeague()} placeholder={t("leaderboard.invite_ph")} style={{ width:"100%", padding:"12px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:18, outline:"none", boxSizing:"border-box", marginBottom:14, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:4, textAlign:"center" }} />
+        <button onClick={joinLeague} disabled={joining||!joinCode.trim()} style={{ width:"100%", padding:"12px 0", borderRadius:11, border:"none", background:joining||!joinCode.trim()?"rgba(241,245,249,0.04)":"linear-gradient(135deg,#10b981,#059669)", color:joining||!joinCode.trim()?"rgba(241,245,249,0.2)":"#fff", fontWeight:800, fontSize:14, cursor:joining||!joinCode.trim()?"not-allowed":"pointer" }}>{joining?"...":t("leaderboard.join_btn")}</button>
       </div>
     )}
   </div>;
@@ -375,17 +410,18 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
   const medals = ["🥈","🥇","🥉"];
   const countdown = useCountdown();
   const visibleList = showAll ? leaderboard : leaderboard.slice(0,10);
+  const { t } = useLang();
 
   const isLoggedIn = !!profile?.id;
 
   const TABS = [
-    { id:"global", label:"🌍 Global" },
-    { id:"ligues", label:"🏅 Ligues privées", locked:!isLoggedIn },
+    { id:"global", label:t("leaderboard.global") },
+    { id:"ligues", label:t("leaderboard.private_leagues"), locked:!isLoggedIn },
   ];
 
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>CLASSEMENT</div>
-    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>Classé par gains MC des paris uniquement</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:6 }}>{t("leaderboard.title")}</div>
+    <div style={{ fontSize:13, color:"rgba(241,245,249,0.35)", marginBottom:16 }}>{t("leaderboard.subtitle")}</div>
 
     {/* Onglets */}
     <div style={{ display:"flex", gap:6, marginBottom:20 }}>
@@ -403,16 +439,16 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
       <div style={{ background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(251,191,36,0.03))", border:"1px solid rgba(251,191,36,0.15)", borderRadius:16, padding:"16px 18px", marginBottom:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
           <div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#fbbf24", marginBottom:2 }}>⏰ REINITIALISATION DANS</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#fbbf24", marginBottom:2 }}>{t("leaderboard.reset_in")}</div>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:2, color:"#f1f5f9" }}>{countdown}</div>
           </div>
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>Chaque lundi à 00h00</div>
-            <div style={{ fontSize:11, color:"#10b981", fontWeight:700 }}>Classement remis à zéro</div>
+            <div style={{ fontSize:10, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>{t("leaderboard.each_monday")}</div>
+            <div style={{ fontSize:11, color:"#10b981", fontWeight:700 }}>{t("leaderboard.reset_label")}</div>
           </div>
         </div>
         <div style={{ borderTop:"1px solid rgba(251,191,36,0.1)", paddingTop:12 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", letterSpacing:1, marginBottom:8 }}>RECOMPENSES DE FIN DE SEMAINE</div>
+          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", letterSpacing:1, marginBottom:8 }}>{t("leaderboard.weekly_rewards")}</div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {WEEKLY_REWARDS.map(r=>(
               <div key={r.rank} style={{ flex:"1 1 80px", background:`${r.color}10`, border:`1px solid ${r.color}25`, borderRadius:10, padding:"8px 6px", textAlign:"center" }}>
@@ -425,7 +461,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
       </div>
 
       <div style={{ background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:10, padding:"10px 14px", marginBottom:22, fontSize:12, color:"rgba(241,245,249,0.35)" }}>
-        Roue et pubs ne comptent pas — seuls tes paris font la différence !
+        {t("leaderboard.no_spin")}
       </div>
 
       {/* Podium */}
@@ -457,9 +493,9 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
               <span onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, color:p.username===username?"#10b981":"#f1f5f9", fontSize:13, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>{p.username}</span>
               <BadgeTag level={getLevel(p.xp||0)} />
               {p.subscription&&p.subscription!=="starter"&&<SubBadge profile={p} />}
-              {p.username===username&&<span style={{ fontSize:10, color:"#10b981" }}>(Vous)</span>}
+              {p.username===username&&<span style={{ fontSize:10, color:"#10b981" }}>{t("leaderboard.you")}</span>}
             </div>
-            <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} paris · Niv. {getLevel(p.xp||0)}</div>
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} {t("leaderboard.bets_short")} · {t("profile.lv_short")} {getLevel(p.xp||0)}</div>
           </div>
           <div style={{ textAlign:"right", flexShrink:0 }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
@@ -470,7 +506,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
       ))}
       {!showAll&&leaderboard.length>10&&(
         <button onClick={()=>setShowAll(true)} className="btn-animated" style={{ width:"100%", marginTop:8, padding:"12px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-          Voir les {leaderboard.length-10} autres joueurs →
+          {t("leaderboard.see_all")}
         </button>
       )}
     </>}

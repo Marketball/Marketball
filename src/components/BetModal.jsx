@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { AMM } from "../lib/amm.js";
-import { fmt, fmtPct } from "../lib/helpers.js";
+import { fmt, fmtPct, mTitle } from "../lib/helpers.js";
+import { useLang } from "../lib/i18n.jsx";
 import MCBadge from "./ui/MCBadge.jsx";
 
 export default function BetModal({ market, onClose, onConfirm, coins, initialSide }) {
+  const { lang } = useLang();
   const [side,setSide]=useState(initialSide==="no"?"no":"yes");
   const [coinsInput,setCoinsInput]=useState("");
   const pYes=AMM.probYes(market.q_yes,market.q_no);
@@ -22,7 +24,7 @@ export default function BetModal({ market, onClose, onConfirm, coins, initialSid
   return <div onClick={onClose} className="modal-overlay" style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease" }}>
     <div onClick={e=>e.stopPropagation()} className="modal-inner" style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:22, padding:28, width:380, maxWidth:"95vw", boxShadow:"0 50px 100px rgba(0,0,0,0.6)", backdropFilter:"blur(20px)", animation:"fadeInUp 0.3s ease" }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, letterSpacing:2, marginBottom:4 }}>PLACER UNE PREDICTION</div>
-      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:20, lineHeight:1.5 }}>{market.title}</div>
+      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:20, lineHeight:1.5 }}>{mTitle(market,lang)}</div>
       <div style={{ display:"flex", gap:8, marginBottom:18 }}>
         {["yes","no"].map(s=><button key={s} onClick={()=>setSide(s)} style={{ flex:1, padding:"12px 0", borderRadius:12, border:`2px solid ${side===s?(s==="yes"?"#10b981":"#ef4444"):"rgba(241,245,249,0.07)"}`, background:side===s?(s==="yes"?"rgba(16,185,129,0.1)":"rgba(239,68,68,0.1)"):"transparent", color:side===s?(s==="yes"?"#10b981":"#ef4444"):"rgba(241,245,249,0.3)", fontWeight:800, fontSize:14, cursor:"pointer", transition:"all 0.2s" }}>{s==="yes"?`OUI ${fmtPct(pYes)}`:`NON ${fmtPct(1-pYes)}`}</button>)}
       </div>

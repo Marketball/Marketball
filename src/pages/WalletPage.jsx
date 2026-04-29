@@ -4,6 +4,7 @@ import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
+import { useLang } from "../lib/i18n.jsx";
 
 function ChartSVG({ points }) {
   const W=300, H=70, PAD=10;
@@ -47,6 +48,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const weekKey=getWeekKey();
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
+  const { t } = useLang();
 
   const allBets=[
     ...(matchBets||[]).map(b=>({...b,isMatch:true})),
@@ -75,9 +77,9 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const questKey=`mb_quests_${today}_${profile?.id||""}`;
   const [claimedQuests,setClaimedQuests]=useState(()=>{try{return JSON.parse(localStorage.getItem(questKey)||"{}")}catch{return {}}});
   const quests=[
-    {id:"login",label:"Connexion du jour",desc:"Se connecter aujourd'hui",icon:"🔐",xp:5,progress:1,goal:1},
-    {id:"bet3",label:"Parieur actif",desc:"3 paris sur les marchés",icon:"📊",xp:15,progress:Math.min(todayMarketBets.length,3),goal:3},
-    {id:"matchbet",label:"Fan de matchs",desc:"1 pari sur un match",icon:"⚽",xp:10,progress:Math.min(todayMatchBets.length,1),goal:1},
+    {id:"login",label:t("wallet.quest_login"),desc:t("wallet.quest_login_desc"),icon:"🔐",xp:5,progress:1,goal:1},
+    {id:"bet3",label:t("wallet.quest_bet3"),desc:t("wallet.quest_bet3_desc"),icon:"📊",xp:15,progress:Math.min(todayMarketBets.length,3),goal:3},
+    {id:"matchbet",label:t("wallet.quest_match"),desc:t("wallet.quest_match_desc"),icon:"⚽",xp:10,progress:Math.min(todayMatchBets.length,1),goal:1},
   ];
   const claimQuest=async(questId,xpReward)=>{
     if(!session||claimedQuests[questId])return;
@@ -91,11 +93,11 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   };
 
   return <div className="page-enter">
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>WALLET</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>{t("wallet.title")}</div>
 
     {/* Soldes */}
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
-      {[{l:"MARKETCOINS",v:coins,c:"#fbbf24",d:"Pour jouer"},{l:"STORECOINS",v:sc,c:"#10b981",d:"Pour les recompenses"}].map(item=>(
+      {[{l:"MARKETCOINS",v:coins,c:"#fbbf24",d:t("wallet.for_play")},{l:"STORECOINS",v:sc,c:"#10b981",d:t("wallet.for_rewards")}].map(item=>(
         <div key={item.l} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:16, padding:"18px", textAlign:"center", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80, borderRadius:"50%", background:`radial-gradient(circle,${item.c}12,transparent 70%)` }} />
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>{item.l}</div>
@@ -107,8 +109,8 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
 
     {/* Convertir MC → SC */}
     <div style={{ background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:14, padding:"16px 18px", marginBottom:14 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#10b981", marginBottom:4 }}>CONVERTIR MC → SC</div>
-      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>{MC_TO_SC_RATE} MC = 1 SC · {fmt(coins)} MC disponibles</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#10b981", marginBottom:4 }}>{t("wallet.convert_mc_sc")}</div>
+      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:10 }}>{MC_TO_SC_RATE} {t("wallet.convert_rate")} · {fmt(coins)} {t("wallet.mc_available")}</div>
       <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
         <div style={{ flex:1 }}>
           <input type="number" value={mcConvertAmount} min={MC_TO_SC_RATE} step={MC_TO_SC_RATE} placeholder={`Ex: ${MC_TO_SC_RATE}`}
@@ -119,30 +121,30 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         <button onClick={()=>coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1&&onConvertMCtoSC?.(Math.floor(mcConvertAmount/MC_TO_SC_RATE))}
           disabled={coins<mcConvertAmount||Math.floor(mcConvertAmount/MC_TO_SC_RATE)<1}
           style={{ padding:"9px 16px", borderRadius:10, border:"none", background:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:coins>=mcConvertAmount&&Math.floor(mcConvertAmount/MC_TO_SC_RATE)>=1?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:"pointer", fontSize:13, whiteSpace:"nowrap", marginTop:2 }}>
-          Convertir →
+          {t("wallet.convert_btn")}
         </button>
       </div>
     </div>
 
     {/* Roue */}
     <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, marginBottom:4 }}>ROUE QUOTIDIENNE</div>
-      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>Gagne entre 1 et 5 SC ou jusqu'à 200 MC par jour !</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, marginBottom:4 }}>{t("wallet.daily_wheel")}</div>
+      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>{t("wallet.wheel_desc")}</div>
       <SpinWheel onSpin={onSpin} canSpin={canSpin} />
     </div>
 
     {/* Pub */}
     <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 20px", marginBottom:14 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-        <div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>PUB RECOMPENSEE</div><div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>+20 MC · {adsToday}/3 aujourd'hui</div></div>
-        <button onClick={()=>canAd&&onWatchAd()} disabled={!canAd} style={{ padding:"9px 16px", borderRadius:10, border:"none", background:canAd?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.04)", color:canAd?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:canAd?"pointer":"not-allowed", fontSize:13 }}>{canAd?"REGARDER":"Limite"}</button>
+        <div><div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>{t("wallet.rewarded_ad")}</div><div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>+20 MC · {adsToday}/3 {t("wallet.ad_today")}</div></div>
+        <button onClick={()=>canAd&&onWatchAd()} disabled={!canAd} style={{ padding:"9px 16px", borderRadius:10, border:"none", background:canAd?"linear-gradient(135deg,#3b82f6,#2563eb)":"rgba(241,245,249,0.04)", color:canAd?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, cursor:canAd?"pointer":"not-allowed", fontSize:13 }}>{canAd?t("wallet.ad_watch"):t("wallet.ad_limit")}</button>
       </div>
       <div style={{ height:3, background:"rgba(59,130,246,0.1)", borderRadius:99, overflow:"hidden" }}><div style={{ width:`${(adsToday/3)*100}%`, height:"100%", background:"linear-gradient(90deg,#3b82f6,#60a5fa)", borderRadius:99, transition:"width 0.5s" }} /></div>
     </div>
 
     {/* Quêtes du jour */}
     <div style={{ background:"rgba(167,139,250,0.04)", border:"1px solid rgba(167,139,250,0.1)", borderRadius:16, padding:"16px 18px", marginBottom:20 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#a78bfa", marginBottom:12 }}>⚡ QUÊTES DU JOUR</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#a78bfa", marginBottom:12 }}>{t("wallet.daily_quests")}</div>
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {quests.map(q=>{
           const done=q.progress>=q.goal;
@@ -156,7 +158,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
             </div>
             <div style={{ flexShrink:0 }}>
               {claimed
-                ?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>Réclamé ✓</span>
+                ?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>{t("wallet.claimed")}</span>
                 :done
                   ?<button onClick={()=>claimQuest(q.id,q.xp)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 10px rgba(16,185,129,0.25)" }}>+{q.xp} XP</button>
                   :<span style={{ fontSize:11, color:"rgba(241,245,249,0.3)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }}>{q.progress}/{q.goal}</span>}
@@ -168,14 +170,14 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
 
     {/* Mes paris */}
     {allBets.length>0&&<>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>MES PARIS</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>{t("wallet.my_bets")}</div>
 
       {/* Stats résumé */}
       {resolvedBets.length>0&&<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
         {[
-          {label:"MISÉ",val:`🪙 ${fmt(totalWagered)}`,color:"#fbbf24"},
-          {label:"PROFIT NET",val:`${netProfit>=0?"+":""}${fmt(netProfit)}`,color:netProfit>=0?"#10b981":"#ef4444"},
-          {label:"VICTOIRES",val:`${winRate}%`,color:"#a78bfa"},
+          {label:t("wallet.staked"),val:`🪙 ${fmt(totalWagered)}`,color:"#fbbf24"},
+          {label:t("wallet.net_profit"),val:`${netProfit>=0?"+":""}${fmt(netProfit)}`,color:netProfit>=0?"#10b981":"#ef4444"},
+          {label:t("wallet.victories"),val:`${winRate}%`,color:"#a78bfa"},
         ].map(s=>(
           <div key={s.label} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:s.color, letterSpacing:1 }}>{s.val}</div>
@@ -187,7 +189,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
       {/* Graphique profit cumulé */}
       {chartPoints.length>2&&<div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:0.5 }}>PROFIT CUMULÉ</div>
+          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", letterSpacing:0.5 }}>{t("wallet.cumulative")}</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:netProfit>=0?"#10b981":"#ef4444", letterSpacing:1 }}>{netProfit>=0?"+":""}{fmt(netProfit)} MC</div>
         </div>
         <ChartSVG points={chartPoints} />
@@ -195,7 +197,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
 
       {/* Filtre */}
       <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-        {[{id:"tous",l:`Tous (${allBets.length})`},{id:"encours",l:`En cours (${allBets.filter(b=>b.status==="pending").length})`},{id:"resolus",l:`Résolus (${allBets.filter(b=>b.status!=="pending").length})`}].map(f=>(
+        {[{id:"tous",l:`${t("wallet.all_filter")} (${allBets.length})`},{id:"encours",l:`${t("wallet.ongoing_filter")} (${allBets.filter(b=>b.status==="pending").length})`},{id:"resolus",l:`${t("wallet.resolved_filter")} (${allBets.filter(b=>b.status!=="pending").length})`}].map(f=>(
           <button key={f.id} onClick={()=>setBetFilter(f.id)}
             style={{ padding:"5px 11px", borderRadius:16, border:`1px solid ${betFilter===f.id?"#a78bfa":"rgba(241,245,249,0.07)"}`, background:betFilter===f.id?"rgba(167,139,250,0.1)":"transparent", color:betFilter===f.id?"#a78bfa":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:"pointer", transition:"all 0.2s", whiteSpace:"nowrap" }}>
             {f.l}
@@ -203,7 +205,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         ))}
       </div>
 
-      {filteredBets.length===0&&<div style={{ textAlign:"center", padding:24, color:"rgba(241,245,249,0.25)", fontSize:13 }}>Aucun pari dans cette catégorie</div>}
+      {filteredBets.length===0&&<div style={{ textAlign:"center", padding:24, color:"rgba(241,245,249,0.25)", fontSize:13 }}>{t("wallet.no_category")}</div>}
 
       {filteredBets.map((b,i)=>{
         const isMarketBet=!b.isMatch&&!!b.market_id;
@@ -232,21 +234,21 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
               <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)" }}>
                 {!isParlay&&<span style={{ color:b.status==="won"?"#10b981":b.status==="lost"?"#ef4444":"#60a5fa", fontWeight:700 }}>{b.side||b.prediction}</span>}
                 {!isParlay&&" · "}{fmt(b.cost)} MC
-                {isMatchBet&&!isParlay&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>⚽ Match</span>}
-                {isMarketBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>📊 Marché</span>}
+                {isMatchBet&&!isParlay&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>{t("wallet.match_label")}</span>}
+                {isMarketBet&&<span style={{ marginLeft:6, fontSize:10, color:"rgba(241,245,249,0.25)" }}>{t("wallet.market_label")}</span>}
               </div>
             </div>
             <div style={{ textAlign:"right", flexShrink:0 }}>
               {b.status==="won"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:16, letterSpacing:1 }}>+{fmt(b.potential_gain)} 🏆</div>
-                :b.status==="lost"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#ef4444", fontSize:14, letterSpacing:1 }}>PERDU</div>
-                :b.status==="cashed_out"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#3b82f6", fontSize:14, letterSpacing:1 }}>CASHÉ 💰</div>
-                :<><div style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(251,191,36,0.1)", color:"#fbbf24", fontWeight:700, marginBottom:3, display:"inline-block" }}>En cours</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:15, letterSpacing:1 }}>+{fmt(b.potential_gain)}</div></>}
+                :b.status==="lost"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#ef4444", fontSize:14, letterSpacing:1 }}>{t("wallet.lost_label")}</div>
+                :b.status==="cashed_out"?<div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#3b82f6", fontSize:14, letterSpacing:1 }}>{t("wallet.cashed_label")}</div>
+                :<><div style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(251,191,36,0.1)", color:"#fbbf24", fontWeight:700, marginBottom:3, display:"inline-block" }}>{t("wallet.in_progress")}</div><div style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:15, letterSpacing:1 }}>+{fmt(b.potential_gain)}</div></>}
             </div>
           </div>
           {canCashout&&cashoutVal>0&&<div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>
-              {isMarketBet?"Cashout selon cotes actuelles":"Cashout anticipé · 75% remboursé"}
-              <span style={{ color:"#3b82f6", fontWeight:700, marginLeft:6 }}>⚡ Pro</span>
+              {isMarketBet?t("wallet.cashout_market"):t("wallet.cashout_match")}
+              <span style={{ color:"#3b82f6", fontWeight:700, marginLeft:6 }}>{t("wallet.pro_badge")}</span>
             </div>
             <button className="btn-animated" onClick={()=>setCashoutConfirm({bet:b,value:cashoutVal,isMatch:b.isMatch})}
               style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(59,130,246,0.3)" }}>
@@ -260,17 +262,17 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
     {/* Modale confirmation cashout */}
     {cashoutConfirm&&<div onClick={()=>setCashoutConfirm(null)} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.85)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(12px)", padding:20 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(15,23,42,0.98)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:20, padding:"28px 24px", width:340, maxWidth:"100%", boxShadow:"0 40px 80px rgba(0,0,0,0.6)" }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:8 }}>CONFIRMER LE CASHOUT</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:8 }}>{t("wallet.confirm_cashout")}</div>
         <div style={{ fontSize:13, color:"rgba(241,245,249,0.45)", marginBottom:20, lineHeight:1.6 }}>
-          {cashoutConfirm.isMatch?"75% de ta mise te sera remboursée.":"Valeur calculée selon les cotes actuelles du marché."}<br/>
-          Cette action est <strong style={{color:"#f87171"}}>irréversible</strong>.
+          {cashoutConfirm.isMatch?t("wallet.cashout_match_desc"):t("wallet.cashout_market_desc")}<br/>
+          Cette action est <strong style={{color:"#f87171"}}>{t("wallet.irreversible")}</strong>.
         </div>
         <div style={{ background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:12, padding:"14px", marginBottom:20, textAlign:"center" }}>
-          <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>TU RÉCUPÈRES</div>
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)", marginBottom:4 }}>{t("wallet.you_get")}</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, color:"#3b82f6", letterSpacing:2 }}>+{fmt(cashoutConfirm.value)} 🪙</div>
         </div>
         <div style={{ display:"flex", gap:10 }}>
-          <button onClick={()=>setCashoutConfirm(null)} style={{ flex:1, padding:"12px 0", borderRadius:11, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>Annuler</button>
+          <button onClick={()=>setCashoutConfirm(null)} style={{ flex:1, padding:"12px 0", borderRadius:11, border:"1px solid rgba(241,245,249,0.1)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>{t("common.cancel")}</button>
           <button onClick={()=>{onCashout(cashoutConfirm.bet,cashoutConfirm.value,cashoutConfirm.isMatch);setCashoutConfirm(null);}}
             style={{ flex:2, padding:"12px 0", borderRadius:11, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(59,130,246,0.3)" }}>
             Confirmer +{fmt(cashoutConfirm.value)} MC

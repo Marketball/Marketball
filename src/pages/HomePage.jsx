@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AMM } from "../lib/amm.js";
-import { getLevel, getBadge, fmt } from "../lib/helpers.js";
+import { getLevel, getBadge, fmt, mTitle } from "../lib/helpers.js";
+import { useLang } from "../lib/i18n.jsx";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import XPBar from "../components/ui/XPBar.jsx";
 import MCBadge from "../components/ui/MCBadge.jsx";
@@ -21,18 +22,19 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
   const [pulse,setPulse]=useState(false);
   const [showTopStats,setShowTopStats]=useState(false);
   const [showTopChallenge,setShowTopChallenge]=useState(false);
-  useEffect(()=>{const t=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(t);},[]);
+  const { t, lang } = useLang();
+  useEffect(()=>{const timer=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(timer);},[]);
 
   return <div className="page-enter">
     {/* HERO WELCOME */}
     <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(59,130,246,0.04))`, border:`1px solid ${badge.color}20`, borderRadius:22, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)`, pointerEvents:"none" }} />
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>BIENVENUE, {username?.toUpperCase()}</div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
           {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
             <span style={{ fontSize:11 }}>🏆</span>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} CETTE SEMAINE</span>
+            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} {t("home.this_week")}</span>
           </div>}
           {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
             <span style={{ fontSize:12 }}>🔥</span>
@@ -40,7 +42,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
           </div>}
         </div>
       </div>
-      <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>Niv. {level} · {profile?.xp||0} XP</span></div>
+      <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>{t("home.level")} {level} · {profile?.xp||0} XP</span></div>
       <XPBar xp={profile?.xp||0} />
       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
     </div>
@@ -51,12 +53,12 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
       <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%)", pointerEvents:"none" }} />
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", boxShadow:"0 0 8px #10b981", animation:"pulse 1s infinite" }} />
-        <span style={{ fontSize:10, fontWeight:800, color:"#10b981", letterSpacing:2 }}>MARCHÉ DU MOMENT</span>
-        <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(241,245,249,0.4)" }}>🔥 {fmt(topMarket.total_volume)} MC misés</span>
+        <span style={{ fontSize:10, fontWeight:800, color:"#10b981", letterSpacing:2 }}>{t("home.market_moment")}</span>
+        <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(241,245,249,0.4)" }}>🔥 {fmt(topMarket.total_volume)} {t("home.staked")}</span>
       </div>
-      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>{topMarket.title}</div>
+      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>{mTitle(topMarket,lang)}</div>
       <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-        {[{s:"OUI",side:"yes",i:0},{s:"NON",side:"no",i:1}].map(({s,side,i})=>{
+        {[{s:t("common.yes"),side:"yes",i:0},{s:t("common.no"),side:"no",i:1}].map(({s,side,i})=>{
           const pct=i===0?Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100):100-Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100);
           const c=i===0?"#10b981":"#ef4444";
           return <button key={s} className="btn-animated" onClick={()=>onBet(topMarket,side)} style={{ flex:1, background:`${c}10`, border:`1px solid ${c}25`, borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.2s" }}>
@@ -66,12 +68,12 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
         })}
         <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#f1f5f9", letterSpacing:1 }}>{topMarket.participants||0}</div>
-          <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>JOUEURS</div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>{t("home.players")}</div>
         </div>
       </div>
       <div style={{ display:"flex", gap:6 }}>
-        <button className="btn-animated" onClick={()=>setShowTopStats(true)} style={{ flex:1, padding:"8px 0", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:12, cursor:"pointer" }}>📊 STATS & PARIEURS</button>
-        {session&&<button className="btn-animated" onClick={()=>setShowTopChallenge(true)} style={{ padding:"8px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.2)", background:"rgba(245,158,11,0.04)", color:"#f59e0b", fontWeight:700, fontSize:12, cursor:"pointer" }}>⚔️ DÉFIER</button>}
+        <button className="btn-animated" onClick={()=>setShowTopStats(true)} style={{ flex:1, padding:"8px 0", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("home.stats_bettors")}</button>
+        {session&&<button className="btn-animated" onClick={()=>setShowTopChallenge(true)} style={{ padding:"8px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.2)", background:"rgba(245,158,11,0.04)", color:"#f59e0b", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("home.challenge_btn")}</button>}
       </div>
     </div>}
     {showTopStats&&topMarket&&<MarketStatsModal market={topMarket} onClose={()=>setShowTopStats(false)} onBet={onBet} session={session} profile={profile} />}
@@ -81,33 +83,33 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     {live.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:"#ef4444", animation:"pulse 1s infinite", boxShadow:"0 0 8px #ef4444" }} />
-        <span style={{ color:"#ef4444" }}>EN DIRECT</span>
+        <span style={{ color:"#ef4444" }}>{t("matches.live")}</span>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:20 }}>{live.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
     </>}
 
     {/* MARCHES EN VEDETTE */}
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
-      <span style={{ width:3, height:18, background:"#3b82f6", borderRadius:99, display:"inline-block" }} />MARCHES EN VEDETTE
+      <span style={{ width:3, height:18, background:"#3b82f6", borderRadius:99, display:"inline-block" }} />{t("home.featured_markets")}
     </div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,6).map(m=><MarketCard key={m.id} market={m} onBet={onBet} session={session} profile={profile} />)}</div>
-    <button className="btn-animated" onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les marches →</button>
+    <button className="btn-animated" onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>{t("home.see_all_markets")}</button>
 
     {/* MATCHS À VENIR */}
     {upcoming.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
-        <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />MATCHS À VENIR
+        <span style={{ width:3, height:18, background:"#10b981", borderRadius:99, display:"inline-block" }} />{t("home.upcoming_matches")}
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:14 }}>{upcoming.map(m=><MatchCard key={m.id} match={m} onBet={onMatchBet} />)}</div>
-      <button className="btn-animated" onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>Voir tous les matchs →</button>
+      <button className="btn-animated" onClick={()=>onNavigate("matches")} style={{ width:"100%", marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>{t("home.see_all_matches")}</button>
     </>}
 
     {/* GUIDE CTA */}
     <div onClick={()=>onNavigate("howto")} className="card-hover" style={{ marginTop:26, background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:16, padding:"18px 20px", display:"flex", alignItems:"center", gap:14, cursor:"pointer", transition:"all 0.2s" }}>
       <div style={{ width:44, height:44, borderRadius:12, background:"rgba(16,185,129,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>❓</div>
       <div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>COMMENT CA MARCHE ?</div>
-        <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)" }}>Concept, regles, et comment gagner des recompenses reelles</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:2 }}>{t("home.how_title")}</div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)" }}>{t("home.how_desc")}</div>
       </div>
       <div style={{ fontSize:18, color:"rgba(241,245,249,0.3)", marginLeft:"auto" }}>→</div>
     </div>

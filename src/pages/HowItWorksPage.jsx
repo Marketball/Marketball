@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLang } from "../lib/i18n.jsx";
 import { AMM } from "../lib/amm.js";
 
 function BetSimulator() {
@@ -77,7 +78,33 @@ function BetSimulator() {
   </div>;
 }
 
+function FAQItem({ q, a }) {
+  const [open,setOpen]=useState(false);
+  return <div onClick={()=>setOpen(!open)} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:11, overflow:"hidden", cursor:"pointer" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"13px 16px" }}>
+      <div style={{ fontWeight:700, fontSize:13 }}>{q}</div>
+      <div style={{ fontSize:14, color:"rgba(241,245,249,0.3)", transition:"transform 0.2s", transform:open?"rotate(180deg)":"none" }}>▾</div>
+    </div>
+    {open&&<div style={{ padding:"0 16px 12px", fontSize:13, color:"rgba(241,245,249,0.4)", lineHeight:1.6, animation:"fadeIn 0.2s ease" }}>{a}</div>}
+  </div>;
+}
+
+function FAQList() {
+  const { t } = useLang();
+  const items = [
+    {q:t("howto.faq1_q"),a:t("howto.faq1_a")},
+    {q:t("howto.faq2_q"),a:t("howto.faq2_a")},
+    {q:t("howto.faq3_q"),a:t("howto.faq3_a")},
+    {q:t("howto.faq4_q"),a:t("howto.faq4_a")},
+    {q:t("howto.faq5_q"),a:t("howto.faq5_a")},
+  ];
+  return <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
+    {items.map((item,i)=><FAQItem key={i} q={item.q} a={item.a} />)}
+  </div>;
+}
+
 export default function HowItWorksPage({ onNavigate }) {
+  const { t } = useLang();
   const [activeStep,setActiveStep]=useState(-1);
   const [videoFrame,setVideoFrame]=useState(0);
   const VIDEO_FRAMES=[
@@ -90,19 +117,19 @@ export default function HowItWorksPage({ onNavigate }) {
   ];
   useEffect(()=>{const t=setInterval(()=>setVideoFrame(f=>(f+1)%VIDEO_FRAMES.length),2500);return()=>clearInterval(t);},[]);
   const STEPS=[
-    {icon:"🎁",title:"Inscris-toi gratuitement",color:"#10b981",desc:"500 MC gratuits a l'inscription. Aucune carte bancaire requise.",detail:"Les MarketCoins (MC) n'ont aucune valeur monetaire mais te permettent de participer a tous les marches et paris."},
-    {icon:"📊",title:"Choisis un marche",color:"#3b82f6",desc:"Transferts, matchs, performances. Chaque marche pose une question sur le football.",detail:"Les cotes bougent selon les paris des autres joueurs, comme une vraie bourse. Plus les gens parient d'un cote, plus la cote baisse."},
-    {icon:"⚽",title:"Parie sur les matchs",color:"#f59e0b",desc:"Vainqueur, score exact, 1er buteur, buteur ou +/- buts.",detail:"Quand le match se termine, tes gains sont credites automatiquement si tu as gagne. Chaque pari rapporte +5 XP."},
-    {icon:"👑",title:"Choisis ta Ligue",color:"#f59e0b",desc:"Starter gratuit, Pro a 4.99€/mois, Elite a 14.99€/mois.",detail:"Plus ta ligue est elevee, plus tu recois de MC chaque lundi (100 → 150 → 250), plus tes recompenses sont prestigieuses. La ligue Elite donne acces aux marches exclusifs et aux recompenses VIP."},
-    {icon:"🏆",title:"Monte de niveau",color:"#a78bfa",desc:"Chaque pari donne 5 XP. Chaque gain donne du XP bonus. La progression est permanente.",detail:"Les badges (Rookie → Scout → Analyst → Pro → Legend) sont ta reputation sur MarketBall. Un joueur niveau 40 a construit un avantage competitif qu'il ne veut pas perdre."},
-    {icon:"💎",title:"Gagne des StoreCoins",color:"#34d399",desc:"Via la roue quotidienne (jusqu'a 1 SC/jour) ou le classement hebdomadaire.",detail:"Echange tes SC dans le Store contre des cadeaux reels. Starter : cartes cadeaux. Pro : maillots. Elite : maillots dedicaces et places VIP."},
-    {icon:"🎡",title:"Bonus quotidiens",color:"#ec4899",desc:"Roue : jusqu'a 200 MC ou 1 SC par jour. Streak : bonus MC chaque jour consecutif.",detail:"Streak 3 jours = +30 MC, streak 7 jours = +100 MC. Reviens chaque jour pour maximiser tes gains et gravir le classement !"},
-    {icon:"🌐",title:"Communaute Discord",color:"#5865f2",desc:"Rejoins le serveur Discord MarketBall pour les news et les analyses.",detail:"News en temps reel, salons exclusifs Pro/Elite, et les meilleurs joueurs (niveau 60+) peuvent proposer leurs propres marches de prediction !"},
+    {icon:"🎁",title:t("howto.step1_title"),color:"#10b981",desc:t("howto.step1_desc"),detail:t("howto.step1_detail")},
+    {icon:"📊",title:t("howto.step2_title"),color:"#3b82f6",desc:t("howto.step2_desc"),detail:t("howto.step2_detail")},
+    {icon:"⚽",title:t("howto.step3_title"),color:"#f59e0b",desc:t("howto.step3_desc"),detail:t("howto.step3_detail")},
+    {icon:"👑",title:t("howto.step4_title"),color:"#f59e0b",desc:t("howto.step4_desc"),detail:t("howto.step4_detail")},
+    {icon:"🏆",title:t("howto.step5_title"),color:"#a78bfa",desc:t("howto.step5_desc"),detail:t("howto.step5_detail")},
+    {icon:"💎",title:t("howto.step6_title"),color:"#34d399",desc:t("howto.step6_desc"),detail:t("howto.step6_detail")},
+    {icon:"🎡",title:t("howto.step7_title"),color:"#ec4899",desc:t("howto.step7_desc"),detail:t("howto.step7_detail")},
+    {icon:"🌐",title:t("howto.step8_title"),color:"#5865f2",desc:null,discordLink:true,detail:t("howto.step8_detail")},
   ];
   return <div className="page-enter">
     <div style={{ textAlign:"center", marginBottom:32 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, letterSpacing:3, marginBottom:8 }}>COMMENT CA <span style={{ color:"#10b981" }}>MARCHE ?</span></div>
-      <div style={{ fontSize:14, color:"rgba(241,245,249,0.4)", maxWidth:480, margin:"0 auto" }}>La premiere plateforme de predictions football en mode bourse. Gratuit, legal, addictif.</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, letterSpacing:3, marginBottom:8 }}>{t("howto.title").split("?")[0]}<span style={{ color:"#10b981" }}>?</span></div>
+      <div style={{ fontSize:14, color:"rgba(241,245,249,0.4)", maxWidth:480, margin:"0 auto" }}>{t("howto.subtitle")}</div>
     </div>
     <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.07)", borderRadius:18, overflow:"hidden", marginBottom:32 }}>
       <div style={{ background:`linear-gradient(135deg,${VIDEO_FRAMES[videoFrame].bg}22,rgba(3,7,18,0.9))`, padding:"44px 30px", textAlign:"center", transition:"background 0.8s ease", minHeight:190, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", position:"relative" }}>
@@ -115,9 +142,9 @@ export default function HowItWorksPage({ onNavigate }) {
         {VIDEO_FRAMES.map((_,i)=><button key={i} onClick={()=>setVideoFrame(i)} style={{ width:i===videoFrame?22:7, height:7, borderRadius:99, background:i===videoFrame?"#10b981":"rgba(241,245,249,0.15)", border:"none", cursor:"pointer", transition:"all 0.3s ease", padding:0 }} />)}
       </div>
     </div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>ESSAIE TOI-MÊME</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>{t("howto.simulator")}</div>
     <BetSimulator />
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>LES ÉTAPES</div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>{t("howto.steps")}</div>
     <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
       {STEPS.map((step,i)=>(
         <div key={i} onClick={()=>setActiveStep(activeStep===i?-1:i)} style={{ background:activeStep===i?"rgba(241,245,249,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${activeStep===i?step.color+"30":"rgba(241,245,249,0.06)"}`, borderRadius:14, overflow:"hidden", cursor:"pointer", transition:"all 0.2s" }}>
@@ -125,7 +152,13 @@ export default function HowItWorksPage({ onNavigate }) {
             <div style={{ width:40,height:40,borderRadius:11,background:`${step.color}15`,border:`1px solid ${step.color}25`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{step.icon}</div>
             <div style={{ flex:1 }}>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1 }}>{step.title}</div>
-              <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)", marginTop:2 }}>{step.desc}</div>
+              {step.discordLink
+                ? <a href="https://discord.gg/marketball" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:12, color:"#5865f2", marginTop:2, display:"inline-flex", alignItems:"center", gap:4, textDecoration:"none", fontWeight:700 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#5865f2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                    {t("community.discord_join")}
+                  </a>
+                : <div style={{ fontSize:12, color:"rgba(241,245,249,0.4)", marginTop:2 }}>{step.desc}</div>
+              }
             </div>
             <div style={{ fontSize:14, color:"rgba(241,245,249,0.3)", transition:"transform 0.2s", transform:activeStep===i?"rotate(180deg)":"none" }}>▾</div>
           </div>
@@ -135,29 +168,12 @@ export default function HowItWorksPage({ onNavigate }) {
         </div>
       ))}
     </div>
-    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>FAQ</div>
-    <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
-      {[
-        {q:"C'est gratuit ?",a:"L'inscription est 100% gratuite avec 500 MC offerts. Des abonnements optionnels existent : Pro (4.99€/mois) et Elite (14.99€/mois) pour plus de MC et des récompenses exclusives. Plafond de dépenses à 14.99€/mois."},
-        {q:"C'est legal en France ?",a:"Oui, totalement legal. Les MC n'ont aucune valeur monetaire. Ce n'est pas du jeu d'argent."},
-        {q:"Comment les paris sont resolus ?",a:"Quand un match se termine, nos systemes resolvent tes paris automatiquement. Si tu as gagne, les coins sont credites et ton XP augmente."},
-        {q:"1 SC = combien de MC ?",a:"1 SC = 10 MC lors de la conversion dans le Wallet. Les SC s'achetent a 1€=1SC ou se gagnent avec la roue."},
-        {q:"C'est quoi les cotes dynamiques ?",a:"Les cotes bougent selon les paris des joueurs, comme une bourse. Plus les gens parient sur PSG, plus la cote de PSG baisse."},
-      ].map((item,i)=>{
-        const [open,setOpen]=useState(false);
-        return <div key={i} onClick={()=>setOpen(!open)} style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:11, overflow:"hidden", cursor:"pointer" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"13px 16px" }}>
-            <div style={{ fontWeight:700, fontSize:13 }}>{item.q}</div>
-            <div style={{ fontSize:14, color:"rgba(241,245,249,0.3)", transition:"transform 0.2s", transform:open?"rotate(180deg)":"none" }}>▾</div>
-          </div>
-          {open&&<div style={{ padding:"0 16px 12px", fontSize:13, color:"rgba(241,245,249,0.4)", lineHeight:1.6, animation:"fadeIn 0.2s ease" }}>{item.a}</div>}
-        </div>;
-      })}
-    </div>
+    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:14 }}>{t("howto.faq")}</div>
+    <FAQList />
     <div style={{ background:"linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.05))", border:"1px solid rgba(16,185,129,0.12)", borderRadius:18, padding:"26px", textAlign:"center" }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, letterSpacing:2, marginBottom:8 }}>PRET A JOUER ?</div>
-      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:18 }}>Rejoins des milliers de joueurs et prouve que tu es le meilleur oracle du football</div>
-      <button onClick={()=>onNavigate("home")} style={{ padding:"13px 32px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", boxShadow:"0 8px 25px rgba(16,185,129,0.3)" }}>COMMENCER →</button>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, letterSpacing:2, marginBottom:8 }}>{t("howto.cta_title")}</div>
+      <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:18 }}>{t("howto.cta_sub")}</div>
+      <button onClick={()=>onNavigate("home")} style={{ padding:"13px 32px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", boxShadow:"0 8px 25px rgba(16,185,129,0.3)" }}>{t("howto.cta_btn")}</button>
     </div>
   </div>;
 }
