@@ -215,6 +215,9 @@ const getStrength = (teamName) => {
 };
 
 export const calcMatchOdds = (match) => {
+  // Si des cotes dynamiques ont été pré-calculées par /api/match-odds, on les utilise
+  if (match.dynamicOdds) return match.dynamicOdds;
+
   const sH = getStrength(match.home_team);
   const sA = getStrength(match.away_team);
 

@@ -132,6 +132,29 @@ function AppInner() {
     }
   },[loadLeaderboard]);
 
+  // Enrichit les matchs à venir avec des cotes dynamiques (forme, stats, blessures)
+  // Tourne en arrière-plan sans bloquer l'affichage initial
+  const enrichMatchOdds=useCallback(async(matches)=>{
+    const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,20); // max 20 matchs
+    if(!upcoming.length) return;
+    const enriched=await Promise.allSettled(
+      upcoming.map(async m=>{
+        try{
+          const r=await fetch(`/api/match-odds?home_team=${encodeURIComponent(m.home_team)}&away_team=${encodeURIComponent(m.away_team)}`);
+          if(!r.ok) return null;
+          const odds=await r.json();
+          if(odds.error) return null;
+          return {id:m.id, odds};
+        }catch{return null;}
+      })
+    );
+    const updates={};
+    enriched.forEach(r=>{if(r.status==="fulfilled"&&r.value) updates[r.value.id]=r.value.odds;});
+    if(!Object.keys(updates).length) return;
+    setMatches(prev=>prev.map(m=>updates[m.id]?{...m,dynamicOdds:updates[m.id]}:m));
+    matchesRef.current=matchesRef.current.map(m=>updates[m.id]?{...m,dynamicOdds:updates[m.id]}:m);
+  },[]);
+
   const loadMatches=useCallback(async()=>{
     setMatchesLoading(true);
     const allMatches=[];
@@ -155,6 +178,8 @@ function AppInner() {
       allMatches.sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
       matchesRef.current=allMatches;
       setMatches(allMatches);
+      // Enrichir avec les cotes dynamiques en arrière-plan (sans bloquer l'affichage)
+      enrichMatchOdds(allMatches);
     }catch(e){console.error("loadMatches error",e);}
     setMatchesLoading(false);
     return allMatches;
