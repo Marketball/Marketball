@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import { compColor, compEmoji, compLabel } from "../lib/helpers.js";
 import MatchCard from "../components/MatchCard.jsx";
 import MatchBetsModal from "../components/MatchBetsModal.jsx";
@@ -9,6 +10,7 @@ const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE"
 
 export default function MatchesPage({ matches, onBet, loading, session, profile }) {
   const { t } = useLang();
+  const contentRef = useRef(null);
   const [tab,setTab]=useState("clubs");
   const [subComp,setSubComp]=useState("Tous");
   const [statsMatch,setStatsMatch]=useState(null);
@@ -26,6 +28,13 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
   const upcoming=filtered.filter(m=>m.status==="SCHEDULED");
   const finished=filtered.filter(m=>m.status==="FINISHED").slice(0,6);
 
+  useEffect(()=>{
+    if (!contentRef.current) return;
+    const els = contentRef.current.querySelectorAll(".card-hover");
+    if (!els.length) return;
+    gsap.fromTo(els, { opacity:0, y:50, scale:0.92 }, { opacity:1, y:0, scale:1, duration:0.45, stagger:0.05, ease:"power3.out", clearProps:"transform,scale" });
+  }, [tab, subComp]);
+
   // Grouper les matchs à venir par jour
   const upcomingByDay=upcoming.reduce((acc,m)=>{
     const locale = t("nav.home")==="Home" ? "en-GB" : "fr-FR";
@@ -35,7 +44,7 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
     return acc;
   },{});
 
-  return <div className="page-enter">
+  return <div ref={contentRef} className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:16 }}>{t("matches.title")}</div>
 
     {/* Tabs principaux */}

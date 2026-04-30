@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import { req } from "../lib/supabase.js";
 import { BADGES } from "../lib/constants.js";
 import { getLevel, getBadge, getSubPlan, fmt } from "../lib/helpers.js";
@@ -413,6 +414,13 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
   const { t } = useLang();
 
   const isLoggedIn = !!profile?.id;
+  const listRef = useRef(null);
+  useEffect(()=>{
+    if (!listRef.current) return;
+    const rows = listRef.current.children;
+    if (!rows.length) return;
+    gsap.fromTo(rows, { opacity:0, y:35, x:15 }, { opacity:1, y:0, x:0, duration:0.4, stagger:0.04, ease:"power3.out" });
+  }, [tab, showAll]);
 
   const TABS = [
     { id:"global", label:t("leaderboard.global") },
@@ -482,6 +490,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
       </div>
 
       {/* Liste */}
+      <div ref={listRef}>
       {visibleList.map((p,i)=>(
         <div key={p.username} style={{ background:p.username===username?"rgba(16,185,129,0.04)":"rgba(241,245,249,0.02)", border:`1px solid ${p.username===username?"rgba(16,185,129,0.12)":"rgba(241,245,249,0.04)"}`, borderRadius:12, padding:"12px 16px", marginBottom:6, display:"flex", alignItems:"center", gap:12 }}>
           <div style={{ position:"relative", flexShrink:0 }}>
@@ -504,6 +513,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
           </div>
         </div>
       ))}
+      </div>
       {!showAll&&leaderboard.length>10&&(
         <button onClick={()=>setShowAll(true)} className="btn-animated" style={{ width:"100%", marginTop:8, padding:"12px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:13, cursor:"pointer" }}>
           {t("leaderboard.see_all")}

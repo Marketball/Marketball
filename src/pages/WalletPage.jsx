@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import { AMM } from "../lib/amm.js";
 import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
@@ -49,6 +50,13 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const weeklyConverted=profile?.weekly_reset_date===weekKey?(profile?.weekly_mc_purchased||0):0;
   const remainingLimit=WEEKLY_MC_LIMIT-weeklyConverted;
   const { t } = useLang();
+  const betsRef = useRef(null);
+  useEffect(()=>{
+    if (!betsRef.current) return;
+    const items = betsRef.current.children;
+    if (!items.length) return;
+    gsap.fromTo(items, { opacity:0, y:35 }, { opacity:1, y:0, duration:0.4, stagger:0.05, ease:"power3.out" });
+  }, [betFilter]);
 
   const allBets=[
     ...(matchBets||[]).map(b=>({...b,isMatch:true})),
@@ -207,6 +215,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
 
       {filteredBets.length===0&&<div style={{ textAlign:"center", padding:24, color:"rgba(241,245,249,0.25)", fontSize:13 }}>{t("wallet.no_category")}</div>}
 
+      <div ref={betsRef}>
       {filteredBets.map((b,i)=>{
         const isMarketBet=!b.isMatch&&!!b.market_id;
         const isMatchBet=!!b.isMatch;
@@ -257,6 +266,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
           </div>}
         </div>;
       })}
+      </div>
     </>}
 
     {/* Modale confirmation cashout */}

@@ -22,7 +22,7 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
     if (!gridRef.current) return;
     const cards = gridRef.current.querySelectorAll(".card-hover");
     if (!cards.length) return;
-    gsap.fromTo(cards, { opacity:0, y:30, scale:0.96 }, { opacity:1, y:0, scale:1, duration:0.4, stagger:0.07, ease:"power2.out", clearProps:"transform,scale" });
+    gsap.fromTo(cards, { opacity:0, y:55, scale:0.91 }, { opacity:1, y:0, scale:1, duration:0.5, stagger:0.07, ease:"power3.out", clearProps:"transform,scale" });
   }, [cat, search]);
 
   const handlePropose=async({title,title_en,category,proposed_by})=>{

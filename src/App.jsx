@@ -53,7 +53,7 @@ function AppInner() {
   const pageAuthRef=useRef(null);
   useEffect(()=>{
     const el=pageAuthRef.current||pageGuestRef.current;
-    if(el) gsap.from(el,{opacity:0,x:30,duration:0.35,ease:"power2.out",clearProps:"transform,opacity"});
+    if(el) gsap.from(el,{opacity:0,x:60,y:12,scale:0.95,duration:0.45,ease:"power3.out",clearProps:"transform,opacity,scale"});
   },[page]);
   const [markets,setMarkets]=useState([]);
   const [matches,setMatches]=useState([]);

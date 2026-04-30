@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import { AMM } from "../lib/amm.js";
 import { getLevel, getBadge, fmt, mTitle } from "../lib/helpers.js";
 import { useLang } from "../lib/i18n.jsx";
@@ -23,9 +24,16 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
   const [showTopStats,setShowTopStats]=useState(false);
   const [showTopChallenge,setShowTopChallenge]=useState(false);
   const { t, lang } = useLang();
+  const contentRef = useRef(null);
   useEffect(()=>{const timer=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(timer);},[]);
+  useEffect(()=>{
+    if (!contentRef.current) return;
+    const els = contentRef.current.querySelectorAll(".card-hover");
+    if (!els.length) return;
+    gsap.fromTo(els, { opacity:0, y:55, scale:0.91 }, { opacity:1, y:0, scale:1, duration:0.55, stagger:0.07, ease:"power3.out", clearProps:"transform,scale" });
+  }, []);
 
-  return <div className="page-enter">
+  return <div ref={contentRef} className="page-enter">
     {/* HERO WELCOME */}
     <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(59,130,246,0.04))`, border:`1px solid ${badge.color}20`, borderRadius:22, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)`, pointerEvents:"none" }} />
