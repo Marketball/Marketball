@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { gsap } from "gsap";
 
 // Lib
 import { LanguageProvider, useLang } from "./lib/i18n.jsx";
@@ -8,6 +9,7 @@ import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC
 import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds, calcLevelUpRewards } from "./lib/helpers.js";
 
 // UI components
+import AnimatedCounter from "./components/ui/AnimatedCounter.jsx";
 import SubBadge from "./components/ui/SubBadge.jsx";
 import Avatar from "./components/ui/Avatar.jsx";
 import Toast from "./components/ui/Toast.jsx";
@@ -47,6 +49,12 @@ function AppInner() {
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
   const navigateTo=(p)=>{setPage(p);if(p==="community")setPendingFriendCount(0);};
+  const pageGuestRef=useRef(null);
+  const pageAuthRef=useRef(null);
+  useEffect(()=>{
+    const el=pageAuthRef.current||pageGuestRef.current;
+    if(el) gsap.fromTo(el,{opacity:0,y:10},{opacity:1,y:0,duration:0.25,ease:"power2.out"});
+  },[page]);
   const [markets,setMarkets]=useState([]);
   const [matches,setMatches]=useState([]);
   const [matchesLoading,setMatchesLoading]=useState(false);
@@ -677,7 +685,7 @@ function AppInner() {
         <button onClick={()=>setShowAuthModal(true)} style={{ marginLeft:10, padding:"4px 14px", borderRadius:6, border:"none", background:"#10b981", color:"#030712", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("auth.create_account")}</button>
       </div>
       {/* Contenu public */}
-      <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
+      <div key={page} ref={pageGuestRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
         {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
         {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
         {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} />}
@@ -741,19 +749,19 @@ function AppInner() {
           {profile?.subscription && profile.subscription !== "starter" && <SubBadge profile={profile} />}
           <LangToggle />
           <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.15)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:13, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
+            🪙 <AnimatedCounter value={coins} color="#fbbf24" fontSize={13} />
           </div>
           <div style={{ background:"rgba(16,185,129,0.07)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:7, padding:"3px 9px" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:13, letterSpacing:1 }}>💎 {fmt(sc)}</span>
+            💎 <AnimatedCounter value={sc} color="#10b981" fontSize={13} />
           </div>
         </div>
         {/* Mobile : coins compacts */}
         <div className="show-mobile" style={{ display:"none", gap:5, alignItems:"center" }}>
           <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.18)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:12, letterSpacing:1 }}>🪙 {fmt(coins)}</span>
+            🪙 <AnimatedCounter value={coins} color="#fbbf24" fontSize={12} />
           </div>
           <div style={{ background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.18)", borderRadius:7, padding:"3px 9px" }}>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#10b981", fontSize:12, letterSpacing:1 }}>💎 {fmt(sc)}</span>
+            💎 <AnimatedCounter value={sc} color="#10b981" fontSize={12} />
           </div>
         </div>
       </div>
@@ -777,7 +785,7 @@ function AppInner() {
       </div>
     </div>
 
-    <div key={page} className="page-slide-right page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
+    <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} profile={profile} session={session} showToast={showToast} />}

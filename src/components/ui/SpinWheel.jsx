@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { gsap } from "gsap";
 import { SPIN_SEGMENTS } from "../../lib/constants.js";
 
 export default function SpinWheel({ onSpin, canSpin }) {
   const canvasRef = useRef(null);
+  const wheelWrapRef = useRef(null);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const rotRef = useRef(0);
@@ -51,14 +53,17 @@ export default function SpinWheel({ onSpin, canSpin }) {
       rotRef.current=startRot+targetAngle*ease;
       drawWheel(rotRef.current);
       if (progress<1){animRef.current=requestAnimationFrame(animate);}
-      else{setSpinning(false);setResult(SPIN_SEGMENTS[segIdx]);onSpin(SPIN_SEGMENTS[segIdx]);}
+      else{
+        setSpinning(false);setResult(SPIN_SEGMENTS[segIdx]);onSpin(SPIN_SEGMENTS[segIdx]);
+        if(wheelWrapRef.current) gsap.fromTo(wheelWrapRef.current,{scale:1.06},{scale:1,duration:0.6,ease:"elastic.out(1,0.4)"});
+      }
     };
     animRef.current=requestAnimationFrame(animate);
   };
   useEffect(()=>()=>{if(animRef.current)cancelAnimationFrame(animRef.current);},[]);
 
   return <div style={{ textAlign:"center" }}>
-    <div style={{ position:"relative", display:"inline-block", marginBottom:14 }}>
+    <div ref={wheelWrapRef} style={{ position:"relative", display:"inline-block", marginBottom:14 }}>
       <canvas ref={canvasRef} width={210} height={210} style={{ display:"block", filter:canSpin?"drop-shadow(0 0 15px rgba(16,185,129,0.2))":"grayscale(0.7) opacity(0.5)" }} />
     </div>
     {result && <div style={{ marginBottom:12, padding:"9px 18px", background:result.type==="cashout"?"rgba(249,115,22,0.12)":result.type==="sc"?"rgba(16,185,129,0.12)":"rgba(251,191,36,0.12)", border:`1px solid ${result.type==="cashout"?"rgba(249,115,22,0.3)":result.type==="sc"?"rgba(16,185,129,0.25)":"rgba(251,191,36,0.25)"}`, borderRadius:10, display:"inline-block", animation:"winPop 0.4s ease" }}>
