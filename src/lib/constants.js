@@ -267,6 +267,7 @@ export const GLOBAL_CSS = `
   ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 99px; }
   .mobile-header-nav { -webkit-overflow-scrolling: touch; }
   .mobile-header-nav::-webkit-scrollbar { display: none; }
+  .sticky-header { padding-top: constant(safe-area-inset-top); padding-top: env(safe-area-inset-top); }
   @media (max-width: 640px) {
     .hide-mobile { display: none !important; }
     .show-mobile { display: flex !important; }
