@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 import { AMM } from "../lib/amm.js";
 import { getLevel, getBadge, fmt, mTitle } from "../lib/helpers.js";
 import { useLang } from "../lib/i18n.jsx";
@@ -30,7 +32,13 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     if (!contentRef.current) return;
     const els = contentRef.current.querySelectorAll(".card-hover");
     if (!els.length) return;
-    gsap.fromTo(els, { opacity:0, y:55, scale:0.91 }, { opacity:1, y:0, scale:1, duration:0.55, stagger:0.07, ease:"power3.out", clearProps:"transform,scale" });
+    els.forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity:0, y:55, scale:0.91 },
+        { opacity:1, y:0, scale:1, duration:0.55, ease:"power3.out", clearProps:"transform,scale", delay: i * 0.06,
+          scrollTrigger:{ trigger:el, start:"top 92%", once:true } }
+      );
+    });
   }, []);
 
   return <div ref={contentRef} className="page-enter">

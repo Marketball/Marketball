@@ -255,16 +255,31 @@ export const GLOBAL_CSS = `
   @keyframes confetti-fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
   @keyframes market-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 50%{box-shadow:0 0 0 8px rgba(16,185,129,0)} }
   @keyframes btn-press { 0%,100%{transform:scale(1)} 50%{transform:scale(0.96)} }
+  :root {
+    --c-green:#10b981; --c-amber:#f59e0b; --c-yellow:#fbbf24;
+    --c-blue:#3b82f6; --c-red:#ef4444; --c-text:#f1f5f9;
+    --surface:rgba(241,245,249,0.02); --surface-h:rgba(241,245,249,0.045);
+    --border:rgba(241,245,249,0.07); --border-l:rgba(241,245,249,0.04);
+    --r:10px; --r-sm:5px; --r-tag:4px;
+  }
+  ::selection { background:rgba(16,185,129,0.25); color:#f1f5f9; }
   .page-enter { animation: fadeInUp 0.3s ease forwards; }
   .page-slide-right { animation: slideInRight 0.3s ease forwards; }
   .page-slide-left { animation: slideInLeft 0.3s ease forwards; }
-  .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
-  .btn-animated { transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
-  .btn-animated:hover:not(:disabled) { transform: translateY(-1px) scale(1.02); }
+  /* GSAP handles card transforms — CSS only handles border/shadow transitions */
+  .card-hover { will-change:transform; transition:box-shadow 0.25s ease, border-color 0.25s ease; }
+  .card-hover:hover { transform:none; }
+  .btn-animated { transition: transform 0.15s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease; }
+  .btn-animated:hover:not(:disabled) { transform: translateY(-1px); }
   .btn-animated:active:not(:disabled) { transform: scale(0.97); }
+  /* Editorial tag — sharp corners, uppercase, tight tracking */
+  .tag-sharp { display:inline-flex; align-items:center; font-size:9px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:3px 7px; border-radius:4px; border-width:1px; border-style:solid; }
+  /* Horizontal rule divider */
+  .section-rule { border:none; border-top:1px solid rgba(241,245,249,0.05); margin:0; }
+  /* Data label — section heading micro */
+  .data-label { font-size:8px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:rgba(241,245,249,0.28); }
   ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.25); border-radius: 99px; }
   .mobile-header-nav { -webkit-overflow-scrolling: touch; }
   .mobile-header-nav::-webkit-scrollbar { display: none; }
   .sticky-header { padding-top: constant(safe-area-inset-top); padding-top: env(safe-area-inset-top); }

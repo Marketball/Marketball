@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 import { req } from "../lib/supabase.js";
 import { BADGES } from "../lib/constants.js";
 import { getLevel, getBadge, getSubPlan, fmt } from "../lib/helpers.js";
@@ -417,9 +419,15 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
   const listRef = useRef(null);
   useEffect(()=>{
     if (!listRef.current) return;
-    const rows = listRef.current.children;
+    const rows = Array.from(listRef.current.children);
     if (!rows.length) return;
-    gsap.fromTo(rows, { opacity:0, y:35, x:15 }, { opacity:1, y:0, x:0, duration:0.4, stagger:0.04, ease:"power3.out" });
+    rows.forEach((row, i) => {
+      gsap.fromTo(row,
+        { opacity:0, y:30, x:12 },
+        { opacity:1, y:0, x:0, duration:0.38, ease:"power3.out", delay: i * 0.035,
+          scrollTrigger:{ trigger:row, start:"top 94%", once:true } }
+      );
+    });
   }, [tab, showAll]);
 
   const TABS = [

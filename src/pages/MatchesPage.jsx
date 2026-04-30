@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 import { compColor, compEmoji, compLabel } from "../lib/helpers.js";
 import MatchCard from "../components/MatchCard.jsx";
 import MatchBetsModal from "../components/MatchBetsModal.jsx";
@@ -32,7 +34,13 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
     if (!contentRef.current) return;
     const els = contentRef.current.querySelectorAll(".card-hover");
     if (!els.length) return;
-    gsap.fromTo(els, { opacity:0, y:50, scale:0.92 }, { opacity:1, y:0, scale:1, duration:0.45, stagger:0.05, ease:"power3.out", clearProps:"transform,scale" });
+    els.forEach((el, i) => {
+      gsap.fromTo(el,
+        { opacity:0, y:50, scale:0.92 },
+        { opacity:1, y:0, scale:1, duration:0.45, ease:"power3.out", clearProps:"transform,scale", delay: i * 0.04,
+          scrollTrigger:{ trigger:el, start:"top 93%", once:true } }
+      );
+    });
   }, [tab, subComp]);
 
   // Grouper les matchs à venir par jour

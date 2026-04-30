@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 import { req } from "../lib/supabase.js";
 import { isElite, catColor } from "../lib/helpers.js";
 import MarketCard from "../components/MarketCard.jsx";
@@ -22,7 +24,11 @@ export default function MarketsPage({ markets, onBet, profile, session, showToas
     if (!gridRef.current) return;
     const cards = gridRef.current.querySelectorAll(".card-hover");
     if (!cards.length) return;
-    gsap.fromTo(cards, { opacity:0, y:55, scale:0.91 }, { opacity:1, y:0, scale:1, duration:0.5, stagger:0.07, ease:"power3.out", clearProps:"transform,scale" });
+    gsap.fromTo(cards,
+      { opacity:0, y:55, scale:0.91 },
+      { opacity:1, y:0, scale:1, duration:0.5, stagger:0.07, ease:"power3.out", clearProps:"transform,scale",
+        scrollTrigger:{ trigger:gridRef.current, start:"top 90%", once:true } }
+    );
   }, [cat, search]);
 
   const handlePropose=async({title,title_en,category,proposed_by})=>{
