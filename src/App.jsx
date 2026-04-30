@@ -629,7 +629,7 @@ function AppInner() {
         <div style={{ position:"absolute", bottom:"10%", right:"10%", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(59,130,246,0.025),transparent 65%)", animation:"floatOrb 15s ease-in-out infinite reverse" }} />
       </div>
       {/* Header identique au mode connecté */}
-      <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)" }}>
+      <div style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,7,18,0.92)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(241,245,249,0.05)", paddingTop:"env(safe-area-inset-top)" }}>
         <div className="header-row1" style={{ maxWidth:980, margin:"0 auto", padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", height:48 }}>
           <div onClick={()=>setPage("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3 }}>MARKET<span style={{ color:"#10b981" }}>BALL</span></span>
@@ -655,10 +655,18 @@ function AppInner() {
           </div>
         </div>
         <div className="mobile-header-nav" style={{ display:"none", overflowX:"auto", scrollbarWidth:"none", borderTop:"1px solid rgba(241,245,249,0.04)", padding:"0 6px" }}>
-          {NAV.map(n=>(
+          {[
+            {id:"home",icon:"⚡",labelKey:"nav.home"},
+            {id:"matches",icon:"⚽",labelKey:"nav.matches"},
+            {id:"markets",icon:"📊",labelKey:"nav.markets"},
+            {id:"community",icon:"💬",labelKey:"nav.com_short"},
+            {id:"leaderboard",icon:"🏆",labelKey:"nav.top_short"},
+            {id:"store",icon:"🎁",labelKey:"nav.store"},
+            {id:"howto",icon:"❓",labelKey:"nav.howto"},
+          ].map(n=>(
             <button key={n.id} onClick={()=>setPage(n.id)} style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 12px", border:"none", borderBottom:page===n.id?"2px solid #10b981":"2px solid transparent", background:"transparent", color:page===n.id?"#10b981":"rgba(241,245,249,0.45)", cursor:"pointer", fontSize:18, lineHeight:1, gap:2, transition:"all 0.15s" }}>
               <span>{n.icon}</span>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{n.label}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.3, whiteSpace:"nowrap" }}>{t(n.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -755,7 +763,7 @@ function AppInner() {
           {id:"home",icon:"⚡",labelKey:"nav.home"},
           {id:"matches",icon:"⚽",labelKey:"nav.matches"},
           {id:"markets",icon:"📊",labelKey:"nav.markets"},
-          {id:"community",icon:"💬",labelKey:"nav.community"},
+          {id:"community",icon:"💬",labelKey:"nav.com_short"},
           {id:"wallet",icon:"💰",labelKey:"nav.wallet"},
           {id:"leaderboard",icon:"🏆",labelKey:"nav.top_short"},
           {id:"store",icon:"🎁",labelKey:"nav.store"},
