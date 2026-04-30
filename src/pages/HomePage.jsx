@@ -27,7 +27,25 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
   const [showTopChallenge,setShowTopChallenge]=useState(false);
   const { t, lang } = useLang();
   const contentRef = useRef(null);
+  const heroRef = useRef(null);
+  const orbRef = useRef(null);
   useEffect(()=>{const timer=setInterval(()=>setPulse(p=>!p),2000);return()=>clearInterval(timer);},[]);
+
+  // Dramatic hero entrance
+  useEffect(()=>{
+    if (!heroRef.current) return;
+    const els = heroRef.current.querySelectorAll("[data-hero]");
+    gsap.fromTo(els,
+      { opacity:0, y:30, filter:"blur(4px)" },
+      { opacity:1, y:0, filter:"blur(0px)", duration:0.6, stagger:0.1, ease:"power3.out", delay:0.1 }
+    );
+    // Ambient orb
+    if (orbRef.current) {
+      gsap.to(orbRef.current, { scale:1.15, y:-12, duration:3.5, ease:"sine.inOut", yoyo:true, repeat:-1 });
+    }
+  }, []);
+
+  // ScrollTrigger for card grids
   useEffect(()=>{
     if (!contentRef.current) return;
     const els = contentRef.current.querySelectorAll(".card-hover");
@@ -35,7 +53,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     els.forEach((el, i) => {
       gsap.fromTo(el,
         { opacity:0, y:55, scale:0.91 },
-        { opacity:1, y:0, scale:1, duration:0.55, ease:"power3.out", clearProps:"transform,scale", delay: i * 0.06,
+        { opacity:1, y:0, scale:1, duration:0.55, ease:"power3.out", clearProps:"transform,scale", delay: i * 0.05,
           scrollTrigger:{ trigger:el, start:"top 92%", once:true } }
       );
     });
@@ -43,10 +61,10 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
 
   return <div ref={contentRef} className="page-enter">
     {/* HERO WELCOME */}
-    <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(59,130,246,0.04))`, border:`1px solid ${badge.color}20`, borderRadius:22, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)`, pointerEvents:"none" }} />
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
+    <div ref={heroRef} style={{ background:`linear-gradient(135deg,${badge.glow},rgba(59,130,246,0.04))`, border:`1px solid ${badge.color}20`, borderTop:`3px solid ${badge.color}`, borderRadius:4, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
+      <div ref={orbRef} style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)`, pointerEvents:"none" }} />
+      <div data-hero style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ fontFamily:"'Space Mono',monospace", fontSize:10, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
           {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
             <span style={{ fontSize:11 }}>🏆</span>
@@ -58,9 +76,9 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
           </div>}
         </div>
       </div>
-      <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}><BadgeTag level={level} /><span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>{t("home.level")} {level} · {profile?.xp||0} XP</span></div>
-      <XPBar xp={profile?.xp||0} />
-      <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
+      <div data-hero style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap", alignItems:"center" }}><BadgeTag level={level} /><span style={{ fontFamily:"'Space Mono',monospace", fontSize:10, color:"rgba(241,245,249,0.35)" }}>{t("home.level")} {level} · {profile?.xp||0} XP</span></div>
+      <div data-hero><XPBar xp={profile?.xp||0} /></div>
+      <div data-hero style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
     </div>
 
     {/* MARCHE DU MOMENT */}
