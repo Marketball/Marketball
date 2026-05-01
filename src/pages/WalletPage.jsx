@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { AMM } from "../lib/amm.js";
-import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "../lib/constants.js";
+import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE, SPIN_SEGMENTS_FREE, SPIN_SEGMENTS_PRO, SPIN_SEGMENTS_ELITE } from "../lib/constants.js";
 import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
@@ -135,11 +135,24 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
     </div>
 
     {/* Roue */}
-    <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1, marginBottom:4 }}>{t("wallet.daily_wheel")}</div>
-      <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>{t("wallet.wheel_desc")}</div>
-      <SpinWheel onSpin={onSpin} canSpin={canSpin} />
-    </div>
+    {(()=>{
+      const sub = profile?.subscription || "starter";
+      const spinSegments = sub==="elite" ? SPIN_SEGMENTS_ELITE : sub==="pro" ? SPIN_SEGMENTS_PRO : SPIN_SEGMENTS_FREE;
+      const tierLabel = sub==="elite" ? { text:"ROUE ELITE 👑", color:"#a78bfa", bg:"rgba(167,139,250,0.08)", border:"rgba(167,139,250,0.2)" }
+                      : sub==="pro"   ? { text:"ROUE PRO ⭐", color:"#34d399", bg:"rgba(52,211,153,0.08)", border:"rgba(52,211,153,0.2)" }
+                                      : { text:"ROUE GRATUITE", color:"#f59e0b", bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.15)" };
+      const tierDesc = sub==="elite" ? "1–3 SC ou 150–300 MC par jour"
+                     : sub==="pro"   ? "1–2 SC ou 100–300 MC par jour"
+                                     : "1 SC, 1 Cashout ou 50–200 MC par jour";
+      return <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:1 }}>{t("wallet.daily_wheel")}</div>
+          <span style={{ fontSize:10, fontWeight:800, color:tierLabel.color, background:tierLabel.bg, border:`1px solid ${tierLabel.border}`, borderRadius:20, padding:"3px 10px", letterSpacing:1 }}>{tierLabel.text}</span>
+        </div>
+        <div style={{ fontSize:12, color:"rgba(241,245,249,0.3)", marginBottom:16 }}>{tierDesc}</div>
+        <SpinWheel onSpin={onSpin} canSpin={canSpin} segments={spinSegments} />
+      </div>;
+    })()}
 
     {/* Pub */}
     <div style={{ background:"rgba(59,130,246,0.04)", border:"1px solid rgba(59,130,246,0.1)", borderRadius:14, padding:"16px 20px", marginBottom:14 }}>

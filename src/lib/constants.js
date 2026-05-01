@@ -94,16 +94,33 @@ export const WEEKLY_MC_LIMIT = 200;
 // Taux de conversion MC → SC (fin de semaine, volontairement défavorable)
 export const MC_TO_SC_RATE = 500; // 500 MC = 1 SC
 
-export const SPIN_SEGMENTS = [
-  { label: "1 SC",   value: 1, type: "sc", color: "#10b981" },
-  { label: "50 MC",  value: 50, type: "mc", color: "#3b82f6" },
-  { label: "2 SC",   value: 2, type: "sc", color: "#34d399" },
-  { label: "100 MC", value: 100, type: "mc", color: "#8b5cf6" },
-  { label: "1 SC",   value: 1, type: "sc", color: "#10b981" },
-  { label: "200 MC", value: 200, type: "mc", color: "#f59e0b" },
-  { label: "3 SC",   value: 3, type: "sc", color: "#fbbf24" },
-  { label: "5 SC 🎰", value: 5, type: "sc", color: "#ef4444" },
+export const SPIN_SEGMENTS_FREE = [
+  { label: "CASHOUT 🔓", value: 1, type: "cashout", color: "#f97316" },
+  { label: "1 SC",       value: 1, type: "sc",      color: "#10b981" },
+  { label: "200 MC",     value: 200, type: "mc",    color: "#f59e0b" },
+  { label: "100 MC",     value: 100, type: "mc",    color: "#8b5cf6" },
+  { label: "50 MC",      value: 50,  type: "mc",    color: "#3b82f6" },
 ];
+
+export const SPIN_SEGMENTS_PRO = [
+  { label: "1 SC",   value: 1,   type: "sc", color: "#10b981" },
+  { label: "2 SC",   value: 2,   type: "sc", color: "#34d399" },
+  { label: "100 MC", value: 100, type: "mc", color: "#8b5cf6" },
+  { label: "200 MC", value: 200, type: "mc", color: "#f59e0b" },
+  { label: "300 MC", value: 300, type: "mc", color: "#fbbf24" },
+];
+
+export const SPIN_SEGMENTS_ELITE = [
+  { label: "1 SC",   value: 1,   type: "sc", color: "#10b981" },
+  { label: "2 SC",   value: 2,   type: "sc", color: "#34d399" },
+  { label: "3 SC",   value: 3,   type: "sc", color: "#6ee7b7" },
+  { label: "200 MC", value: 200, type: "mc", color: "#f59e0b" },
+  { label: "300 MC", value: 300, type: "mc", color: "#fbbf24" },
+  { label: "150 MC", value: 150, type: "mc", color: "#a78bfa" },
+];
+
+// Alias pour compatibilité
+export const SPIN_SEGMENTS = SPIN_SEGMENTS_FREE;
 
 export const COMPETITIONS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL","NL","EURO","WC","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 

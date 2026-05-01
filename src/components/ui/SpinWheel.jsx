@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { gsap } from "gsap";
-import { SPIN_SEGMENTS } from "../../lib/constants.js";
+import { segments } from "../../lib/constants.js";
 
-export default function SpinWheel({ onSpin, canSpin }) {
+export default function SpinWheel({ onSpin, canSpin, segments: segmentsProp }) {
+  const segments = segmentsProp || segments;
   const canvasRef = useRef(null);
   const wheelWrapRef = useRef(null);
   const [spinning, setSpinning] = useState(false);
@@ -14,9 +15,9 @@ export default function SpinWheel({ onSpin, canSpin }) {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const W = canvas.width, cx = W/2, r = W/2-6;
-    const segAngle = (2*Math.PI)/SPIN_SEGMENTS.length;
+    const segAngle = (2*Math.PI)/segments.length;
     ctx.clearRect(0,0,W,W);
-    SPIN_SEGMENTS.forEach((seg,i) => {
+    segments.forEach((seg,i) => {
       const s=rot+i*segAngle, e=s+segAngle;
       ctx.beginPath(); ctx.moveTo(cx,cx); ctx.arc(cx,cx,r,s,e); ctx.closePath();
       const grad=ctx.createRadialGradient(cx,cx,0,cx,cx,r);
@@ -36,15 +37,15 @@ export default function SpinWheel({ onSpin, canSpin }) {
     ctx.shadowBlur=0;
     ctx.beginPath(); ctx.moveTo(W-5,cx-9); ctx.lineTo(W+12,cx); ctx.lineTo(W-5,cx+9);
     ctx.closePath(); ctx.fillStyle="#f1f5f9"; ctx.fill();
-  }, []);
+  }, [segments]);
 
   useEffect(() => { drawWheel(rotRef.current); }, [drawWheel]);
 
   const doSpin = () => {
     if (!canSpin||spinning) return;
     setSpinning(true); setResult(null);
-    const segIdx=Math.floor(Math.random()*SPIN_SEGMENTS.length);
-    const segAngle=(2*Math.PI)/SPIN_SEGMENTS.length;
+    const segIdx=Math.floor(Math.random()*segments.length);
+    const segAngle=(2*Math.PI)/segments.length;
     const targetAngle=2*Math.PI*8+(2*Math.PI-segIdx*segAngle-segAngle/2);
     const startRot=rotRef.current, startTime=performance.now(), duration=4500;
     const animate=(now)=>{
@@ -54,7 +55,7 @@ export default function SpinWheel({ onSpin, canSpin }) {
       drawWheel(rotRef.current);
       if (progress<1){animRef.current=requestAnimationFrame(animate);}
       else{
-        setSpinning(false);setResult(SPIN_SEGMENTS[segIdx]);onSpin(SPIN_SEGMENTS[segIdx]);
+        setSpinning(false);setResult(segments[segIdx]);onSpin(segments[segIdx]);
         if(wheelWrapRef.current) gsap.fromTo(wheelWrapRef.current,{scale:1.06},{scale:1,duration:0.6,ease:"elastic.out(1,0.4)"});
       }
     };
