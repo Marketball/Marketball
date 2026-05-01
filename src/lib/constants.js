@@ -230,29 +230,18 @@ export const CLUB_COLORS = {
 // GLOBAL CSS
 // ============================================================
 export const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { overflow-x: hidden; max-width: 100vw; }
-  body { background: #030712; color: #f1f5f9; font-family: 'Rajdhani', sans-serif; font-weight: 500; font-size: 15px; letter-spacing: 0.01em; touch-action: pan-y; }
+  body { background: #030712; color: #f1f5f9; font-family: 'DM Sans', sans-serif; touch-action: pan-y; }
   /* Bloquer le scroll du fond quand une modale est ouverte */
   body:has(.modal-overlay) { overflow: hidden; }
   /* L'overlay lui-même est scrollable (au cas où le contenu dépasse) */
   .modal-overlay { overflow-y: auto; }
   body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events: none; z-index: 999; opacity: 0.35; }
-  input::placeholder { color: rgba(241,245,249,0.2); font-family: 'Rajdhani', sans-serif; }
+  input::placeholder { color: rgba(241,245,249,0.2); }
   input:focus { border-color: rgba(16,185,129,0.5) !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-  button { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
-  /* Monospace data treatment */
-  .mono { font-family: 'Space Mono', monospace !important; }
-  /* Ambient breathing for hero orbs */
-  @keyframes orb-breathe { 0%,100%{transform:scale(1) translateY(0);opacity:0.6} 50%{transform:scale(1.15) translateY(-10px);opacity:1} }
-  @keyframes scan-line { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
-  @keyframes number-flash { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
-  /* Sharp primary CTA */
-  .btn-sharp { border-radius:2px; text-transform:uppercase; letter-spacing:3px; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:11px; }
-  /* Horizontal rule as design element */
-  .rule-accent { height:1px; background:linear-gradient(90deg,rgba(16,185,129,0.5),transparent); border:none; margin:0; }
-  .rule-amber  { height:1px; background:linear-gradient(90deg,rgba(245,158,11,0.5),transparent); border:none; margin:0; }
+  button { font-family: 'DM Sans', sans-serif; }
   @keyframes slideUp { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
   @keyframes fadeInUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -277,9 +266,9 @@ export const GLOBAL_CSS = `
   .page-enter { animation: fadeInUp 0.3s ease forwards; }
   .page-slide-right { animation: slideInRight 0.3s ease forwards; }
   .page-slide-left { animation: slideInLeft 0.3s ease forwards; }
-  /* GSAP handles all card transforms */
-  .card-hover { will-change:transform; transition:box-shadow 0.28s ease, border-color 0.28s ease; }
-  .card-hover:hover { transform:none !important; box-shadow:none; }
+  /* GSAP handles card transforms — CSS only handles border/shadow transitions */
+  .card-hover { will-change:transform; transition:box-shadow 0.25s ease, border-color 0.25s ease; }
+  .card-hover:hover { transform:none; }
   .btn-animated { transition: transform 0.15s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease; }
   .btn-animated:hover:not(:disabled) { transform: translateY(-1px); }
   .btn-animated:active:not(:disabled) { transform: scale(0.97); }
