@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { gsap } from "gsap";
-import { segments } from "../../lib/constants.js";
+import { SPIN_SEGMENTS } from "../../lib/constants.js";
 
 export default function SpinWheel({ onSpin, canSpin, segments: segmentsProp }) {
-  const segments = segmentsProp || segments;
+  const segments = segmentsProp || SPIN_SEGMENTS;
   const canvasRef = useRef(null);
   const wheelWrapRef = useRef(null);
   const [spinning, setSpinning] = useState(false);
