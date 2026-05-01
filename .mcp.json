@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "/Users/martinp/.npm-global/bin/n8n-mcp",
+      "args": [],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://marketball.app.n8n.cloud",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MGZkZWQzYy00MGNmLTQwMjEtYjc3Yy1mOTllZTg5Y2Q0NzciLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiODMwNDBiMTctMDVmYi00MjZlLThhOTktNDQwMDE2MTNhODYyIiwiaWF0IjoxNzc3NTY0NzM2fQ.aKUZRPq9JuXbVjCbOrtaVkaU_g9GAKtfEh1mjzGPBms"
+      }
+    }
+  }
+}

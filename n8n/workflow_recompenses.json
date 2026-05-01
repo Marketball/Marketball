@@ -1,0 +1,162 @@
+{
+  "name": "MarketBall — Récompenses Classement (Lundi 10h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "trigger-monday",
+      "name": "Chaque lundi à 10h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [-1200, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/profiles",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select", "value": "id,username,coins,store_coins,xp,level,weekly_profit,total_wins" },
+            { "name": "weekly_profit", "value": "gt.0" },
+            { "name": "order", "value": "weekly_profit.desc" },
+            { "name": "limit", "value": "10" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-fetch-top10",
+      "name": "Récupérer Top 10",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-1000, 300],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Barème de récompenses StoreCoins + XP par rang\nconst REWARDS = [\n  { rank: 1,  sc: 500, xp: 300, label: '🥇 Champion de la semaine' },\n  { rank: 2,  sc: 300, xp: 200, label: '🥈 2ème place' },\n  { rank: 3,  sc: 150, xp: 150, label: '🥉 3ème place' },\n  { rank: 4,  sc: 75,  xp: 75,  label: '🏅 Top 5' },\n  { rank: 5,  sc: 75,  xp: 75,  label: '🏅 Top 5' },\n  { rank: 6,  sc: 25,  xp: 25,  label: '⭐ Top 10' },\n  { rank: 7,  sc: 25,  xp: 25,  label: '⭐ Top 10' },\n  { rank: 8,  sc: 25,  xp: 25,  label: '⭐ Top 10' },\n  { rank: 9,  sc: 25,  xp: 25,  label: '⭐ Top 10' },\n  { rank: 10, sc: 25,  xp: 25,  label: '⭐ Top 10' },\n];\n\nconst players = $input.all();\n\nif (!players || players.length === 0) {\n  console.log('Aucun joueur avec weekly_profit > 0 cette semaine.');\n  return [{ json: { skipped: true, reason: 'Aucun joueur classé' } }];\n}\n\nconst results = [];\nfor (let i = 0; i < players.length; i++) {\n  const player = players[i].json;\n  const reward = REWARDS[i];\n  if (!reward) break;\n\n  results.push({ json: {\n    id:             player.id,\n    username:       player.username || 'Joueur inconnu',\n    rank:           reward.rank,\n    label:          reward.label,\n    sc_reward:      reward.sc,\n    xp_reward:      reward.xp,\n    new_store_coins: (player.store_coins || 0) + reward.sc,\n    new_xp:         (player.xp || 0) + reward.xp,\n    weekly_profit:  player.weekly_profit\n  }});\n}\n\nconsole.log(`Récompenses calculées pour ${results.length} joueurs`);\nreturn results;\n"
+      },
+      "id": "node-calc-rewards",
+      "name": "Calculer récompenses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-800, 300],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skipped }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "notTrue", "singleValue": true }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-check-skip",
+      "name": "Il y a des joueurs ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-600, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/profiles?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ store_coins: $json.new_store_coins, xp: $json.new_xp }) }}",
+        "options": {}
+      },
+      "id": "node-patch-player",
+      "name": "Créditer joueur",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-400, 200]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://aiesvzdvlownkcjbkgjv.supabase.co/rest/v1/profiles?weekly_profit=gte.0",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"weekly_profit\": 0 }",
+        "options": {}
+      },
+      "id": "node-reset-weekly",
+      "name": "Reset weekly_profit tous les joueurs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [-200, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst now = new Date().toLocaleString('fr-FR');\nconsole.log(`Récompenses distribuées — ${now} — ${items.length} joueurs crédités`);\nconsole.log(`weekly_profit remis à zéro pour tous les joueurs`);\nreturn [{ json: { \n  success: true,\n  players_rewarded: items.length,\n  timestamp: new Date().toISOString(),\n  message: `Classement hebdo traité le ${now}`\n} }];\n"
+      },
+      "id": "node-log-rewards",
+      "name": "Log récompenses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('Aucun joueur classé cette semaine — pas de récompenses distribuées');\nreturn [{ json: { success: true, players_rewarded: 0, message: 'Semaine sans classement' } }];\n"
+      },
+      "id": "node-log-empty",
+      "name": "Log semaine vide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 440]
+    }
+  ],
+  "connections": {
+    "Chaque lundi à 10h":           { "main": [[{ "node": "Récupérer Top 10",                   "type": "main", "index": 0 }]] },
+    "Récupérer Top 10":             { "main": [[{ "node": "Calculer récompenses",               "type": "main", "index": 0 }]] },
+    "Calculer récompenses":         { "main": [[{ "node": "Il y a des joueurs ?",               "type": "main", "index": 0 }]] },
+    "Il y a des joueurs ?":         { "main": [
+      [{ "node": "Créditer joueur",    "type": "main", "index": 0 }],
+      [{ "node": "Log semaine vide",   "type": "main", "index": 0 }]
+    ]},
+    "Créditer joueur":              { "main": [[{ "node": "Reset weekly_profit tous les joueurs", "type": "main", "index": 0 }]] },
+    "Reset weekly_profit tous les joueurs": { "main": [[{ "node": "Log récompenses",             "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}
