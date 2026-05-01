@@ -580,6 +580,16 @@ function renderProposed() {
   }).join("");
 }
 
+async function creditProposerSC(proposedId) {
+  try {
+    await fetch("/api/credit-sc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ proposedId, adminPwd: ADMIN_PASSWORD }),
+    });
+  } catch (e) { console.error("Erreur SC crédit :", e); }
+}
+
 async function approveProposed(id, title, category, titleEn) {
   if (!confirm(`Approuver et publier ce marché ?\n\n"${title}"`)) return;
   try {
@@ -599,7 +609,9 @@ async function approveProposed(id, title, category, titleEn) {
       method: "PATCH",
       body: JSON.stringify({ status: "approved" }),
     });
-    showToast("✅ Marché approuvé et publié !");
+    // Créditer +2 SC au proposeur Elite
+    await creditProposerSC(id);
+    showToast("✅ Marché approuvé et publié ! +2 SC crédités au proposeur.");
     loadAll();
   } catch (e) { showToast("Erreur : " + e.message, "error"); }
 }
@@ -674,7 +686,9 @@ async function saveEdit() {
         body: JSON.stringify({ ...patch, proposed_by: proposedItem?.proposed_by || null, q_yes: patch.q_yes||100, q_no: patch.q_no||100, total_volume: 0, participants: 0, status: "open", created_by: "elite_proposed", market_type: marketType }),
       });
       await sbReq(`proposed_markets?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "approved", admin_note: "Modifié avant publication" }) });
-      showToast("✅ Marché modifié et publié !");
+      // Créditer +2 SC au proposeur Elite
+      await creditProposerSC(editProposedId);
+      showToast("✅ Marché modifié et publié ! +2 SC crédités au proposeur.");
       editProposedId = null;
       closeEditModal();
       loadAll();

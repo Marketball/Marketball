@@ -381,7 +381,7 @@ const T = {
     "markets.trending_badge": "📈 TENDANCE",
     "markets.players": "JOUEURS",
     "markets.stats_bettors": "📊 STATS & PARIEURS",
-    "markets.propose_sent": "✅ Proposition envoyée ! L'admin va l'examiner. +50 XP si accepté 👑",
+    "markets.propose_sent": "✅ Proposition envoyée ! L'admin va l'examiner. +2 SC si accepté 👑",
     "markets.choices": "choix",
 
     // HomePage
@@ -890,7 +890,7 @@ const T = {
     "markets.trending_badge": "📈 TRENDING",
     "markets.players": "PLAYERS",
     "markets.stats_bettors": "📊 STATS & BETTORS",
-    "markets.propose_sent": "✅ Proposal sent! The admin will review it. +50 XP if accepted 👑",
+    "markets.propose_sent": "✅ Proposal sent! The admin will review it. +2 SC if accepted 👑",
     "markets.choices": "choices",
 
     // HomePage

@@ -21,7 +21,7 @@ export default function ProposeMarketModal({ profile, onClose, onSubmit }) {
         <div style={{ width:36,height:36,borderRadius:10,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>👑</div>
         <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2 }}>PROPOSER UN MARCHÉ</div>
       </div>
-      <div style={{ fontSize:12,color:"rgba(241,245,249,0.35)",marginBottom:20 }}>Tu proposes, l'admin valide. Si accepté, tu gagnes +50 XP et 2 SC !</div>
+      <div style={{ fontSize:12,color:"rgba(241,245,249,0.35)",marginBottom:20 }}>Tu proposes, l'admin valide. Si accepté, tu gagnes <span style={{ color:"#fbbf24",fontWeight:700 }}>+2 SC</span> !</div>
       <div style={{ marginBottom:14 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"rgba(241,245,249,0.4)",marginBottom:8,letterSpacing:1 }}>🇫🇷 QUESTION EN FRANÇAIS</div>
         <textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex: Mbappé signera à Arsenal avant le 31 août ?" rows={2}

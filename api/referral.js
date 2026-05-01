@@ -38,8 +38,8 @@ export default async function handler(req, res) {
     if (!referrer) return res.status(404).json({ error: "Code parrain invalide" });
     if (referrer.id === newUserId) return res.status(400).json({ error: "Impossible de se parrainer soi-même" });
 
-    // 3. Créditer le parrain (5 SC pour Free)
-    const reward = 5;
+    // 3. Créditer le parrain selon son abonnement
+    const reward = SC_REWARD[referrer.subscription] || SC_REWARD.starter;
     await supabase
       .from("profiles")
       .update({

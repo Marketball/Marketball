@@ -227,7 +227,7 @@ function AppInner() {
     return `${base}-${suffix}`;
   };
 
-  const loadProfile=useCallback(async(token,userId,favoriteClub=null,referralCode=null)=>{
+  const loadProfile=useCallback(async(token,userId,favoriteClub=null,referralCode=null,phone=null)=>{
     try{
       const data=await req(`profiles?id=eq.${userId}&select=*`,{_token:token});
       if(data?.[0]){
@@ -241,7 +241,7 @@ function AppInner() {
         setProfile(p);profileRef.current=p;
       }else{
         const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
-        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,phone:phone||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
         if(referralCode){
@@ -312,11 +312,11 @@ function AppInner() {
     }catch{}
   },[]);
 
-  const handleAuth=async(token,user,refreshToken,referralCode=null)=>{
+  const handleAuth=async(token,user,refreshToken,referralCode=null,phone=null)=>{
     if(refreshToken) localStorage.setItem("mb_auth",JSON.stringify({access_token:token,refresh_token:refreshToken,user}));
     setSession({token,user});
     const favClub=user.user_metadata?.favorite_club||null;
-    await loadProfile(token,user.id,favClub,referralCode);
+    await loadProfile(token,user.id,favClub,referralCode,phone);
     await loadBets(token,user.id);
     const mb=await loadMatchBets(token,user.id);
     await loadLeaderboard(token);
