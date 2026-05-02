@@ -642,7 +642,7 @@ function AppInner() {
       <style>{GLOBAL_CSS}</style>
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
         {page==="home"&&<>
-          <video autoPlay muted loop playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.22 }} src="/videos/bg1_web.mp4" />
+          <video autoPlay muted loop playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.12 }} src="/videos/bg2_web.mp4" />
           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(3,7,18,0.3) 0%, rgba(3,7,18,0.6) 60%, rgba(3,7,18,1) 100%)" }} />
         </>}
         <div style={{ position:"absolute", top:"5%", left:"15%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.03),transparent 65%)", animation:"floatOrb 12s ease-in-out infinite" }} />
