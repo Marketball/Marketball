@@ -208,7 +208,7 @@ function AppInner() {
       const savedOdds=loadSavedOdds();
       const customMarkets=(customs||[]).map(c=>{
         const saved=savedOdds[c.id];
-        return {id:c.id,title:c.title,q_yes:saved?.q_yes??c.q_yes??100,q_no:saved?.q_no??c.q_no??100,total_volume:saved?.total_volume??c.total_volume??0,participants:saved?.participants??c.participants??0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null,market_type:c.market_type||"binary",options:c.options||null,created_at:c.created_at||null};
+        return {id:c.id,title:c.title,title_en:c.title_en||null,q_yes:saved?.q_yes??c.q_yes??100,q_no:saved?.q_no??c.q_no??100,total_volume:saved?.total_volume??c.total_volume??0,participants:saved?.participants??c.participants??0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null,market_type:c.market_type||"binary",options:c.options||null,created_at:c.created_at||null,conditions:c.conditions||null,conditions_en:c.conditions_en||null};
       });
       setMarkets([...customMarkets,...rumorMarkets]);
     }catch{}
