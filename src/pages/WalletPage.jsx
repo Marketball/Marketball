@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { AMM } from "../lib/amm.js";
-import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE, SPIN_SEGMENTS_FREE, SPIN_SEGMENTS_PRO, SPIN_SEGMENTS_ELITE } from "../lib/constants.js";
-import { isPro, fmt, getWeekKey } from "../lib/helpers.js";
+import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE, SPIN_SEGMENTS_FREE, SPIN_SEGMENTS_ELITE } from "../lib/constants.js";
+import { isElite, fmt, getWeekKey } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
 import { useLang } from "../lib/i18n.jsx";
@@ -137,12 +137,10 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
     {/* Roue */}
     {(()=>{
       const sub = profile?.subscription || "starter";
-      const spinSegments = sub==="elite" ? SPIN_SEGMENTS_ELITE : sub==="pro" ? SPIN_SEGMENTS_PRO : SPIN_SEGMENTS_FREE;
+      const spinSegments = sub==="elite" ? SPIN_SEGMENTS_ELITE : SPIN_SEGMENTS_FREE;
       const tierLabel = sub==="elite" ? { text:"ROUE ELITE 👑", color:"#a78bfa", bg:"rgba(167,139,250,0.08)", border:"rgba(167,139,250,0.2)" }
-                      : sub==="pro"   ? { text:"ROUE PRO ⭐", color:"#34d399", bg:"rgba(52,211,153,0.08)", border:"rgba(52,211,153,0.2)" }
                                       : { text:"ROUE GRATUITE", color:"#f59e0b", bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.15)" };
       const tierDesc = sub==="elite" ? "1–3 SC ou 150–300 MC par jour"
-                     : sub==="pro"   ? "1–2 SC ou 100–300 MC par jour"
                                      : "1 SC, 1 Cashout ou 50–200 MC par jour";
       return <div style={{ background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.1)", borderRadius:16, padding:"20px", marginBottom:12 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
@@ -233,8 +231,8 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         const isMarketBet=!b.isMatch&&!!b.market_id;
         const isMatchBet=!!b.isMatch;
         const hasFreeCashout=(profile?.free_cashouts||0)>0;
-        const canCashoutMarket=(isPro(profile)||hasFreeCashout)&&b.status==="pending"&&isMarketBet&&b.side&&b.amount&&b.id;
-        const canCashoutMatch=(isPro(profile)||hasFreeCashout)&&b.status==="pending"&&isMatchBet&&b.id;
+        const canCashoutMarket=(isElite(profile)||hasFreeCashout)&&b.status==="pending"&&isMarketBet&&b.side&&b.amount&&b.id;
+        const canCashoutMatch=(isElite(profile)||hasFreeCashout)&&b.status==="pending"&&isMatchBet&&b.id;
         const market=markets?.find(m=>m.id===b.market_id);
         const cashoutMarketVal=canCashoutMarket&&market?AMM.cashoutValue(market.q_yes,market.q_no,b.amount,b.side):0;
         const cashoutMatchVal=canCashoutMatch?Math.round((b.cost||0)*0.75):0;
@@ -270,7 +268,7 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
           {canCashout&&cashoutVal>0&&<div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(241,245,249,0.05)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>
               {isMarketBet?t("wallet.cashout_market"):t("wallet.cashout_match")}
-              <span style={{ color:"#3b82f6", fontWeight:700, marginLeft:6 }}>{t("wallet.pro_badge")}</span>
+              <span style={{ color:"#f59e0b", fontWeight:700, marginLeft:6 }}>{t("wallet.elite_badge")}</span>
             </div>
             <button className="btn-animated" onClick={()=>setCashoutConfirm({bet:b,value:cashoutVal,isMatch:b.isMatch})}
               style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(59,130,246,0.3)" }}>

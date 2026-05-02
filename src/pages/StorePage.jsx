@@ -40,11 +40,11 @@ export default function StorePage({ coins, sc, profile, onRedeemSC, onSubscribe,
     {/* RECOMPENSES PAR LIGUE */}
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, marginBottom:6 }}>{t("store.rewards_title")}</div>
     <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginBottom:20 }}>{t("store.rewards_sub")}</div>
-    {["starter","pro","elite"].map(planId=>{
+    {["starter","elite"].map(planId=>{
       const planInfo=SUBSCRIPTION_PLANS.find(p=>p.id===planId);
       const items=STORE_ITEMS.filter(r=>r.plan===planId);
       if(items.length===0) return null;
-      const planOrder=["starter","pro","elite"];
+      const planOrder=["starter","elite"];
       const userOrder=planOrder.indexOf(currentSub);
       const planOrderIdx=planOrder.indexOf(planId);
       const accessible=userOrder>=planOrderIdx;

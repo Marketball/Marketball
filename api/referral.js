@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 // SC accordés selon le plan de l'abonné
-const SC_REWARD = { starter: 5, pro: 10, elite: 20 };
+const SC_REWARD = { starter: 5, elite: 20 };
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

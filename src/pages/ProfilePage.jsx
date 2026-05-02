@@ -72,7 +72,7 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
         <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:3 }}>{getMCBoost(sub)} {t("profile.mc_monday")}</div>
       </div>
-      {sub==="starter"&&<div style={{ fontSize:11, color:"#3b82f6", fontWeight:700, cursor:"pointer" }} onClick={()=>onNavigate("subscription")}>{t("profile.go_pro")}</div>}
+      {sub==="starter"&&<div style={{ fontSize:11, color:"#f59e0b", fontWeight:700, cursor:"pointer" }} onClick={()=>onNavigate("subscription")}>{t("profile.go_elite")}</div>}
     </div>
     {/* Club favori */}
     {profile?.favorite_club&&(

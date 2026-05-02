@@ -6,7 +6,7 @@ import { LanguageProvider, useLang } from "./lib/i18n.jsx";
 import { req, authReq, SUPABASE_URL, SUPABASE_KEY } from "./lib/supabase.js";
 import { resolveBet } from "./lib/amm.js";
 import { GLOBAL_CSS, COMPETITIONS, SUBSCRIPTION_PLANS, WEEKLY_MC_LIMIT, MC_TO_SC_RATE } from "./lib/constants.js";
-import { getLevel, getMCBoost, isPro, fmt, getWeekKey, loadSavedOdds, saveOdds, calcLevelUpRewards } from "./lib/helpers.js";
+import { getLevel, getMCBoost, isElite, fmt, getWeekKey, loadSavedOdds, saveOdds, calcLevelUpRewards } from "./lib/helpers.js";
 
 // UI components
 import AnimatedCounter from "./components/ui/AnimatedCounter.jsx";
@@ -548,15 +548,15 @@ function AppInner() {
 
   const handleCashout=async(bet,cashoutValue,isMatchBet=false)=>{
     const hasFree=(profile?.free_cashouts||0)>0;
-    if(!session||(!isPro(profile)&&!hasFree)) return;
+    if(!session||(!isElite(profile)&&!hasFree)) return;
     try{
       const table=isMatchBet?"match_bets":"user_bets";
       await req(`${table}?id=eq.${bet.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({status:"cashed_out"})});
       const newCoins=(profile?.coins||0)+cashoutValue;
       const profileUpdate={coins:newCoins,updated_at:new Date().toISOString()};
-      if(!isPro(profile)&&hasFree) profileUpdate.free_cashouts=Math.max(0,(profile?.free_cashouts||0)-1);
+      if(!isElite(profile)&&hasFree) profileUpdate.free_cashouts=Math.max(0,(profile?.free_cashouts||0)-1);
       await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify(profileUpdate)});
-      const newFree=(!isPro(profile)&&hasFree)?Math.max(0,(profile?.free_cashouts||0)-1):(profile?.free_cashouts||0);
+      const newFree=(!isElite(profile)&&hasFree)?Math.max(0,(profile?.free_cashouts||0)-1):(profile?.free_cashouts||0);
       setProfile(p=>({...p,coins:newCoins,free_cashouts:newFree}));
       profileRef.current={...profileRef.current,coins:newCoins,free_cashouts:newFree};
       if(isMatchBet) setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:"cashed_out"}:b));

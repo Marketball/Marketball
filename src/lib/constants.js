@@ -23,17 +23,17 @@ export const STORE_ITEMS = [
   { id: "s3",  name: "Carte cadeau Amazon 5€",          name_en: "Amazon Gift Card €5",               cost: 50,  emoji: "🛒", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
   { id: "s4",  name: "Carte cadeau Fanatics 5€",        name_en: "Fanatics Gift Card €5",             cost: 50,  emoji: "👟", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "5€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
   { id: "s5",  name: "Pack 3 boosters Topps",           name_en: "3 Topps Booster Packs",             cost: 70,  emoji: "📦", plan: "starter", planLabel: "Free", planColor: "#94a3b8", value: "~7€", description: "3 boosters Topps au choix, livraison sous 10j",                     description_en: "3 Topps boosters of your choice, delivered within 10 days" },
-  // ── TIER 2 — Standard (100-320 SC) ────────────────────────
-  { id: "s6",  name: "Boîte Topps Match Attax",         name_en: "Topps Match Attax Box",             cost: 100, emoji: "🎁", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~10€", description: "18 boosters UCL ou Liga, livraison sous 10j",                      description_en: "18 UCL or Liga boosters, delivered within 10 days" },
-  { id: "s7",  name: "Blaster Box Topps Bundesliga",    name_en: "Topps Bundesliga Blaster Box",      cost: 130, emoji: "🃏", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~13€", description: "Blaster Box Topps Chrome Bundesliga",                               description_en: "Topps Chrome Bundesliga Blaster Box" },
-  { id: "s8",  name: "Carte cadeau Amazon 15€",         name_en: "Amazon Gift Card €15",              cost: 150, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
-  { id: "s9",  name: "Carte cadeau Fanatics 15€",       name_en: "Fanatics Gift Card €15",            cost: 150, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
-  { id: "s10", name: "Blaster Box Topps Premier League",name_en: "Topps Premier League Blaster Box",  cost: 150, emoji: "🏴", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~15€", description: "Blaster Box Topps Chrome Premier League",                          description_en: "Topps Chrome Premier League Blaster Box" },
-  { id: "s11", name: "Hobby Box Topps Ligue 1",         name_en: "Topps Ligue 1 Hobby Box",           cost: 280, emoji: "🇫🇷", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~28€", description: "24 boosters + relics garantis, livraison sous 14j",               description_en: "24 boosters + guaranteed relics, delivered within 14 days" },
-  { id: "s12", name: "Carte cadeau Amazon 30€",         name_en: "Amazon Gift Card €30",              cost: 300, emoji: "🛒", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "30€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
-  { id: "s13", name: "Hobby Box Topps UCL",             name_en: "Topps UCL Hobby Box",               cost: 320, emoji: "🏆", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~32€", description: "Hobby Box Topps UEFA Champions League",                            description_en: "Topps UEFA Champions League Hobby Box" },
-  { id: "s14", name: "Place match tribune",             name_en: "Stadium Stand Ticket",              cost: 450, emoji: "🏟️", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "~45€", description: "Tribune standard, clubs partenaires",                              description_en: "Standard stand, partner clubs" },
-  { id: "s15", name: "Carte cadeau Fanatics 50€",       name_en: "Fanatics Gift Card €50",            cost: 500, emoji: "👟", plan: "pro", planLabel: "Standard", planColor: "#3b82f6", value: "50€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  // ── TIER 2-3 — Premium (100-3000 SC) ─────────────────────
+  { id: "s6",  name: "Boîte Topps Match Attax",         name_en: "Topps Match Attax Box",             cost: 100, emoji: "🎁", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~10€", description: "18 boosters UCL ou Liga, livraison sous 10j",                      description_en: "18 UCL or Liga boosters, delivered within 10 days" },
+  { id: "s7",  name: "Blaster Box Topps Bundesliga",    name_en: "Topps Bundesliga Blaster Box",      cost: 130, emoji: "🃏", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~13€", description: "Blaster Box Topps Chrome Bundesliga",                               description_en: "Topps Chrome Bundesliga Blaster Box" },
+  { id: "s8",  name: "Carte cadeau Amazon 15€",         name_en: "Amazon Gift Card €15",              cost: 150, emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s9",  name: "Carte cadeau Fanatics 15€",       name_en: "Fanatics Gift Card €15",            cost: 150, emoji: "👟", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "15€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s10", name: "Blaster Box Topps Premier League",name_en: "Topps Premier League Blaster Box",  cost: 150, emoji: "🏴", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~15€", description: "Blaster Box Topps Chrome Premier League",                          description_en: "Topps Chrome Premier League Blaster Box" },
+  { id: "s11", name: "Hobby Box Topps Ligue 1",         name_en: "Topps Ligue 1 Hobby Box",           cost: 280, emoji: "🇫🇷", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~28€", description: "24 boosters + relics garantis, livraison sous 14j",               description_en: "24 boosters + guaranteed relics, delivered within 14 days" },
+  { id: "s12", name: "Carte cadeau Amazon 30€",         name_en: "Amazon Gift Card €30",              cost: 300, emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "30€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
+  { id: "s13", name: "Hobby Box Topps UCL",             name_en: "Topps UCL Hobby Box",               cost: 320, emoji: "🏆", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~32€", description: "Hobby Box Topps UEFA Champions League",                            description_en: "Topps UEFA Champions League Hobby Box" },
+  { id: "s14", name: "Place match tribune",             name_en: "Stadium Stand Ticket",              cost: 450, emoji: "🏟️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~45€", description: "Tribune standard, clubs partenaires",                              description_en: "Standard stand, partner clubs" },
+  { id: "s15", name: "Carte cadeau Fanatics 50€",       name_en: "Fanatics Gift Card €50",            cost: 500, emoji: "👟", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "50€",  description: "Code envoyé par email sous 48h",                                    description_en: "Code sent by email within 48h" },
   // ── TIER 3-5 — Premium (700+ SC) ──────────────────────────
   { id: "s16", name: "Carte Topps autographe Ligue 1",  name_en: "Topps Ligue 1 Autograph Card",      cost: 700,  emoji: "✍️", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "~70€",  description: "Autographe joueur Ligue 1 certifié, livraison assurée",          description_en: "Certified Ligue 1 player autograph, insured delivery" },
   { id: "s17", name: "Carte cadeau Amazon 75€",         name_en: "Amazon Gift Card €75",              cost: 750,  emoji: "🛒", plan: "elite", planLabel: "Premium", planColor: "#f59e0b", value: "75€",   description: "Code envoyé par email sous 48h",                                  description_en: "Code sent by email within 48h" },
@@ -64,19 +64,6 @@ export const SUBSCRIPTION_PLANS = [
     noFeatures: ["sub.nofeat.cashout","sub.nofeat.exclusive_markets","sub.nofeat.priority_support"],
   },
   {
-    id: "pro",
-    label: "Ligue Standard",
-    price: 5,
-    priceLabel: "5€/mois",
-    color: "#3b82f6",
-    emoji: "⚡",
-    mcBoost: 3000,
-    bonusMC: 9000,
-    priceId: "price_1TOJWuIB3HPK0xH5DzsgINcE",
-    features: ["sub.feat.mc_3000_monday","sub.feat.mc_9000_signup","sub.feat.cashout_option","sub.feat.rewards_t2","sub.feat.no_ads"],
-    popular: true,
-  },
-  {
     id: "elite",
     label: "Ligue Premium",
     price: 15,
@@ -100,14 +87,6 @@ export const SPIN_SEGMENTS_FREE = [
   { label: "200 MC",     value: 200, type: "mc",    color: "#f59e0b" },
   { label: "100 MC",     value: 100, type: "mc",    color: "#8b5cf6" },
   { label: "50 MC",      value: 50,  type: "mc",    color: "#3b82f6" },
-];
-
-export const SPIN_SEGMENTS_PRO = [
-  { label: "1 SC",   value: 1,   type: "sc", color: "#10b981" },
-  { label: "2 SC",   value: 2,   type: "sc", color: "#34d399" },
-  { label: "100 MC", value: 100, type: "mc", color: "#8b5cf6" },
-  { label: "200 MC", value: 200, type: "mc", color: "#f59e0b" },
-  { label: "300 MC", value: 300, type: "mc", color: "#fbbf24" },
 ];
 
 export const SPIN_SEGMENTS_ELITE = [

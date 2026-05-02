@@ -15,7 +15,7 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
       {/* Barre progression */}
       <div style={{ marginTop:20, position:"relative" }}>
         <div style={{ height:4, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden", margin:"0 20px" }}>
-          <div style={{ width:currentSub==="starter"?"16%":currentSub==="pro"?"50%":"100%", height:"100%", background:`linear-gradient(90deg,#94a3b8,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1.2s ease", boxShadow:`0 0 10px ${getSubColor(currentSub)}` }} />
+          <div style={{ width:currentSub==="starter"?"16%":"100%", height:"100%", background:`linear-gradient(90deg,#94a3b8,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1.2s ease", boxShadow:`0 0 10px ${getSubColor(currentSub)}` }} />
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, padding:"0 16px" }}>
           {SUBSCRIPTION_PLANS.map(p=>(
@@ -40,10 +40,10 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
         </div>
       </div>
       <div style={{ height:3, borderRadius:99, background:"rgba(241,245,249,0.06)", overflow:"hidden" }}>
-        <div style={{ width:currentSub==="starter"?"33%":currentSub==="pro"?"66%":"100%", height:"100%", background:`linear-gradient(90deg,${getSubColor(currentSub)}88,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1s ease", boxShadow:`0 0 8px ${getSubColor(currentSub)}` }} />
+        <div style={{ width:currentSub==="starter"?"20%":"100%", height:"100%", background:`linear-gradient(90deg,${getSubColor(currentSub)}88,${getSubColor(currentSub)})`, borderRadius:99, transition:"width 1s ease", boxShadow:`0 0 8px ${getSubColor(currentSub)}` }} />
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
-        {["Starter","Pro","Elite"].map((l,i)=><span key={l} style={{ fontSize:9, fontWeight:700, color:["#94a3b8","#3b82f6","#f59e0b"][i], opacity:["starter","pro","elite"][i]===currentSub?1:0.35 }}>{l}</span>)}
+        {["Free","Elite"].map((l,i)=><span key={l} style={{ fontSize:9, fontWeight:700, color:["#94a3b8","#f59e0b"][i], opacity:["starter","elite"][i]===currentSub?1:0.35 }}>{l}</span>)}
       </div>
     </div>
     {/* Comparatif */}
@@ -89,7 +89,6 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
               <div style={{ display:"flex", gap:8 }}>
                 <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>{t("sub.current_label")}</div>
                 {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("sub.cancel_sub")}</button>}
-                {plan.id==="pro"&&<button onClick={()=>onSubscribe("elite")} style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", boxShadow:"0 6px 20px rgba(245,158,11,0.3)" }}>{t("sub.upgrade_elite")}</button>}
               </div>
             ):(
               <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"14px 0", borderRadius:13, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.04)":`linear-gradient(135deg,${color},${color}aa)`, color:plan.id==="starter"?"rgba(241,245,249,0.25)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 10px 30px ${color}30`:"none", letterSpacing:plan.id!=="starter"?0.5:0, transition:"all 0.2s" }}>

@@ -1,12 +1,12 @@
 import { BADGES, XP_PER_LEVEL, CLUB_COLORS, COMP_INFO } from "./constants.js";
 
 export const getSubPlan = (profile) => profile?.subscription || "starter";
-export const getSubColor = (sub) => ({ starter:"#94a3b8", pro:"#3b82f6", elite:"#f59e0b" })[sub] || "#94a3b8";
-export const getSubEmoji = (sub) => ({ starter:"🌱", pro:"⚡", elite:"👑" })[sub] || "🌱";
-export const getSubLabel = (sub) => ({ starter:"Free", pro:"Standard", elite:"Premium" })[sub] || "Free";
-export const getMCBoost = (sub) => ({ starter:1000, pro:3000, elite:8000 })[sub] || 1000;
+export const getSubColor = (sub) => ({ starter:"#94a3b8", elite:"#f59e0b" })[sub] || "#94a3b8";
+export const getSubEmoji = (sub) => ({ starter:"🌱", elite:"👑" })[sub] || "🌱";
+export const getSubLabel = (sub) => ({ starter:"Free", elite:"Premium" })[sub] || "Free";
+export const getMCBoost = (sub) => ({ starter:1000, elite:8000 })[sub] || 1000;
 export const isElite = (profile) => profile?.subscription === "elite";
-export const isPro = (profile) => profile?.subscription === "pro" || profile?.subscription === "elite";
+export const isPro = (profile) => profile?.subscription === "elite";
 export const getBadge = (level) => BADGES.find(b => level >= b.minLevel && level <= b.maxLevel) || BADGES[0];
 
 // XP cumulé nécessaire pour atteindre le niveau N
