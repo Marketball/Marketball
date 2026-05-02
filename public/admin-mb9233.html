@@ -207,8 +207,12 @@
         <input class="form-inp" id="mSource" placeholder="Ex: TMZ, L'Equipe, Twitter..." value="MarketBall" />
       </div>
       <div class="form-group full">
-        <label>CONDITIONS <span style="font-weight:400;opacity:0.6">(optionnel — règles de validation du marché)</span></label>
+        <label>🇫🇷 CONDITIONS <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
         <textarea class="form-inp" id="mConditions" rows="3" style="resize:vertical;line-height:1.5" placeholder="Ex: Le marché sera résolu OUI si le transfert est annoncé officiellement avant la date de clôture..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>🇬🇧 CONDITIONS (EN) <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
+        <textarea class="form-inp" id="mConditionsEn" rows="3" style="resize:vertical;line-height:1.5" placeholder="Ex: The market will resolve YES if the transfer is officially announced before the closing date..."></textarea>
       </div>
 
       <!-- Champs binaires (OUI/NON) -->
@@ -309,8 +313,12 @@
       <input class="form-inp" id="editSource" />
     </div>
     <div class="form-group" style="margin-bottom:14px">
-      <label>CONDITIONS <span style="font-weight:400;opacity:0.6">(optionnel — règles de validation du marché)</span></label>
+      <label>🇫🇷 CONDITIONS <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
       <textarea class="form-inp" id="editConditions" rows="3" style="resize:vertical;line-height:1.5" placeholder="Ex: Le marché sera résolu OUI si le transfert est annoncé officiellement avant la date de clôture..."></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>🇬🇧 CONDITIONS (EN) <span style="font-weight:400;opacity:0.6">(optionnel)</span></label>
+      <textarea class="form-inp" id="editConditionsEn" rows="3" style="resize:vertical;line-height:1.5" placeholder="Ex: The market will resolve YES if the transfer is officially announced before the closing date..."></textarea>
     </div>
 
     <!-- Champs binaires dans l'éditeur -->
@@ -647,6 +655,7 @@ function editProposed(id, title, category, titleEn) {
   document.getElementById("editCategory").value = category;
   document.getElementById("editSource").value = "MarketBall — Elite";
   document.getElementById("editConditions").value = "";
+  document.getElementById("editConditionsEn").value = "";
   document.getElementById("editProb").value = "50";
   document.getElementById("editNoDateCheck").checked = false;
   const d = new Date(Date.now() + 14 * 86400000);
@@ -667,6 +676,7 @@ async function saveEdit() {
   const noDate = document.getElementById("editNoDateCheck").checked;
   const closes = document.getElementById("editCloses").value;
   const conditions = document.getElementById("editConditions").value.trim() || null;
+  const conditions_en = document.getElementById("editConditionsEn").value.trim() || null;
   if (!title) { showToast("Titre obligatoire", "error"); return; }
 
   let patch;
@@ -681,11 +691,11 @@ async function saveEdit() {
       if (label) options.push({ label, pct, odds });
     }
     if (options.length < 2) { showToast("Minimum 2 options requises", "error"); return; }
-    patch = { title, title_en: titleEn, category, source, conditions, options, closes_at: noDate ? null : new Date(closes).toISOString() };
+    patch = { title, title_en: titleEn, category, source, conditions, conditions_en, options, closes_at: noDate ? null : new Date(closes).toISOString() };
   } else {
     const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("editProb").value) || 50));
     const q_yes = Math.round(100 * prob / (100 - prob));
-    patch = { title, title_en: titleEn, category, source, conditions, q_yes, q_no: 100, closes_at: noDate ? null : new Date(closes).toISOString() };
+    patch = { title, title_en: titleEn, category, source, conditions, conditions_en, q_yes, q_no: 100, closes_at: noDate ? null : new Date(closes).toISOString() };
   }
 
   if (editProposedId) {
@@ -753,6 +763,7 @@ async function createMarket() {
   const noDate = document.getElementById("noDateCheck").checked;
   const closes = document.getElementById("mCloses").value;
   const conditions = document.getElementById("mConditions").value.trim() || null;
+  const conditions_en = document.getElementById("mConditionsEn").value.trim() || null;
 
   if (!title) { showToast("Le titre est obligatoire !", "error"); return; }
   if (!noDate && !closes) { showToast("Choisis une date de clôture ou coche 'Sans date limite'", "error"); return; }
@@ -762,7 +773,7 @@ async function createMarket() {
   if (currentMarketType === "binary") {
     const prob = Math.max(5, Math.min(95, parseInt(document.getElementById("mProb").value) || 50));
     const q_yes = Math.round(100 * prob / (100 - prob));
-    marketPayload = { title, title_en: titleEn, category, source, conditions, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "binary" };
+    marketPayload = { title, title_en: titleEn, category, source, conditions, conditions_en, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "binary" };
   } else {
     const optionDivs = document.getElementById("optionsList").children;
     const options = [];
@@ -774,7 +785,7 @@ async function createMarket() {
       if (label) options.push({ label, pct, odds });
     }
     if (options.length < 2) { showToast("Au moins 2 options avec un nom sont requises", "error"); return; }
-    marketPayload = { title, title_en: titleEn, category, source, conditions, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
+    marketPayload = { title, title_en: titleEn, category, source, conditions, conditions_en, closes_at: noDate ? null : new Date(closes).toISOString(), q_yes: 100, q_no: 100, total_volume: 0, participants: 0, status: "open", created_by: "admin", market_type: "multi", options };
   }
 
   const btn = document.getElementById("submitBtn");
@@ -787,6 +798,7 @@ async function createMarket() {
     document.getElementById("mTitleEn").value = "";
     document.getElementById("mSource").value = "MarketBall";
     document.getElementById("mConditions").value = "";
+    document.getElementById("mConditionsEn").value = "";
     document.getElementById("mProb").value = "50";
     document.getElementById("mCategory").value = "Rumeurs";
     document.getElementById("noDateCheck").checked = false;
@@ -863,6 +875,7 @@ function openEditMarket(id) {
   document.getElementById("editCategory").value = market.category || "Rumeurs";
   document.getElementById("editSource").value = market.source || "MarketBall";
   document.getElementById("editConditions").value = market.conditions || "";
+  document.getElementById("editConditionsEn").value = market.conditions_en || "";
 
   // Toggle binary/multi fields
   document.getElementById("editBinaryFields").style.display = isMulti ? "none" : "";

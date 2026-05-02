@@ -282,15 +282,17 @@ export default function MarketDetailPage({ market, onBack, onBet, session, profi
       {tab==="comments"&&<CommentsSection refId={market.id} refType="market" session={session} profile={profile} />}
 
       {/* Conditions */}
-      {market.conditions&&(
-        <div style={{ marginTop:30, background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.15)", borderRadius:14, padding:"18px 20px" }}>
+      {(market.conditions||market.conditions_en)&&(()=>{
+        const text = lang==="en"&&market.conditions_en ? market.conditions_en : market.conditions;
+        if (!text) return null;
+        return <div style={{ marginTop:30, background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.15)", borderRadius:14, padding:"18px 20px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
             <span style={{ fontSize:16 }}>📋</span>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#f59e0b" }}>CONDITIONS DE RÉSOLUTION</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#f59e0b" }}>{lang==="en"?"RESOLUTION CONDITIONS":"CONDITIONS DE RÉSOLUTION"}</div>
           </div>
-          <div style={{ fontSize:13, color:"rgba(241,245,249,0.6)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>{market.conditions}</div>
-        </div>
-      )}
+          <div style={{ fontSize:13, color:"rgba(241,245,249,0.6)", lineHeight:1.75, whiteSpace:"pre-wrap" }}>{text}</div>
+        </div>;
+      })()}
 
       {/* Actions */}
       <div style={{ display:"flex", gap:10, marginTop:26 }}>
