@@ -766,6 +766,7 @@ function AppInner() {
         </div>
         {/* Mobile : coins compacts */}
         <div className="show-mobile" style={{ display:"none", gap:5, alignItems:"center" }}>
+          <LangToggle />
           <div onClick={()=>navigateTo("wallet")} style={{ background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.18)", borderRadius:7, padding:"3px 9px", cursor:"pointer" }}>
             🪙 <AnimatedCounter value={coins} color="#fbbf24" fontSize={12} />
           </div>
