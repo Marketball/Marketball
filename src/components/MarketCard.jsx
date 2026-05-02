@@ -7,13 +7,11 @@ import { catColor, timeLeft, fmt, mTitle } from "../lib/helpers.js";
 import { useLang } from "../lib/i18n.jsx";
 import ProbBar from "./ui/ProbBar.jsx";
 import ShareMenu from "./ShareMenu.jsx";
-import MarketStatsModal from "./MarketStatsModal.jsx";
 import ChallengeModal from "./ChallengeModal.jsx";
 
-export default function MarketCard({ market, onBet, isNew, isTrending, session, profile, showToast }) {
+export default function MarketCard({ market, onBet, onViewDetail, isNew, isTrending, session, profile, showToast }) {
   const [hover, setHover] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   const [showChallenge, setShowChallenge] = useState(false);
   const cardRef = useRef(null);
   const yesNumRef = useRef(null);
@@ -54,7 +52,7 @@ export default function MarketCard({ market, onBet, isNew, isTrending, session, 
       className="card-hover"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
-      onClick={() => { if (showShare) setShowShare(false); else setShowStats(true); }}
+      onClick={() => { if (showShare) setShowShare(false); else onViewDetail && onViewDetail(market); }}
       style={{
         background: hover ? "rgba(241,245,249,0.045)" : "rgba(241,245,249,0.02)",
         border: `1px solid ${hover ? `${accentColor}28` : "rgba(241,245,249,0.07)"}`,
@@ -138,7 +136,7 @@ export default function MarketCard({ market, onBet, isNew, isTrending, session, 
       <div style={{ display: "flex", gap: 5, marginTop: 12, position: "relative" }}>
         <button className="btn-animated" onClick={e => { e.stopPropagation(); setShowShare(!showShare); }}
           style={{ padding: "9px 11px", borderRadius: 6, border: "1px solid rgba(241,245,249,0.08)", background: "transparent", color: "rgba(241,245,249,0.35)", fontSize: 13, cursor: "pointer" }}>↗</button>
-        <button className="btn-animated" onClick={e => { e.stopPropagation(); setShowStats(true); }}
+        <button className="btn-animated" onClick={e => { e.stopPropagation(); onViewDetail && onViewDetail(market); }}
           style={{ padding: "9px 11px", borderRadius: 6, border: "1px solid rgba(241,245,249,0.08)", background: "transparent", color: "rgba(241,245,249,0.35)", fontSize: 13, cursor: "pointer" }}>📊</button>
         {session && <button className="btn-animated" onClick={e => { e.stopPropagation(); setShowChallenge(true); }}
           style={{ padding: "9px 11px", borderRadius: 6, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.04)", color: "#f59e0b", fontSize: 13, cursor: "pointer" }}>⚔️</button>}
@@ -147,7 +145,6 @@ export default function MarketCard({ market, onBet, isNew, isTrending, session, 
         {showShare && <ShareMenu market={market} onClose={() => setShowShare(false)} />}
       </div>
     </div>
-    {showStats && <MarketStatsModal market={market} onClose={() => setShowStats(false)} onBet={onBet} session={session} profile={profile} />}
     {showChallenge && <ChallengeModal market={market} profile={profile} session={session} onClose={() => setShowChallenge(false)} showToast={showToast || ((m) => alert(m))} />}
   </>;
 }

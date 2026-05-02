@@ -11,10 +11,9 @@ import MCBadge from "../components/ui/MCBadge.jsx";
 import SCBadge from "../components/ui/SCBadge.jsx";
 import MatchCard from "../components/MatchCard.jsx";
 import MarketCard from "../components/MarketCard.jsx";
-import MarketStatsModal from "../components/MarketStatsModal.jsx";
 import ChallengeModal from "../components/ChallengeModal.jsx";
 
-export default function HomePage({ markets, coins, sc, username, onBet, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast }) {
+export default function HomePage({ markets, coins, sc, username, onBet, onViewDetail, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
@@ -23,7 +22,6 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
   const myRank=leaderboard?.findIndex(p=>p.id===profile?.id);
   const rankDisplay=myRank>=0?myRank+1:null;
   const [pulse,setPulse]=useState(false);
-  const [showTopStats,setShowTopStats]=useState(false);
   const [showTopChallenge,setShowTopChallenge]=useState(false);
   const { t, lang } = useLang();
   const contentRef = useRef(null);
@@ -80,12 +78,12 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     {topMarket&&<div style={{ position:"relative", background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.06))", border:"1px solid rgba(16,185,129,0.2)", borderRadius:20, padding:"18px 20px", marginBottom:20, overflow:"hidden", animation:pulse?"market-pulse 2s ease":"none", transition:"all 0.3s" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#10b981,#3b82f6,#10b981)", backgroundSize:"200% 100%", animation:"shimmer 2s linear infinite" }} />
       <div style={{ position:"absolute", top:-30, right:-30, width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%)", pointerEvents:"none" }} />
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, cursor:"pointer" }} onClick={()=>onViewDetail && onViewDetail(topMarket)}>
         <div style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", boxShadow:"0 0 8px #10b981", animation:"pulse 1s infinite" }} />
         <span style={{ fontSize:10, fontWeight:800, color:"#10b981", letterSpacing:2 }}>{t("home.market_moment")}</span>
         <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(241,245,249,0.4)" }}>🔥 {fmt(topMarket.total_volume)} {t("home.staked")}</span>
       </div>
-      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4, cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>{mTitle(topMarket,lang)}</div>
+      <div style={{ fontWeight:800, fontSize:15, color:"#f1f5f9", marginBottom:12, lineHeight:1.4, cursor:"pointer" }} onClick={()=>onViewDetail && onViewDetail(topMarket)}>{mTitle(topMarket,lang)}</div>
       <div style={{ display:"flex", gap:8, marginBottom:10 }}>
         {[{s:t("common.yes"),side:"yes",i:0},{s:t("common.no"),side:"no",i:1}].map(({s,side,i})=>{
           const pct=i===0?Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100):100-Math.round(AMM.probYes(topMarket.q_yes,topMarket.q_no)*100);
@@ -95,17 +93,16 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
             <div style={{ fontSize:10, color:c, fontWeight:700, opacity:0.7 }}>{s} →</div>
           </button>;
         })}
-        <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer" }} onClick={()=>setShowTopStats(true)}>
+        <div style={{ flex:1, background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:10, padding:"8px 10px", textAlign:"center", cursor:"pointer" }} onClick={()=>onViewDetail && onViewDetail(topMarket)}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#f1f5f9", letterSpacing:1 }}>{topMarket.participants||0}</div>
           <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", fontWeight:700 }}>{t("home.players")}</div>
         </div>
       </div>
       <div style={{ display:"flex", gap:6 }}>
-        <button className="btn-animated" onClick={()=>setShowTopStats(true)} style={{ flex:1, padding:"8px 0", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("home.stats_bettors")}</button>
+        <button className="btn-animated" onClick={()=>onViewDetail && onViewDetail(topMarket)} style={{ flex:1, padding:"8px 0", borderRadius:10, border:"1px solid rgba(16,185,129,0.2)", background:"transparent", color:"rgba(241,245,249,0.4)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("home.stats_bettors")}</button>
         {session&&<button className="btn-animated" onClick={()=>setShowTopChallenge(true)} style={{ padding:"8px 14px", borderRadius:10, border:"1px solid rgba(245,158,11,0.2)", background:"rgba(245,158,11,0.04)", color:"#f59e0b", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("home.challenge_btn")}</button>}
       </div>
     </div>}
-    {showTopStats&&topMarket&&<MarketStatsModal market={topMarket} onClose={()=>setShowTopStats(false)} onBet={onBet} session={session} profile={profile} />}
     {showTopChallenge&&topMarket&&session&&<ChallengeModal market={topMarket} profile={profile} session={session} onClose={()=>setShowTopChallenge(false)} showToast={showToast||((m)=>alert(m))} />}
 
     {/* EN DIRECT */}
@@ -121,7 +118,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onNaviga
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
       <span style={{ width:3, height:18, background:"#3b82f6", borderRadius:99, display:"inline-block" }} />{t("home.featured_markets")}
     </div>
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,6).map(m=><MarketCard key={m.id} market={m} onBet={onBet} session={session} profile={profile} />)}</div>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:11 }}>{markets.slice(0,6).map(m=><MarketCard key={m.id} market={m} onBet={onBet} onViewDetail={onViewDetail} session={session} profile={profile} />)}</div>
     <button className="btn-animated" onClick={()=>onNavigate("markets")} style={{ width:"100%", marginTop:14, marginBottom:26, padding:"11px 0", borderRadius:12, border:"1px solid rgba(241,245,249,0.07)", background:"transparent", color:"rgba(241,245,249,0.35)", fontWeight:700, cursor:"pointer", fontSize:13 }}>{t("home.see_all_markets")}</button>
 
     {/* MATCHS À VENIR */}

@@ -25,6 +25,7 @@ import MatchBetModal from "./components/MatchBetModal.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import MatchesPage from "./pages/MatchesPage.jsx";
 import MarketsPage from "./pages/MarketsPage.jsx";
+import MarketDetailPage from "./pages/MarketDetailPage.jsx";
 import WalletPage from "./pages/WalletPage.jsx";
 import LeaderboardPage from "./pages/LeaderboardPage.jsx";
 import StorePage from "./pages/StorePage.jsx";
@@ -49,6 +50,7 @@ function AppInner() {
   const [profile,setProfile]=useState(null);
   const [page,setPage]=useState("home");
   const navigateTo=(p)=>{setPage(p);if(p==="community")setPendingFriendCount(0);};
+  const viewMarketDetail=(market)=>{setSelectedMarket(market);navigateTo("market");};
   const pageGuestRef=useRef(null);
   const pageAuthRef=useRef(null);
   useEffect(()=>{
@@ -63,6 +65,7 @@ function AppInner() {
   const [matchBets,setMatchBets]=useState([]);
   // Refs pour stocker les intervals et pouvoir les nettoyer au logout
   const intervalsRef=useRef([]);
+  const [selectedMarket,setSelectedMarket]=useState(null);
   const [betModal,setBetModal]=useState(null);
   const [betInitialSide,setBetInitialSide]=useState("yes");
   const [matchBetModal,setMatchBetModal]=useState(null);
@@ -686,9 +689,10 @@ function AppInner() {
       </div>
       {/* Contenu public */}
       <div key={page} ref={pageGuestRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
-        {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
+        {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
         {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
-        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} />}
+        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} profile={null} session={null} showToast={showToast} />}
+        {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setShowAuthModal(true);}} session={null} profile={null} />}
         {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard} username="" onViewProfile={()=>setShowAuthModal(true)} />}
         {page==="community"&&<CommunityPage session={null} profile={null} showToast={showToast} onViewProfile={()=>setShowAuthModal(true)} />}
         {(page==="wallet"||page==="store"||page==="subscription"||page==="profile"||page==="howto")&&(
@@ -786,9 +790,10 @@ function AppInner() {
     </div>
 
     <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
-      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
+      {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} profile={profile} session={session} showToast={showToast} />}
+      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} profile={profile} session={session} showToast={showToast} />}
+      {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} session={session} profile={profile} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
       {page==="leaderboard"&&publicProfileUser&&<PublicProfilePage username={publicProfileUser} onBack={()=>setPublicProfileUser(null)} leaderboard={leaderboard} session={session} profile={profile} showToast={showToast} />}
