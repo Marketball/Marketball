@@ -470,7 +470,9 @@ async function sbReq(path, opts = {}) {
     },
   });
   const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+  return data;
 }
 
 function doLogin() {
