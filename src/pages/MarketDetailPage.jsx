@@ -80,8 +80,9 @@ function MiniDonut({ entries }) {
   );
 }
 
-export default function MarketDetailPage({ market, onBack, onBet, session, profile }) {
+export default function MarketDetailPage({ market: marketProp, onBack, onBet, session, profile }) {
   const { lang } = useLang();
+  const [market, setMarket] = useState(marketProp);
   const [bets, setBets] = useState(null);
   const [tab, setTab] = useState("repartition");
   const isMulti = market.market_type === "multi";
@@ -89,11 +90,14 @@ export default function MarketDetailPage({ market, onBack, onBet, session, profi
   const cc = catColor(market.category);
 
   useEffect(() => {
+    req(`custom_markets?id=eq.${marketProp.id}&select=*`)
+      .then(d => { if (d?.[0]) setMarket(d[0]); })
+      .catch(() => {});
     req(
-      `user_bets?market_id=eq.${market.id}&select=side,cost,status,username,amount,created_at&order=created_at.asc&limit=500`,
+      `user_bets?market_id=eq.${marketProp.id}&select=side,cost,status,username,amount,created_at&order=created_at.asc&limit=500`,
       session ? { _token: session.token } : undefined
     ).then(d => setBets(d||[])).catch(()=>setBets([]));
-  }, [market.id]);
+  }, [marketProp.id]);
 
   const distribution = {};
   (bets||[]).forEach(b => {
