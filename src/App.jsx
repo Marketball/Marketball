@@ -264,6 +264,11 @@ function AppInner() {
   },[]);
 
   useEffect(()=>{loadMarkets();loadMatches();},[]);
+  useEffect(()=>{
+    const onVisible=()=>{ if(!document.hidden) loadMarkets(); };
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>document.removeEventListener("visibilitychange",onVisible);
+  },[loadMarkets]);
 
   const handleDailyStreak=async(token,userId)=>{
     try{
