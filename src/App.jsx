@@ -80,6 +80,14 @@ function AppInner() {
   const profileRef=useRef(null);
   const [googlePendingUser,setGooglePendingUser]=useState(null);
   const [googleUsername,setGoogleUsername]=useState("");
+  const [googleStep,setGoogleStep]=useState("username"); // "username" | "phone"
+  const [googlePhone,setGooglePhone]=useState("");
+  const [googlePhoneError,setGooglePhoneError]=useState("");
+  const [googlePhoneLoading,setGooglePhoneLoading]=useState(false);
+  const [showPhoneRequired,setShowPhoneRequired]=useState(false);
+  const [phoneRequiredValue,setPhoneRequiredValue]=useState("");
+  const [phoneRequiredError,setPhoneRequiredError]=useState("");
+  const [phoneRequiredLoading,setPhoneRequiredLoading]=useState(false);
 
   const showToast=(msg,type="success")=>{setToast({msg,type});if(type==="win")setShowConfetti(true);};
 
@@ -242,11 +250,13 @@ function AppInner() {
           p={...p,referral_code:refCode,referral_sc_earned:0};
         }
         setProfile(p);profileRef.current=p;
+        if(!p.phone) setShowPhoneRequired(true);
       }else{
         const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
         const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,phone:phone||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
+        if(!phone) setShowPhoneRequired(true);
         if(referralCode){
           try{await fetch("/api/referral",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode,newUserId:userId})});}catch{}
         }
@@ -375,13 +385,43 @@ function AppInner() {
       .catch(()=>{});
   },[]);
 
-  const finishGoogleSignup=async(username)=>{
+  const handleGooglePhoneStep=async()=>{
+    const clean=googlePhone.trim().replace(/\s+/g,"").replace(/-/g,"");
+    if(!clean||clean.length<8){setGooglePhoneError("Numéro invalide (min. 8 chiffres)");return;}
+    setGooglePhoneLoading(true);setGooglePhoneError("");
+    try{
+      const pr=await fetch("/api/check-phone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:clean})});
+      const pd=await pr.json();
+      if(pd.exists){setGooglePhoneError("Ce numéro est déjà associé à un compte MarketBall");setGooglePhoneLoading(false);return;}
+    }catch{}
+    // Créer le profil avec téléphone
     const{token,user,refreshToken}=googlePendingUser;
-    setGooglePendingUser(null);setGoogleUsername("");
-    const refCode=generateReferralCode(username);
-    const np={id:user.id,username,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:null,referral_code:refCode,referral_sc_earned:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    setGooglePendingUser(null);setGoogleUsername("");setGooglePhone("");setGoogleStep("username");
+    const refCode=generateReferralCode(googleUsername.trim());
+    const np={id:user.id,username:googleUsername.trim(),coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:null,referral_code:refCode,referral_sc_earned:0,phone:clean,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
     try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
-    await handleAuth(token,user,refreshToken);
+    await handleAuth(token,user,refreshToken,null,clean);
+    setGooglePhoneLoading(false);
+  };
+
+  const finishGoogleSignup=async(username)=>{
+    // Passe à l'étape téléphone (le profil sera créé après vérification)
+    setGoogleStep("phone");
+  };
+
+  const savePhoneRequired=async()=>{
+    const clean=phoneRequiredValue.trim().replace(/\s+/g,"").replace(/-/g,"");
+    if(!clean||clean.length<8){setPhoneRequiredError("Numéro invalide (min. 8 chiffres)");return;}
+    setPhoneRequiredLoading(true);setPhoneRequiredError("");
+    try{
+      const pr=await fetch("/api/check-phone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:clean})});
+      const pd=await pr.json();
+      if(pd.exists){setPhoneRequiredError("Ce numéro est déjà associé à un compte MarketBall");setPhoneRequiredLoading(false);return;}
+      await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({phone:clean,updated_at:new Date().toISOString()})});
+      setProfile(p=>({...p,phone:clean}));
+      setShowPhoneRequired(false);
+    }catch(e){setPhoneRequiredError("Erreur lors de la sauvegarde");}
+    setPhoneRequiredLoading(false);
   };
 
   // Restauration automatique de session au chargement de la page
@@ -613,25 +653,80 @@ function AppInner() {
     <div style={{ minHeight:"100vh", background:"#030712", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <style>{GLOBAL_CSS}</style>
       <div style={{ width:"100%", maxWidth:420, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.07)", borderRadius:22, padding:"36px 28px", textAlign:"center", boxShadow:"0 40px 80px rgba(0,0,0,0.4)" }}>
-        <div style={{ fontSize:44, marginBottom:16 }}>🎉</div>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:3, marginBottom:6 }}>BIENVENUE !</div>
-        <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28, lineHeight:1.6 }}>Compte Google connecté.<br/>Choisis ton pseudo MarketBall.</div>
-        <input
-          value={googleUsername}
-          onChange={e=>setGoogleUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,"").slice(0,20))}
-          onKeyDown={e=>e.key==="Enter"&&googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())}
-          placeholder="MonPseudo"
-          autoFocus
-          style={{ width:"100%", padding:"14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:12, color:"#f1f5f9", fontSize:18, outline:"none", boxSizing:"border-box", marginBottom:10, textAlign:"center", fontFamily:"'DM Sans',sans-serif", letterSpacing:1 }}
-        />
-        <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginBottom:20 }}>Lettres, chiffres, _ · 3 à 20 caractères</div>
-        <button onClick={()=>googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())} disabled={googleUsername.trim().length<3}
-          style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:googleUsername.trim().length>=3?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.05)", color:googleUsername.trim().length>=3?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:googleUsername.trim().length>=3?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:googleUsername.trim().length>=3?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
-          CONTINUER →
-        </button>
-        <div style={{ marginTop:16, fontSize:13, color:"rgba(241,245,249,0.3)" }}>
-          Tu recevras <span style={{ color:"#fbbf24", fontWeight:700 }}>3 000 🪙 MC</span> gratuits !
+        {/* Étape 1 : pseudo */}
+        {googleStep==="username"&&<>
+          <div style={{ fontSize:44, marginBottom:16 }}>🎉</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:3, marginBottom:6 }}>BIENVENUE !</div>
+          <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:28, lineHeight:1.6 }}>Compte Google connecté.<br/>Choisis ton pseudo MarketBall.</div>
+          <input
+            value={googleUsername}
+            onChange={e=>setGoogleUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,"").slice(0,20))}
+            onKeyDown={e=>e.key==="Enter"&&googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())}
+            placeholder="MonPseudo"
+            autoFocus
+            style={{ width:"100%", padding:"14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.1)", borderRadius:12, color:"#f1f5f9", fontSize:18, outline:"none", boxSizing:"border-box", marginBottom:10, textAlign:"center", fontFamily:"'DM Sans',sans-serif", letterSpacing:1 }}
+          />
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)", marginBottom:20 }}>Lettres, chiffres, _ · 3 à 20 caractères</div>
+          <button onClick={()=>googleUsername.trim().length>=3&&finishGoogleSignup(googleUsername.trim())} disabled={googleUsername.trim().length<3}
+            style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:googleUsername.trim().length>=3?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.05)", color:googleUsername.trim().length>=3?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:googleUsername.trim().length>=3?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:googleUsername.trim().length>=3?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
+            CONTINUER →
+          </button>
+          <div style={{ marginTop:16, fontSize:13, color:"rgba(241,245,249,0.3)" }}>
+            Tu recevras <span style={{ color:"#fbbf24", fontWeight:700 }}>3 000 🪙 MC</span> gratuits !
+          </div>
+        </>}
+        {/* Étape 2 : téléphone */}
+        {googleStep==="phone"&&<>
+          <div style={{ fontSize:44, marginBottom:16 }}>📱</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:3, marginBottom:6 }}>TON NUMÉRO</div>
+          <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:8, lineHeight:1.6 }}>Un numéro de téléphone unique est requis.<br/>1 compte par numéro — anti-fraude.</div>
+          <div style={{ fontSize:11, color:"rgba(16,185,129,0.6)", marginBottom:24 }}>Pseudo choisi : <strong style={{ color:"#10b981" }}>{googleUsername}</strong></div>
+          <input
+            type="tel"
+            value={googlePhone}
+            onChange={e=>{ setGooglePhone(e.target.value); setGooglePhoneError(""); }}
+            onKeyDown={e=>e.key==="Enter"&&!googlePhoneLoading&&handleGooglePhoneStep()}
+            placeholder="+33 6 12 34 56 78"
+            autoFocus
+            style={{ width:"100%", padding:"14px", background:"rgba(241,245,249,0.04)", border:`1px solid ${googlePhoneError?"rgba(239,68,68,0.4)":"rgba(241,245,249,0.1)"}`, borderRadius:12, color:"#f1f5f9", fontSize:16, outline:"none", boxSizing:"border-box", marginBottom:8, textAlign:"center", fontFamily:"'DM Sans',sans-serif" }}
+          />
+          {googlePhoneError&&<div style={{ fontSize:12, color:"rgba(239,68,68,0.8)", marginBottom:8 }}>{googlePhoneError}</div>}
+          <div style={{ fontSize:11, color:"rgba(241,245,249,0.2)", marginBottom:20 }}>Format international recommandé : +33 6 XX XX XX XX</div>
+          <button onClick={handleGooglePhoneStep} disabled={googlePhoneLoading||!googlePhone.trim()}
+            style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:!googlePhoneLoading&&googlePhone.trim()?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.05)", color:!googlePhoneLoading&&googlePhone.trim()?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:!googlePhoneLoading&&googlePhone.trim()?"pointer":"not-allowed", transition:"all 0.2s" }}>
+            {googlePhoneLoading?"Vérification...":"CRÉER MON COMPTE →"}
+          </button>
+          <button onClick={()=>setGoogleStep("username")} style={{ marginTop:12, background:"none", border:"none", color:"rgba(241,245,249,0.3)", fontSize:12, cursor:"pointer", textDecoration:"underline" }}>← Retour</button>
+        </>}
+      </div>
+    </div>
+  );
+
+  if(showPhoneRequired&&session) return (
+    <div style={{ minHeight:"100vh", background:"#030712", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ width:"100%", maxWidth:420, background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.07)", borderRadius:22, padding:"36px 28px", textAlign:"center", boxShadow:"0 40px 80px rgba(0,0,0,0.4)" }}>
+        <div style={{ fontSize:44, marginBottom:16 }}>📱</div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:3, marginBottom:6 }}>NUMÉRO REQUIS</div>
+        <div style={{ fontSize:13, color:"rgba(241,245,249,0.4)", marginBottom:24, lineHeight:1.7 }}>
+          Pour accéder à MarketBall, un numéro de téléphone unique est nécessaire.<br/>
+          <span style={{ color:"rgba(241,245,249,0.25)", fontSize:11 }}>Anti-fraude · 1 compte par numéro</span>
         </div>
+        <input
+          type="tel"
+          value={phoneRequiredValue}
+          onChange={e=>{ setPhoneRequiredValue(e.target.value); setPhoneRequiredError(""); }}
+          onKeyDown={e=>e.key==="Enter"&&!phoneRequiredLoading&&savePhoneRequired()}
+          placeholder="+33 6 12 34 56 78"
+          autoFocus
+          style={{ width:"100%", padding:"14px", background:"rgba(241,245,249,0.04)", border:`1px solid ${phoneRequiredError?"rgba(239,68,68,0.4)":"rgba(241,245,249,0.1)"}`, borderRadius:12, color:"#f1f5f9", fontSize:16, outline:"none", boxSizing:"border-box", marginBottom:8, textAlign:"center", fontFamily:"'DM Sans',sans-serif" }}
+        />
+        {phoneRequiredError&&<div style={{ fontSize:12, color:"rgba(239,68,68,0.8)", marginBottom:8 }}>{phoneRequiredError}</div>}
+        <div style={{ fontSize:11, color:"rgba(241,245,249,0.2)", marginBottom:20 }}>Format international : +33 6 XX XX XX XX</div>
+        <button onClick={savePhoneRequired} disabled={phoneRequiredLoading||!phoneRequiredValue.trim()}
+          style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:!phoneRequiredLoading&&phoneRequiredValue.trim()?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.05)", color:!phoneRequiredLoading&&phoneRequiredValue.trim()?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:!phoneRequiredLoading&&phoneRequiredValue.trim()?"pointer":"not-allowed", transition:"all 0.2s" }}>
+          {phoneRequiredLoading?"Vérification...":"VALIDER →"}
+        </button>
       </div>
     </div>
   );
