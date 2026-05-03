@@ -250,13 +250,11 @@ function AppInner() {
           p={...p,referral_code:refCode,referral_sc_earned:0};
         }
         setProfile(p);profileRef.current=p;
-        if(!p.phone) setShowPhoneRequired(true);
       }else{
         const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
         const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,phone:phone||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
-        if(!phone) setShowPhoneRequired(true);
         if(referralCode){
           try{await fetch("/api/referral",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode,newUserId:userId})});}catch{}
         }
