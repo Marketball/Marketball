@@ -389,8 +389,10 @@ function AppInner() {
     setGooglePhoneLoading(true);setGooglePhoneError("");
     try{
       const pr=await fetch("/api/check-phone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:clean})});
-      const pd=await pr.json();
-      if(pd.exists){setGooglePhoneError("Ce numéro est déjà associé à un compte MarketBall");setGooglePhoneLoading(false);return;}
+      if(pr.ok){
+        const pd=await pr.json();
+        if(pd.exists){setGooglePhoneError("Ce numéro est déjà associé à un compte MarketBall");setGooglePhoneLoading(false);return;}
+      }
     }catch{}
     // Créer le profil avec téléphone
     const{token,user,refreshToken}=googlePendingUser;
@@ -413,8 +415,10 @@ function AppInner() {
     setPhoneRequiredLoading(true);setPhoneRequiredError("");
     try{
       const pr=await fetch("/api/check-phone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:clean})});
-      const pd=await pr.json();
-      if(pd.exists){setPhoneRequiredError("Ce numéro est déjà associé à un compte MarketBall");setPhoneRequiredLoading(false);return;}
+      if(pr.ok){
+        const pd=await pr.json();
+        if(pd.exists){setPhoneRequiredError("Ce numéro est déjà associé à un compte MarketBall");setPhoneRequiredLoading(false);return;}
+      }
       await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({phone:clean,updated_at:new Date().toISOString()})});
       setProfile(p=>({...p,phone:clean}));
       setShowPhoneRequired(false);
