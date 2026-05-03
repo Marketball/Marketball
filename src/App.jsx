@@ -420,7 +420,7 @@ function AppInner() {
       await req(`profiles?id=eq.${session.user.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({phone:clean,updated_at:new Date().toISOString()})});
       setProfile(p=>({...p,phone:clean}));
       setShowPhoneRequired(false);
-    }catch(e){setPhoneRequiredError("Erreur lors de la sauvegarde");}
+    }catch(e){setPhoneRequiredError(e?.message||"Erreur lors de la sauvegarde");}
     setPhoneRequiredLoading(false);
   };
 
