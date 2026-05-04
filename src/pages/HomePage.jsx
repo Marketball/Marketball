@@ -13,7 +13,7 @@ import MatchCard from "../components/MatchCard.jsx";
 import MarketCard from "../components/MarketCard.jsx";
 import ChallengeModal from "../components/ChallengeModal.jsx";
 
-export default function HomePage({ markets, coins, sc, username, onBet, onViewDetail, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast }) {
+export default function HomePage({ markets, coins, sc, username, onBet, onViewDetail, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast, onAwardXP }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const level=getLevel(profile?.xp||0);
@@ -73,6 +73,9 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
       <div data-hero><XPBar xp={profile?.xp||0} /></div>
       <div data-hero style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
     </div>
+
+    {/* MISSIONS DÉMARRAGE */}
+    <MissionsStarter profile={profile} session={session} onNavigate={onNavigate} onAwardXP={onAwardXP} showToast={showToast} />
 
     {/* MARCHE DU MOMENT */}
     {topMarket&&<div style={{ position:"relative", background:"linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.06))", border:"1px solid rgba(16,185,129,0.2)", borderRadius:20, padding:"18px 20px", marginBottom:20, overflow:"hidden", animation:pulse?"market-pulse 2s ease":"none", transition:"all 0.3s" }}>
@@ -140,4 +143,135 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
       <div style={{ fontSize:18, color:"rgba(241,245,249,0.3)", marginLeft:"auto" }}>→</div>
     </div>
   </div>;
+}
+
+function MissionsStarter({ profile, session, onNavigate, onAwardXP, showToast }) {
+  const hasBet      = (profile?.total_bets || 0) > 0;
+  const hasInvited  = (profile?.referral_sc_earned || 0) > 0;
+  const [discordDone, setDiscordDone] = useState(() => localStorage.getItem("mb_discord_done") === "1");
+
+  const allDone = hasBet && discordDone && hasInvited;
+  // Affiche uniquement pour les nouveaux joueurs (< 10 paris) et tant que tout n'est pas fait
+  if (!session || allDone || (profile?.total_bets || 0) >= 10) return null;
+
+  const handleDiscord = async () => {
+    if (discordDone) return;
+    window.open("https://discord.gg/marketball", "_blank");
+    localStorage.setItem("mb_discord_done", "1");
+    setDiscordDone(true);
+    try { await onAwardXP?.(20); } catch {}
+    showToast?.("Discord rejoint ! +20 XP 🎉");
+  };
+
+  const handleFirstBet = () => onNavigate?.("markets");
+
+  const missions = [
+    {
+      done: true,
+      icon: "⚽",
+      label: "Compte créé",
+      reward: "+3 000 MC",
+      rewardColor: "#fbbf24",
+      action: null,
+    },
+    {
+      done: hasBet,
+      icon: "📊",
+      label: "Faire ton premier pari",
+      reward: "+10 XP",
+      rewardColor: "#3b82f6",
+      action: hasBet ? null : handleFirstBet,
+      cta: "Parier →",
+    },
+    {
+      done: discordDone,
+      icon: "💬",
+      label: "Rejoindre Discord",
+      reward: "+20 XP",
+      rewardColor: "#5865f2",
+      action: discordDone ? null : handleDiscord,
+      cta: "Rejoindre →",
+    },
+    {
+      done: hasInvited,
+      icon: "🎁",
+      label: "Inviter un ami",
+      reward: "+5 SC",
+      rewardColor: "#10b981",
+      action: hasInvited ? null : () => onNavigate?.("profile"),
+      cta: "Mon code →",
+    },
+  ];
+
+  const doneCount = missions.filter(m => m.done).length;
+  const pct = Math.round((doneCount / missions.length) * 100);
+
+  return (
+    <div style={{ marginBottom: 20, background: "rgba(16,185,129,0.03)", border: "1px solid rgba(16,185,129,0.1)", borderRadius: 18, padding: "16px 18px", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#f1f5f9" }}>
+            🎯 MISSIONS DÉMARRAGE
+          </span>
+        </div>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, color: "#10b981", letterSpacing: 1 }}>
+          {doneCount}/{missions.length}
+        </span>
+      </div>
+
+      {/* Barre de progression */}
+      <div style={{ height: 4, background: "rgba(241,245,249,0.06)", borderRadius: 99, marginBottom: 14, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#10b981,#3b82f6)", borderRadius: 99, transition: "width 0.6s ease" }} />
+      </div>
+
+      {/* Missions */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {missions.map((m, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 12px", borderRadius: 11,
+            background: m.done ? "rgba(16,185,129,0.05)" : "rgba(241,245,249,0.02)",
+            border: `1px solid ${m.done ? "rgba(16,185,129,0.12)" : "rgba(241,245,249,0.06)"}`,
+            transition: "all 0.3s",
+          }}>
+            {/* Checkbox */}
+            <div style={{
+              width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+              background: m.done ? "#10b981" : "rgba(241,245,249,0.05)",
+              border: `1.5px solid ${m.done ? "#10b981" : "rgba(241,245,249,0.12)"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.3s",
+            }}>
+              {m.done && <span style={{ fontSize: 12, color: "#fff" }}>✓</span>}
+            </div>
+
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{m.icon}</span>
+
+            <span style={{ flex: 1, fontSize: 13, color: m.done ? "rgba(241,245,249,0.4)" : "rgba(241,245,249,0.75)", textDecoration: m.done ? "line-through" : "none", textDecorationColor: "rgba(241,245,249,0.2)" }}>
+              {m.label}
+            </span>
+
+            {m.done ? (
+              <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, color: m.rewardColor, letterSpacing: 1, opacity: 0.6 }}>
+                {m.reward}
+              </span>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 12, color: m.rewardColor, letterSpacing: 1 }}>
+                  {m.reward}
+                </span>
+                {m.action && (
+                  <button onClick={m.action}
+                    style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "rgba(16,185,129,0.15)", color: "#10b981", fontWeight: 800, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {m.cta}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
