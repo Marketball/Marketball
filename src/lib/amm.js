@@ -12,7 +12,8 @@ export const AMM = {
   potentialGain: (qY, qN, amount, side) => {
     const p = AMM.probYes(qY, qN);
     const prob = side === "yes" ? p : 1 - p;
-    return Math.max(amount + 1, Math.round(amount / Math.max(prob, 0.02)));
+    const raw = Math.round(amount / Math.max(prob, 0.01));
+    return Math.max(amount + 1, Math.min(amount * 100, raw));
   },
   // Cashout : valeur actuelle = montant * (proba actuelle / proba d'achat) * 0.95
   cashoutValue: (qY, qN, amount, side) => {
@@ -256,15 +257,15 @@ export const calcExactScoreOdds = (hG, aG, odds, match = null) => {
     const elapsed = Math.max(1, Math.min(93, match.elapsed || 45));
     const remaining = Math.max(1, 94 - elapsed);
     // Score déjà impossible
-    if (hG < hs || aG < as_) return 200;
+    if (hG < hs || aG < as_) return 100;
     const hNeed = hG - hs, aNeed = aG - as_;
     const frac = remaining / 90;
     const lH = (odds.pHome * 2.2 + odds.pDraw * 1.1) * frac;
     const lA = (odds.pAway * 2.2 + odds.pDraw * 1.1) * frac;
-    return Math.min(200, Math.max(1.05, +((1 / Math.max(poi(lH, hNeed) * poi(lA, aNeed), 0.0001)) * 1.1).toFixed(1)));
+    return Math.min(100, Math.max(1.05, +((1 / Math.max(poi(lH, hNeed) * poi(lA, aNeed), 0.0001)) * 1.1).toFixed(1)));
   }
   const lH = odds.pHome * 2.2 + odds.pDraw * 1.1, lA = odds.pAway * 2.2 + odds.pDraw * 1.1;
-  return Math.min(200, Math.max(3, +((1 / Math.max(poi(lH, hG) * poi(lA, aG), 0.001)) * 1.1).toFixed(1)));
+  return Math.min(100, Math.max(3, +((1 / Math.max(poi(lH, hG) * poi(lA, aG), 0.001)) * 1.1).toFixed(1)));
 };
 
 export const calcScorerOdds = (player, isFirst, position) => {
