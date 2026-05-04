@@ -6,6 +6,7 @@ import { compColor, compEmoji, compLabel } from "../lib/helpers.js";
 import MatchCard from "../components/MatchCard.jsx";
 import MatchBetsModal from "../components/MatchBetsModal.jsx";
 import { useLang } from "../lib/i18n.jsx";
+import { SkeletonMatchCard } from "../components/ui/Skeleton.jsx";
 
 const INTL_SLUGS = ["WC","EURO","NL","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL"];
@@ -74,7 +75,11 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
       ))}
     </div>
 
-    {loading&&<div style={{ textAlign:"center", padding:60, color:"rgba(241,245,249,0.25)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2, fontSize:16 }}>{t("matches.loading").toUpperCase()}</div>}
+    {loading&&(
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
+        {Array.from({length:6}).map((_,i)=><SkeletonMatchCard key={i} />)}
+      </div>
+    )}
 
     {!loading&&live.length===0&&upcoming.length===0&&finished.length===0&&(
       <div style={{ textAlign:"center", padding:60 }}>

@@ -7,8 +7,9 @@ import { isElite, catColor } from "../lib/helpers.js";
 import MarketCard from "../components/MarketCard.jsx";
 import ProposeMarketModal from "../components/ProposeMarketModal.jsx";
 import { useLang } from "../lib/i18n.jsx";
+import { SkeletonMarketCard } from "../components/ui/Skeleton.jsx";
 
-export default function MarketsPage({ markets, onBet, onViewDetail, profile, session, showToast }) {
+export default function MarketsPage({ markets, onBet, onViewDetail, profile, session, showToast, loading }) {
   const [cat,setCat]=useState("Tous");
   const [search,setSearch]=useState("");
   const [showPropose,setShowPropose]=useState(false);
@@ -83,8 +84,13 @@ export default function MarketsPage({ markets, onBet, onViewDetail, profile, ses
       {search&&<button onClick={()=>setSearch("")} style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(241,245,249,0.35)",cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1 }}>×</button>}
     </div>
     <div style={{ display:"flex",gap:7,marginBottom:22,flexWrap:"wrap" }}>{cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{ padding:"6px 13px",borderRadius:20,border:`1px solid ${cat===c?catColor(c):"rgba(241,245,249,0.07)"}`,background:cat===c?`${catColor(c)}12`:"transparent",color:cat===c?catColor(c):"rgba(241,245,249,0.35)",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.2s" }}>{c==="Tous"?t("markets.all"):c}</button>)}</div>
-    {filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>{search?t("markets.no_results"):t("markets.none_open")}</div>}
-    <div ref={gridRef} style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} onViewDetail={onViewDetail} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} session={session} profile={profile} showToast={showToast} />)}</div>
+    {loading&&(
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>
+        {Array.from({length:4}).map((_,i)=><SkeletonMarketCard key={i} />)}
+      </div>
+    )}
+    {!loading&&filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>{search?t("markets.no_results"):t("markets.none_open")}</div>}
+    {!loading&&<div ref={gridRef} style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} onViewDetail={onViewDetail} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} session={session} profile={profile} showToast={showToast} />)}</div>}
     {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
 }

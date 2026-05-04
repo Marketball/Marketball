@@ -58,6 +58,7 @@ function AppInner() {
     if(el) gsap.from(el,{opacity:0,x:60,y:12,scale:0.95,duration:0.45,ease:"power3.out",clearProps:"transform,opacity,scale"});
   },[page]);
   const [markets,setMarkets]=useState([]);
+  const [marketsLoading,setMarketsLoading]=useState(true);
   const [matches,setMatches]=useState([]);
   const [matchesLoading,setMatchesLoading]=useState(false);
   const [leaderboard,setLeaderboard]=useState([]);
@@ -219,7 +220,7 @@ function AppInner() {
         return {id:c.id,title:c.title,title_en:c.title_en||null,q_yes:saved?.q_yes??c.q_yes??100,q_no:saved?.q_no??c.q_no??100,total_volume:saved?.total_volume??c.total_volume??0,participants:saved?.participants??c.participants??0,closes_at:c.closes_at||null,category:c.category||"Rumeurs",source:c.source||"MarketBall",status:"open",proposed_by:c.proposed_by||null,market_type:c.market_type||"binary",options:c.options||null,created_at:c.created_at||null,conditions:c.conditions||null,conditions_en:c.conditions_en||null};
       });
       setMarkets([...customMarkets,...rumorMarkets]);
-    }catch{}
+    }catch{}finally{setMarketsLoading(false);}
   },[]);
 
   // Rafraîchissement classement + marchés toutes les 10s (cotes en temps réel)
@@ -801,7 +802,7 @@ function AppInner() {
       <div key={page} ref={pageGuestRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
         {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
         {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
-        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} profile={null} session={null} showToast={showToast} />}
+        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} profile={null} session={null} showToast={showToast} loading={marketsLoading} />}
         {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setShowAuthModal(true);}} session={null} profile={null} />}
         {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard} username="" onViewProfile={()=>setShowAuthModal(true)} />}
         {page==="community"&&<CommunityPage session={null} profile={null} showToast={showToast} onViewProfile={()=>setShowAuthModal(true)} />}
@@ -911,7 +912,7 @@ function AppInner() {
     <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} onAwardXP={async(xp)=>{const{newXP,newLevel,newSC}=applyXPGain(profile?.xp,xp);await updateProfile({xp:newXP,level:newLevel,store_coins:newSC},session.token,session.user.id);}} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} profile={profile} session={session} showToast={showToast} />}
+      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} profile={profile} session={session} showToast={showToast} loading={marketsLoading} />}
       {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} session={session} profile={profile} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}
