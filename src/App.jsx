@@ -107,6 +107,7 @@ function AppInner() {
     let newCoins=profileRef.current?.coins||0;
     let newXP=profileRef.current?.xp||0;
     let newProfit=profileRef.current?.total_profit||0;
+    let newWeeklyProfit=profileRef.current?.weekly_profit||0;
     let newWins=profileRef.current?.total_wins||0;
 
     const finishedMatches=currentMatches.filter(m=>m.status==="FINISHED");
@@ -133,7 +134,7 @@ function AppInner() {
         setMatchBets(prev=>prev.map(b=>b.id===bet.id?{...b,status:newStatus}:b));
         if(won){
           const gain=bet.potential_gain||0;
-          newCoins+=gain;newProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
+          newCoins+=gain;newProfit+=gain-(bet.cost||0);newWeeklyProfit+=gain-(bet.cost||0);newWins+=1;profileUpdated=true;
           showToast(`🏆 PARI GAGNE ! +${fmt(gain)} MC — ${bet.match_title||""}`, "win");
         }
       }catch{}
@@ -145,10 +146,10 @@ function AppInner() {
       const {scBonus,messages}=calcLevelUpRewards(oldXP,newXP);
       const newSC=(profileRef.current?.store_coins||0)+scBonus;
       try{
-        await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins,updated_at:new Date().toISOString()})});
+        await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,weekly_profit:newWeeklyProfit,total_wins:newWins,updated_at:new Date().toISOString()})});
       }catch{}
-      setProfile(p=>({...p,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins}));
-      profileRef.current={...profileRef.current,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,total_wins:newWins};
+      setProfile(p=>({...p,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,weekly_profit:newWeeklyProfit,total_wins:newWins}));
+      profileRef.current={...profileRef.current,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_profit:newProfit,weekly_profit:newWeeklyProfit,total_wins:newWins};
       messages.forEach(m=>setTimeout(()=>showToast(m,"win"),500));
       await loadLeaderboard(token);
     }
