@@ -73,9 +73,9 @@ export const calcLiveMatchOdds = (match) => {
   const m = 1.05;
   return {
     pHome, pAway, pDraw,
-    oddsHome: +(m / pHome).toFixed(2),
-    oddsDraw: +(m / pDraw).toFixed(2),
-    oddsAway: +(m / pAway).toFixed(2),
+    oddsHome: +Math.min(100, m / pHome).toFixed(2),
+    oddsDraw: +Math.min(100, m / pDraw).toFixed(2),
+    oddsAway: +Math.min(100, m / pAway).toFixed(2),
     isLive: true,
   };
 };
