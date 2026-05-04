@@ -94,7 +94,7 @@ function AppInner() {
 
   const loadLeaderboard=useCallback(async(token)=>{
     try{
-      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,subscription&order=total_profit.desc&limit=50",{_token:token});
+      const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,weekly_profit,subscription&order=weekly_profit.desc&limit=50",{_token:token});
       if(data?.length) setLeaderboard(data.map((p,i)=>({...p,rank:i+1})));
     }catch{}
   },[]);

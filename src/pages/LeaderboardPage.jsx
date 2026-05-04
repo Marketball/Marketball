@@ -492,7 +492,7 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
             </div>
             <BadgeTag level={getLevel(p.xp||0)} />
             <div onClick={()=>onViewProfile&&onViewProfile(p.username)} style={{ fontWeight:700, fontSize:12, color:"#f1f5f9", cursor:"pointer" }}>{p.username}</div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:topColors[vi], letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:topColors[vi], letterSpacing:1 }}>+{fmt(p.weekly_profit||0)}</div>
           </div>;
         })}
       </div>
@@ -515,8 +515,8 @@ export default function LeaderboardPage({ leaderboard, username, onViewProfile, 
             <div style={{ fontSize:11, color:"rgba(241,245,249,0.25)" }}>{p.total_wins}/{p.total_bets} {t("leaderboard.bets_short")} · {t("profile.lv_short")} {getLevel(p.xp||0)}</div>
           </div>
           <div style={{ textAlign:"right", flexShrink:0 }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.total_profit||0)}</div>
-            <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>gain total</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{fmt(p.weekly_profit||0)}</div>
+            <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)" }}>cette semaine</div>
             {i<5&&<div style={{ fontSize:10, color:WEEKLY_REWARDS[i]?.color||"#6b7280", fontWeight:700 }}>+{WEEKLY_REWARDS[i]?.sc} SC lundi</div>}
           </div>
         </div>
