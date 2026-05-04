@@ -55,9 +55,12 @@ function getSeason(comp) {
   return month >= 6 ? year : year - 1;
 }
 
+import { rateLimit } from "./_rateLimit.js";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "s-maxage=300");
+  if (rateLimit(req, res, 30, 60_000)) return;
 
   const { competition } = req.query;
 

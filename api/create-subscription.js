@@ -1,8 +1,10 @@
 import Stripe from 'stripe';
+import { rateLimit } from "./_rateLimit.js";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  
+  if (rateLimit(req, res, 10, 60_000)) return;
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const { priceId, userId, plan } = req.body;
   
