@@ -366,6 +366,7 @@ function AppInner() {
       if(scoreChanged) setBetsFrozenUntil(Date.now()+90000);
       const pendingMB=await loadMatchBets(token,user.id);
       if(pendingMB?.some(b=>b.status==="pending")) await checkAndResolveBets(token,user.id,lm,pendingMB);
+      loadNotifications(token,user.id);
     },30*1000);
     intervalsRef.current=[interval];
   };
