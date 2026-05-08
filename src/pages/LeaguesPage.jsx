@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { req } from "../lib/supabase.js";
-import { getLevel } from "../lib/helpers.js";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import { fmt } from "../lib/helpers.js";
@@ -165,7 +164,7 @@ export default function LeaguesPage({ profile, session, showToast }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: isMe ? "#10b981" : "#f1f5f9" }}>{m.username}</span>
-                      <BadgeTag level={getLevel(m.xp || 0)} />
+                      <BadgeTag coins={m.coins || 0} />
                       {isMe && <span style={{ fontSize: 10, color: "#10b981" }}>(Vous)</span>}
                     </div>
                     <div style={{ fontSize: 11, color: "rgba(241,245,249,0.25)", marginTop: 2 }}>{m.total_wins || 0}/{m.total_bets || 0} paris</div>
