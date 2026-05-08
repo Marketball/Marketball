@@ -69,8 +69,8 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
         </div>
       </div>
       <div data-hero style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-        <div style={{ width:44, height:44, borderRadius:12, background:`${div.color}18`, border:`1.5px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:div.color, boxShadow:`0 0 14px ${div.color}30`, flexShrink:0 }}>
-          {div.tier==="diamond"?"◆":div.tier==="gold"?"◈":div.tier==="silver"?"◉":"●"}
+        <div style={{ width:44, height:44, borderRadius:12, background:`${div.color}18`, border:`1.5px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:`0 0 14px ${div.color}30`, flexShrink:0 }}>
+          {div.icon}
         </div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:div.color, letterSpacing:2, lineHeight:1 }}>{div.name}</div>

@@ -2,19 +2,19 @@
 // DIVISIONS (remplace le système XP/niveaux)
 // ============================================================
 export const DIVISIONS = [
-  { id:"rookie",   name:"Rookie",     min:0,       max:5000,    color:"#6b7280", tier:"rookie",  top1:5,  top2:4,  top3:3,  bonus:1  },
-  { id:"bronze3",  name:"Bronze III", min:5001,    max:15000,   color:"#b45309", tier:"bronze",  top1:7,  top2:6,  top3:5,  bonus:1  },
-  { id:"bronze2",  name:"Bronze II",  min:15001,   max:30000,   color:"#b45309", tier:"bronze",  top1:9,  top2:8,  top3:7,  bonus:1  },
-  { id:"bronze1",  name:"Bronze I",   min:30001,   max:50000,   color:"#b45309", tier:"bronze",  top1:12, top2:11, top3:10, bonus:1  },
-  { id:"silver3",  name:"Silver III", min:50001,   max:80000,   color:"#94a3b8", tier:"silver",  top1:15, top2:13, top3:12, bonus:3  },
-  { id:"silver2",  name:"Silver II",  min:80001,   max:120000,  color:"#94a3b8", tier:"silver",  top1:19, top2:17, top3:15, bonus:3  },
-  { id:"silver1",  name:"Silver I",   min:120001,  max:175000,  color:"#94a3b8", tier:"silver",  top1:24, top2:22, top3:20, bonus:3  },
-  { id:"gold3",    name:"Gold III",   min:175001,  max:250000,  color:"#d97706", tier:"gold",    top1:30, top2:27, top3:25, bonus:5  },
-  { id:"gold2",    name:"Gold II",    min:250001,  max:400000,  color:"#d97706", tier:"gold",    top1:38, top2:35, top3:32, bonus:5  },
-  { id:"gold1",    name:"Gold I",     min:400001,  max:600000,  color:"#d97706", tier:"gold",    top1:48, top2:45, top3:42, bonus:5  },
-  { id:"diamond3", name:"Diamant 3",  min:600001,  max:1000000, color:"#22d3ee", tier:"diamond", top1:65, top2:60, top3:55, bonus:10 },
-  { id:"diamond2", name:"Diamant 2",  min:1000001, max:5000000, color:"#22d3ee", tier:"diamond", top1:75, top2:70, top3:65, bonus:10 },
-  { id:"diamond1", name:"Diamant 1",  min:5000001, max:Infinity,color:"#22d3ee", tier:"diamond", top1:85, top2:80, top3:75, bonus:10 },
+  { id:"rookie",   name:"Rookie",     min:0,       max:5000,    color:"#6b7280", tier:"rookie",  icon:"🌱", top1:5,  top2:4,  top3:3,  bonus:1  },
+  { id:"bronze3",  name:"Bronze III", min:5001,    max:15000,   color:"#cd7f32", tier:"bronze",  icon:"🛡️", top1:7,  top2:6,  top3:5,  bonus:1  },
+  { id:"bronze2",  name:"Bronze II",  min:15001,   max:30000,   color:"#cd7f32", tier:"bronze",  icon:"🛡️", top1:9,  top2:8,  top3:7,  bonus:1  },
+  { id:"bronze1",  name:"Bronze I",   min:30001,   max:50000,   color:"#cd7f32", tier:"bronze",  icon:"⚔️", top1:12, top2:11, top3:10, bonus:1  },
+  { id:"silver3",  name:"Silver III", min:50001,   max:80000,   color:"#94a3b8", tier:"silver",  icon:"⚡", top1:15, top2:13, top3:12, bonus:3  },
+  { id:"silver2",  name:"Silver II",  min:80001,   max:120000,  color:"#94a3b8", tier:"silver",  icon:"⚡", top1:19, top2:17, top3:15, bonus:3  },
+  { id:"silver1",  name:"Silver I",   min:120001,  max:175000,  color:"#b0c4de", tier:"silver",  icon:"🌙", top1:24, top2:22, top3:20, bonus:3  },
+  { id:"gold3",    name:"Gold III",   min:175001,  max:250000,  color:"#f59e0b", tier:"gold",    icon:"⭐", top1:30, top2:27, top3:25, bonus:5  },
+  { id:"gold2",    name:"Gold II",    min:250001,  max:400000,  color:"#f59e0b", tier:"gold",    icon:"🌟", top1:38, top2:35, top3:32, bonus:5  },
+  { id:"gold1",    name:"Gold I",     min:400001,  max:600000,  color:"#fbbf24", tier:"gold",    icon:"👑", top1:48, top2:45, top3:42, bonus:5  },
+  { id:"diamond3", name:"Diamant 3",  min:600001,  max:1000000, color:"#67e8f9", tier:"diamond", icon:"💎", top1:65, top2:60, top3:55, bonus:10 },
+  { id:"diamond2", name:"Diamant 2",  min:1000001, max:5000000, color:"#22d3ee", tier:"diamond", icon:"💎", top1:75, top2:70, top3:65, bonus:10 },
+  { id:"diamond1", name:"Diamant 1",  min:5000001, max:Infinity,color:"#a5f3fc", tier:"diamond", icon:"🏆", top1:85, top2:80, top3:75, bonus:10 },
 ];
 
 // ============================================================

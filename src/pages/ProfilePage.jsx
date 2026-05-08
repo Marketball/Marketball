@@ -49,7 +49,7 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
       <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:14 }}>
         <div style={{ position:"relative", flexShrink:0 }}>
           <Avatar username={username} size={64} radius={18} fontSize={22} />
-          <div style={{ position:"absolute", bottom:-6, right:-6, width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${div.color},${div.color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"#030712", boxShadow:`0 4px 10px ${div.color}40`, border:"2px solid #030712" }}>{div.tier==="diamond"?"◆":"●"}</div>
+          <div style={{ position:"absolute", bottom:-6, right:-6, width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${div.color}cc,${div.color}66)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:`0 4px 10px ${div.color}50`, border:"2px solid #030712" }}>{div.icon}</div>
         </div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:1 }}>{username}</div>
@@ -91,22 +91,46 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
       ))}
     </div>
-    <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>Progression des divisions</div>
-      {DIVISIONS.map(d=>{
-        const reached=(profile?.coins||0)>=d.min;
-        const isCurrent=d.id===div.id;
-        return (
-          <div key={d.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, opacity:reached?1:0.35 }}>
-            <span style={{ fontSize:11, fontWeight:700, color:d.color, background:`${d.color}12`, padding:"3px 9px", borderRadius:20, border:`1px solid ${d.color}25`, minWidth:90, textAlign:"center", boxShadow:isCurrent?`0 0 8px ${d.color}60`:"none", flexShrink:0 }}>
-              {d.tier==="diamond"?"◆":"●"} {d.name}
-            </span>
-            <span style={{ fontSize:11, color:"rgba(241,245,249,0.35)", flex:1 }}>dès {d.min.toLocaleString("fr-FR")} MC</span>
-            {isCurrent&&<span style={{ fontSize:11, color:d.color, fontWeight:700 }}>← tu es ici</span>}
-            {reached&&!isCurrent&&<span style={{ fontSize:12, color:d.color }}>✓</span>}
-          </div>
-        );
-      })}
+    <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:16, padding:"18px", marginBottom:16 }}>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, marginBottom:16, color:"rgba(241,245,249,0.7)" }}>PROGRESSION DES DIVISIONS</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {DIVISIONS.map((d,i)=>{
+          const coins=profile?.coins||0;
+          const reached=coins>=d.min;
+          const isCurrent=d.id===div.id;
+          const pct=isCurrent?(d.max===Infinity?100:Math.min(100,Math.round(((coins-d.min)/(d.max-d.min))*100))):null;
+          return (
+            <div key={d.id} style={{ position:"relative", background:isCurrent?`${d.color}10`:"transparent", border:`1px solid ${isCurrent?d.color+"35":"rgba(241,245,249,0.04)"}`, borderRadius:12, padding:"10px 12px", opacity:reached?1:0.3, transition:"all 0.2s", overflow:"hidden" }}>
+              {isCurrent&&<div style={{ position:"absolute", top:0, left:0, bottom:0, width:`${pct}%`, background:`${d.color}08`, pointerEvents:"none" }} />}
+              <div style={{ display:"flex", alignItems:"center", gap:10, position:"relative" }}>
+                <div style={{ width:34, height:34, borderRadius:10, background:isCurrent?`${d.color}20`:`${d.color}10`, border:`1px solid ${d.color}${isCurrent?"40":"20"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0, boxShadow:isCurrent?`0 0 12px ${d.color}40`:"none" }}>
+                  {d.icon}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:isCurrent?d.color:"rgba(241,245,249,0.7)", letterSpacing:1 }}>{d.name}</span>
+                    {isCurrent&&<span style={{ fontSize:9, fontWeight:800, color:d.color, background:`${d.color}20`, padding:"1px 6px", borderRadius:20, letterSpacing:1 }}>TU ES ICI</span>}
+                    {reached&&!isCurrent&&<span style={{ fontSize:12, color:d.color }}>✓</span>}
+                  </div>
+                  <div style={{ fontSize:9, color:"rgba(241,245,249,0.3)", marginTop:1 }}>
+                    {d.min===0?"0":"dès "+d.min.toLocaleString("fr-FR")} MC
+                    {d.max!==Infinity?" · max "+d.max.toLocaleString("fr-FR")+" MC":""}
+                  </div>
+                </div>
+                <div style={{ textAlign:"right", flexShrink:0 }}>
+                  <div style={{ fontSize:11, color:isCurrent?d.color:"rgba(241,245,249,0.35)", fontWeight:700 }}>🏅 {d.top1} SC</div>
+                  <div style={{ fontSize:9, color:"rgba(241,245,249,0.25)", marginTop:1 }}>top 1 hebdo</div>
+                </div>
+              </div>
+              {isCurrent&&pct!==null&&d.max!==Infinity&&(
+                <div style={{ marginTop:8, height:3, borderRadius:99, background:"rgba(255,255,255,0.05)", overflow:"hidden", position:"relative" }}>
+                  <div style={{ width:`${pct}%`, height:"100%", background:`linear-gradient(90deg,${d.color}60,${d.color})`, borderRadius:99, boxShadow:`0 0 6px ${d.color}80` }} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
     <div style={{ background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.08)", borderRadius:12, padding:"12px 16px", marginBottom:18, fontSize:12, color:"rgba(241,245,249,0.35)", lineHeight:1.6 }}>
       {t("profile.no_monetary")} <strong style={{ color:"rgba(241,245,249,0.6)" }}>{t("profile.no_monetary_strong")}</strong>.
