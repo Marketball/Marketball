@@ -404,7 +404,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
       </div>
 
       {/* ── CHAT ── */}
-      {tab === "chat" && <ChatTab posts={posts} loading={loading} session={session} profile={profile} input={input} setInput={setInput} sending={sending} handlePost={handlePost} handleDelete={handleDelete} bottomRef={bottomRef} onViewProfile={onViewProfile} MAX={MAX} t={t} />}
+      {tab === "chat" && <ChatTab posts={posts} postCoins={postCoins} loading={loading} session={session} profile={profile} input={input} setInput={setInput} sending={sending} handlePost={handlePost} handleDelete={handleDelete} bottomRef={bottomRef} onViewProfile={onViewProfile} MAX={MAX} t={t} />}
 
       {/* ── POLLS ── */}
       {tab === "polls" && (polls.length === 0
@@ -430,7 +430,7 @@ function EmptyState({ icon, label }) {
 }
 
 // ─── Chat tab ─────────────────────────────────────────────────────────────────
-function ChatTab({ posts, loading, session, profile, input, setInput, sending, handlePost, handleDelete, bottomRef, onViewProfile, MAX, t }) {
+function ChatTab({ posts, postCoins, loading, session, profile, input, setInput, sending, handlePost, handleDelete, bottomRef, onViewProfile, MAX, t }) {
   return (
     <>
       {/* Chat feed */}
