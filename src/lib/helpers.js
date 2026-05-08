@@ -1,4 +1,24 @@
-import { BADGES, XP_PER_LEVEL, CLUB_COLORS, COMP_INFO } from "./constants.js";
+import { BADGES, DIVISIONS, XP_PER_LEVEL, CLUB_COLORS, COMP_INFO } from "./constants.js";
+
+export const getDivision = (coins) => {
+  const c = Math.floor(coins || 0);
+  for (let i = DIVISIONS.length - 1; i >= 0; i--) {
+    if (c >= DIVISIONS[i].min) return DIVISIONS[i];
+  }
+  return DIVISIONS[0];
+};
+export const getDivisionProgress = (coins) => {
+  const div = getDivision(coins);
+  if (!isFinite(div.max)) return 100;
+  const range = div.max - div.min;
+  if (range <= 0) return 100;
+  return Math.min(100, Math.round((Math.max(0, (coins || 0) - div.min) / range) * 100));
+};
+export const getDivisionNext = (coins) => {
+  const div = getDivision(coins);
+  const idx = DIVISIONS.findIndex(d => d.id === div.id);
+  return idx < DIVISIONS.length - 1 ? DIVISIONS[idx + 1] : null;
+};
 
 export const getSubPlan = (profile) => profile?.subscription || "starter";
 export const getSubColor = (sub) => ({ starter:"#94a3b8", elite:"#f59e0b" })[sub] || "#94a3b8";

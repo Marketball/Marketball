@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { BADGES } from "../lib/constants.js";
-import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getBadge, getLevel } from "../lib/helpers.js";
+import { DIVISIONS } from "../lib/constants.js";
+import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getDivision } from "../lib/helpers.js";
 import MCBadge from "../components/ui/MCBadge.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import SCBadge from "../components/ui/SCBadge.jsx";
@@ -38,29 +38,28 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
     // Compter les filleuls
     req(`profiles?referred_by=eq.${refCode}&select=id`).then(r=>setReferralCount((r||[]).length)).catch(()=>{});
   }, [profile?.id]);
-  const level=getLevel(profile?.xp||0), badge=getBadge(level);
+  const div=getDivision(profile?.coins||0);
   const wr=profile?.total_bets>0?Math.round((profile.total_wins/profile.total_bets)*100):0;
   const sub=getSubPlan(profile);
   const { t } = useLang();
   return <div className="page-enter">
     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, letterSpacing:2, marginBottom:20 }}>{t("profile.title")}</div>
-    <div style={{ background:`linear-gradient(135deg,${badge.glow},rgba(241,245,249,0.02))`, border:`1px solid ${badge.color}20`, borderRadius:20, padding:"22px", marginBottom:18, position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${badge.glow},transparent 70%)` }} />
+    <div style={{ background:`linear-gradient(135deg,${div.color}15,rgba(241,245,249,0.02))`, border:`1px solid ${div.color}20`, borderRadius:20, padding:"22px", marginBottom:18, position:"relative", overflow:"hidden" }}>
+      <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${div.color}20,transparent 70%)` }} />
       <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:14 }}>
         <div style={{ position:"relative", flexShrink:0 }}>
           <Avatar username={username} size={64} radius={18} fontSize={22} />
-          <div style={{ position:"absolute", bottom:-6, right:-6, width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${badge.color},${badge.color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:`0 4px 10px ${badge.glow}`, border:"2px solid #030712" }}>{badge.emoji}</div>
+          <div style={{ position:"absolute", bottom:-6, right:-6, width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${div.color},${div.color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"#030712", boxShadow:`0 4px 10px ${div.color}40`, border:"2px solid #030712" }}>{div.tier==="diamond"?"◆":"●"}</div>
         </div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:1 }}>{username}</div>
           <div style={{ display:"flex", gap:6, marginTop:4, flexWrap:"wrap", alignItems:"center" }}>
-            <BadgeTag level={level} />
+            <BadgeTag coins={profile?.coins||0} />
             {sub!=="starter"&&<SubBadge profile={profile} />}
           </div>
-          <div style={{ fontSize:12, color:"rgba(241,245,249,0.35)", marginTop:5 }}>Niveau {level} · {profile?.xp||0} XP total</div>
         </div>
       </div>
-      <XPBar xp={profile?.xp||0} />
+      <XPBar coins={profile?.coins||0} />
       <div style={{ display:"flex", gap:10, marginTop:14, flexWrap:"wrap" }}><MCBadge amount={profile?.coins||0} /><SCBadge amount={profile?.store_coins||0} /></div>
     </div>
     {/* Info abonnement */}
@@ -93,14 +92,21 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
       ))}
     </div>
     <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>{t("profile.badges_progress")}</div>
-      {BADGES.map(b=>(
-        <div key={b.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:9 }}>
-          <span style={{ fontSize:11, fontWeight:700, color:b.color, background:`${b.color}12`, padding:"3px 9px", borderRadius:20, border:`1px solid ${b.color}25`, minWidth:90, textAlign:"center", boxShadow:level>=b.minLevel?`0 0 8px ${b.glow}`:"none" }}>{b.emoji} {b.label}</span>
-          <span style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>{t("profile.lv_short")} {b.minLevel}{b.maxLevel===999?"+":"–"+b.maxLevel}</span>
-          {level>=b.minLevel&&<span style={{ fontSize:12, color:b.color }}>✓</span>}
-        </div>
-      ))}
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, marginBottom:12 }}>Progression des divisions</div>
+      {DIVISIONS.map(d=>{
+        const reached=(profile?.coins||0)>=d.min;
+        const isCurrent=d.id===div.id;
+        return (
+          <div key={d.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, opacity:reached?1:0.35 }}>
+            <span style={{ fontSize:11, fontWeight:700, color:d.color, background:`${d.color}12`, padding:"3px 9px", borderRadius:20, border:`1px solid ${d.color}25`, minWidth:90, textAlign:"center", boxShadow:isCurrent?`0 0 8px ${d.color}60`:"none", flexShrink:0 }}>
+              {d.tier==="diamond"?"◆":"●"} {d.name}
+            </span>
+            <span style={{ fontSize:11, color:"rgba(241,245,249,0.35)", flex:1 }}>dès {d.min.toLocaleString("fr-FR")} MC</span>
+            {isCurrent&&<span style={{ fontSize:11, color:d.color, fontWeight:700 }}>← tu es ici</span>}
+            {reached&&!isCurrent&&<span style={{ fontSize:12, color:d.color }}>✓</span>}
+          </div>
+        );
+      })}
     </div>
     <div style={{ background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.08)", borderRadius:12, padding:"12px 16px", marginBottom:18, fontSize:12, color:"rgba(241,245,249,0.35)", lineHeight:1.6 }}>
       {t("profile.no_monetary")} <strong style={{ color:"rgba(241,245,249,0.6)" }}>{t("profile.no_monetary_strong")}</strong>.
