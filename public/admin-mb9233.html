@@ -606,9 +606,9 @@ async function creditProposerSC(proposedId) {
       body: JSON.stringify({ proposedId, adminPwd: ADMIN_PASSWORD }),
     });
     const data = await res.json();
-    if (!res.ok) showToast("⚠️ SC non crédité : " + (data?.error || res.status), "error");
-    else if (data?.note) showToast("⚠️ SC : " + data.note, "warning");
-  } catch (e) { showToast("⚠️ SC crédit erreur : " + e.message, "error"); }
+    if (!res.ok) { alert("❌ SC non crédité\nHTTP " + res.status + "\n" + JSON.stringify(data)); return; }
+    if (data?.note) alert("⚠️ SC non crédité : " + data.note);
+  } catch (e) { alert("❌ Erreur réseau SC : " + e.message); }
 }
 
 async function approveProposed(id, title, category, titleEn) {
