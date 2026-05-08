@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { AMM } from "../lib/amm.js";
 import { WEEKLY_MC_LIMIT, MC_TO_SC_RATE, SPIN_SEGMENTS_FREE, SPIN_SEGMENTS_ELITE } from "../lib/constants.js";
-import { isElite, fmt, getWeekKey } from "../lib/helpers.js";
+import { isElite, fmt, getWeekKey, getDivision } from "../lib/helpers.js";
 import { req } from "../lib/supabase.js";
 import SpinWheel from "../components/ui/SpinWheel.jsx";
 import { useLang } from "../lib/i18n.jsx";
@@ -84,19 +84,53 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
   const todayMatchBets=(matchBets||[]).filter(b=>(b.created_at||"").startsWith(today));
   const questKey=`mb_quests_${today}_${profile?.id||""}`;
   const [claimedQuests,setClaimedQuests]=useState(()=>{try{return JSON.parse(localStorage.getItem(questKey)||"{}")}catch{return {}}});
+  const QUEST_MC=50;
   const quests=[
-    {id:"login",label:t("wallet.quest_login"),desc:t("wallet.quest_login_desc"),icon:"🔐",xp:5,progress:1,goal:1},
-    {id:"bet3",label:t("wallet.quest_bet3"),desc:t("wallet.quest_bet3_desc"),icon:"📊",xp:15,progress:Math.min(todayMarketBets.length,3),goal:3},
-    {id:"matchbet",label:t("wallet.quest_match"),desc:t("wallet.quest_match_desc"),icon:"⚽",xp:10,progress:Math.min(todayMatchBets.length,1),goal:1},
+    {id:"login",label:t("wallet.quest_login"),desc:t("wallet.quest_login_desc"),icon:"🔐",progress:1,goal:1},
+    {id:"bet3",label:t("wallet.quest_bet3"),desc:t("wallet.quest_bet3_desc"),icon:"📊",progress:Math.min(todayMarketBets.length,3),goal:3},
+    {id:"matchbet",label:t("wallet.quest_match"),desc:t("wallet.quest_match_desc"),icon:"⚽",progress:Math.min(todayMatchBets.length,1),goal:1},
   ];
-  const claimQuest=async(questId,xpReward)=>{
+  const claimQuest=async(questId)=>{
     if(!session||claimedQuests[questId])return;
     const nc={...claimedQuests,[questId]:true};
     localStorage.setItem(questKey,JSON.stringify(nc));
     setClaimedQuests(nc);
     try{
-      await req(`profiles?id=eq.${profile.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({xp:(profile?.xp||0)+xpReward})});
-      showToast?.(`+${xpReward} XP gagné ! 🎉`);
+      await req(`profiles?id=eq.${profile.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({coins:(profile?.coins||0)+QUEST_MC})});
+      showToast?.(`+${QUEST_MC} MC gagné ! 🎉`);
+    }catch{}
+  };
+
+  // Quêtes long terme
+  const permKey=`mb_pquests_${profile?.id||""}`;
+  const [claimedLT,setClaimedLT]=useState(()=>{try{return JSON.parse(localStorage.getItem(permKey)||"{}")}catch{return {}}});
+  const [divRank,setDivRank]=useState(null); // rang dans la division (1-based)
+  const div=getDivision(profile?.coins||0);
+  useEffect(()=>{
+    if(!profile?.id) return;
+    const maxFilter=isFinite(div.max)?`&coins=lte.${div.max}`:"";
+    req(`profiles?select=id,weekly_profit&coins=gte.${div.min}${maxFilter}&order=weekly_profit.desc&limit=100`)
+      .then(players=>{
+        if(!players?.length){setDivRank(null);return;}
+        const idx=players.findIndex(p=>p.id===profile.id);
+        setDivRank(idx>=0?idx+1:null);
+      }).catch(()=>{});
+  },[profile?.id,div.id]);
+
+  const ltQuests=[
+    {id:"reach_gold3",   icon:"⭐", label:"Atteindre Or III",             desc:"Accumule 175 001 MC",        done:(profile?.coins||0)>=175001, sc:5},
+    {id:"top3_div",      icon:"🥉", label:"Finir top 3 de sa division",    desc:"Être dans le top 3 hebdo",   done:divRank!==null&&divRank<=3,   sc:5},
+    {id:"top1_div",      icon:"🥇", label:"Finir top 1 de sa division",    desc:"Être #1 de ta division",     done:divRank===1,                  sc:5},
+    {id:"reach_diamond", icon:"💎", label:"Atteindre la division Diamant", desc:"Accumule 600 001 MC",        done:(profile?.coins||0)>=600001,  sc:5},
+  ];
+  const claimLTQuest=async(questId,sc)=>{
+    if(!session||claimedLT[questId])return;
+    const nc={...claimedLT,[questId]:true};
+    localStorage.setItem(permKey,JSON.stringify(nc));
+    setClaimedLT(nc);
+    try{
+      await req(`profiles?id=eq.${profile.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({store_coins:(profile?.store_coins||0)+sc})});
+      showToast?.(`+${sc} SC débloqué ! 🏆`,"win");
     }catch{}
   };
 
@@ -162,8 +196,11 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
     </div>
 
     {/* Quêtes du jour */}
-    <div style={{ background:"rgba(167,139,250,0.04)", border:"1px solid rgba(167,139,250,0.1)", borderRadius:16, padding:"16px 18px", marginBottom:20 }}>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#a78bfa", marginBottom:12 }}>{t("wallet.daily_quests")}</div>
+    <div style={{ background:"rgba(167,139,250,0.04)", border:"1px solid rgba(167,139,250,0.1)", borderRadius:16, padding:"16px 18px", marginBottom:14 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#a78bfa" }}>{t("wallet.daily_quests")}</div>
+        <span style={{ fontSize:10, fontWeight:800, color:"#fbbf24", background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", padding:"3px 10px", borderRadius:20, letterSpacing:1 }}>+{QUEST_MC} MC / quête</span>
+      </div>
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {quests.map(q=>{
           const done=q.progress>=q.goal;
@@ -179,8 +216,40 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
               {claimed
                 ?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>{t("wallet.claimed")}</span>
                 :done
-                  ?<button onClick={()=>claimQuest(q.id,q.xp)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 10px rgba(16,185,129,0.25)" }}>+{q.xp} XP</button>
+                  ?<button onClick={()=>claimQuest(q.id)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#fbbf24,#f59e0b)", color:"#030712", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 10px rgba(251,191,36,0.25)" }}>+{QUEST_MC} MC</button>
                   :<span style={{ fontSize:11, color:"rgba(241,245,249,0.3)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }}>{q.progress}/{q.goal}</span>}
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {/* Quêtes long terme */}
+    <div style={{ background:"rgba(16,185,129,0.03)", border:"1px solid rgba(16,185,129,0.12)", borderRadius:16, padding:"16px 18px", marginBottom:20 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#10b981" }}>DÉFIS SAISON</div>
+          <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", marginTop:2 }}>Récompenses uniques en SC</div>
+        </div>
+        <span style={{ fontSize:10, fontWeight:800, color:"#10b981", background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.2)", padding:"3px 10px", borderRadius:20, letterSpacing:1 }}>+5 SC / défi</span>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {ltQuests.map(q=>{
+          const claimed=!!claimedLT[q.id];
+          return <div key={q.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, background:q.done?"rgba(16,185,129,0.06)":claimed?"rgba(241,245,249,0.02)":"rgba(241,245,249,0.02)", border:`1px solid ${q.done&&!claimed?"rgba(16,185,129,0.2)":claimed?"rgba(16,185,129,0.08)":"rgba(241,245,249,0.05)"}`, transition:"all 0.3s", opacity:claimed?0.5:1 }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:q.done?"rgba(16,185,129,0.15)":"rgba(241,245,249,0.04)", border:`1px solid ${q.done?"rgba(16,185,129,0.3)":"rgba(241,245,249,0.08)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+              {claimed?"✓":q.icon}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:q.done&&!claimed?"#10b981":claimed?"rgba(241,245,249,0.3)":"#f1f5f9", marginBottom:2 }}>{q.label}</div>
+              <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)" }}>{q.desc}</div>
+            </div>
+            <div style={{ flexShrink:0 }}>
+              {claimed
+                ?<span style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>Réclamé</span>
+                :q.done
+                  ?<button onClick={()=>claimLTQuest(q.id,q.sc)} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", fontWeight:800, fontSize:11, cursor:"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)", whiteSpace:"nowrap" }}>+{q.sc} SC 🏆</button>
+                  :<span style={{ fontSize:11, color:"rgba(241,245,249,0.2)", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }}>🔒</span>}
             </div>
           </div>;
         })}
