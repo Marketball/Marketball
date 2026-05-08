@@ -3,12 +3,15 @@ import { req } from "../lib/supabase.js";
 import BadgeTag from "../components/ui/BadgeTag.jsx";
 import Avatar from "../components/ui/Avatar.jsx";
 import { fmt } from "../lib/helpers.js";
+import { SUBSCRIPTION_PLANS } from "../lib/constants.js";
+import { useLang } from "../lib/i18n.jsx";
 
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-export default function LeaguesPage({ profile, session, showToast }) {
+export default function LeaguesPage({ profile, session, showToast, onNavigate }) {
+  const { t } = useLang();
   const [tab, setTab] = useState("mes-ligues");
   const [myLeagues, setMyLeagues] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -49,7 +52,7 @@ export default function LeaguesPage({ profile, session, showToast }) {
       const members = await req(`league_members?league_id=eq.${league.id}&select=user_id`);
       const ids = (members || []).map(m => m.user_id).join(",");
       if (ids) {
-        const profiles = await req(`profiles?id=in.(${ids})&select=id,username,xp,total_bets,total_wins,total_profit,weekly_profit`);
+        const profiles = await req(`profiles?id=in.(${ids})&select=id,username,coins,total_bets,total_wins,total_profit,weekly_profit`);
         setMembersProfiles((profiles || []).sort((a, b) => (b.weekly_profit || 0) - (a.weekly_profit || 0)));
       } else {
         setMembersProfiles([]);
@@ -125,6 +128,7 @@ export default function LeaguesPage({ profile, session, showToast }) {
     { id: "mes-ligues", label: "🏆 Mes ligues" },
     { id: "creer", label: "➕ Créer" },
     { id: "rejoindre", label: "🔗 Rejoindre" },
+    { id: "abonnements", label: "⭐ Abonnements" },
   ];
 
   // Vue classement d'une ligue
@@ -246,6 +250,64 @@ export default function LeaguesPage({ profile, session, showToast }) {
               {creating ? "..." : "CRÉER LA LIGUE →"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Abonnements */}
+      {tab === "abonnements" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {SUBSCRIPTION_PLANS.map(plan => {
+            const isCurrent = (profile?.subscription || "starter") === plan.id;
+            const isPremium = plan.id === "elite";
+            return (
+              <div key={plan.id} style={{ background: isCurrent ? `${plan.color}08` : "rgba(241,245,249,0.02)", border: `1.5px solid ${isCurrent ? plan.color+"40" : "rgba(241,245,249,0.06)"}`, borderRadius: 18, padding: "20px", position: "relative", overflow: "hidden" }}>
+                {isCurrent && <div style={{ position:"absolute", top:12, right:14, fontSize:10, fontWeight:800, color:plan.color, background:`${plan.color}20`, padding:"3px 10px", borderRadius:20, letterSpacing:1 }}>ACTUEL</div>}
+                {/* Header */}
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+                  <div style={{ width:46, height:46, borderRadius:13, background:`${plan.color}18`, border:`1.5px solid ${plan.color}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
+                    {plan.emoji}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:plan.color, letterSpacing:2 }}>{plan.label}</div>
+                    <div style={{ fontSize:13, fontWeight:800, color: isPremium ? plan.color : "rgba(241,245,249,0.4)", marginTop:1 }}>{plan.priceLabel}</div>
+                  </div>
+                </div>
+                {/* MC highlights */}
+                <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                  <div style={{ flex:1, background:`${plan.color}10`, border:`1px solid ${plan.color}20`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:plan.color, letterSpacing:1 }}>{fmt(plan.bonusMC)}</div>
+                    <div style={{ fontSize:9, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1, marginTop:2 }}>MC À L'INSCRIPTION</div>
+                  </div>
+                  <div style={{ flex:1, background:`${plan.color}10`, border:`1px solid ${plan.color}20`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:plan.color, letterSpacing:1 }}>{fmt(plan.mcBoost)}</div>
+                    <div style={{ fontSize:9, color:"rgba(241,245,249,0.35)", fontWeight:700, letterSpacing:1, marginTop:2 }}>MC CHAQUE LUNDI</div>
+                  </div>
+                </div>
+                {/* Features */}
+                <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                  {plan.features.map(k => (
+                    <div key={k} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:16, height:16, borderRadius:"50%", background:`${plan.color}20`, border:`1px solid ${plan.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:plan.color, flexShrink:0, fontWeight:900 }}>✓</span>
+                      <span style={{ fontSize:12, color:"rgba(241,245,249,0.65)" }}>{t(k)}</span>
+                    </div>
+                  ))}
+                  {plan.noFeatures?.map(k => (
+                    <div key={k} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:16, height:16, borderRadius:"50%", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:"rgba(239,68,68,0.5)", flexShrink:0 }}>✗</span>
+                      <span style={{ fontSize:12, color:"rgba(241,245,249,0.25)", textDecoration:"line-through" }}>{t(k)}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* CTA */}
+                {!isCurrent && isPremium && (
+                  <button onClick={() => onNavigate?.("subscription")}
+                    style={{ width:"100%", marginTop:16, padding:"12px 0", borderRadius:12, border:"none", background:`linear-gradient(135deg,${plan.color},${plan.color}cc)`, color:"#030712", fontWeight:900, fontSize:14, cursor:"pointer", letterSpacing:1 }}>
+                    PASSER PREMIUM 👑
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

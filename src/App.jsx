@@ -945,7 +945,7 @@ function AppInner() {
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
       {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} onViewProfile={(u)=>{setPublicProfileUser(u);navigateTo("leaderboard");}} />}
       {page==="friends"&&<FriendsPage profile={profile} session={session} onViewProfile={(u)=>setPublicProfileUser(u)} showToast={showToast} />}
-      {page==="leagues"&&<LeaguesPage profile={profile} session={session} showToast={showToast} />}
+      {page==="leagues"&&<LeaguesPage profile={profile} session={session} showToast={showToast} onNavigate={navigateTo} />}
     </div>
 
     {/* Bottom nav mobile */}
