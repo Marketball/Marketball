@@ -77,9 +77,9 @@ export const SUBSCRIPTION_PLANS = [
     priceLabel: "Gratuit",
     color: "#94a3b8",
     emoji: "🌱",
-    mcBoost: 1000,
-    bonusMC: 3000,
-    features: ["sub.feat.mc_1000_monday","sub.feat.mc_3000_signup","sub.feat.daily_wheel","sub.feat.rewards_t1","sub.feat.rewarded_ads"],
+    mcBoost: 500,
+    bonusMC: 1500,
+    features: ["sub.feat.mc_500_monday","sub.feat.mc_1500_signup","sub.feat.daily_wheel","sub.feat.rewards_t1","sub.feat.rewarded_ads"],
     noFeatures: ["sub.nofeat.cashout","sub.nofeat.exclusive_markets","sub.nofeat.priority_support"],
   },
   {
@@ -89,10 +89,10 @@ export const SUBSCRIPTION_PLANS = [
     priceLabel: "15€/mois",
     color: "#f59e0b",
     emoji: "👑",
-    mcBoost: 8000,
-    bonusMC: 24000,
+    mcBoost: 3000,
+    bonusMC: 9000,
     priceId: "price_1TOJYAIB3HPK0xH5AusdEOFn",
-    features: ["sub.feat.mc_8000_monday","sub.feat.mc_24000_signup","sub.feat.exclusive_markets","sub.feat.rewards_t35","sub.feat.no_ads","sub.feat.priority_support"],
+    features: ["sub.feat.mc_3000_monday","sub.feat.mc_9000_signup","sub.feat.cashout_option","sub.feat.exclusive_markets","sub.feat.rewards_t35","sub.feat.no_ads","sub.feat.priority_support"],
   },
 ];
 

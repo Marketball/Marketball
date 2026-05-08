@@ -470,6 +470,8 @@ const T = {
     "polls.registered": "Vote enregistré ✓",
 
     // Subscription features
+    "sub.feat.mc_500_monday": "500 MC chaque lundi",
+    "sub.feat.mc_1500_signup": "1 500 MC bonus à l'inscription",
     "sub.feat.mc_1000_monday": "1 000 MC chaque lundi",
     "sub.feat.mc_3000_signup": "3 000 MC bonus à l'inscription",
     "sub.feat.daily_wheel": "Roue quotidienne (1-3 SC)",
@@ -981,6 +983,8 @@ const T = {
     "polls.registered": "Vote recorded ✓",
 
     // Subscription features
+    "sub.feat.mc_500_monday": "500 MC every Monday",
+    "sub.feat.mc_1500_signup": "1,500 MC bonus at sign-up",
     "sub.feat.mc_1000_monday": "1,000 MC every Monday",
     "sub.feat.mc_3000_signup": "3,000 MC bonus at sign-up",
     "sub.feat.daily_wheel": "Daily wheel (1-3 SC)",

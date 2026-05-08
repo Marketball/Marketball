@@ -263,7 +263,7 @@ function AppInner() {
         setProfile(p);profileRef.current=p;
       }else{
         const refCode=generateReferralCode(favoriteClub||userId.slice(0,6));
-        const np={id:userId,coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,phone:phone||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        const np={id:userId,coins:1500,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:favoriteClub,referral_code:refCode,referral_sc_earned:0,phone:phone||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
         setProfile(np);profileRef.current=np;
         if(referralCode){
@@ -297,17 +297,27 @@ function AppInner() {
       if(p.last_login===today) return;
       const yesterday=new Date(Date.now()-86400000).toISOString().split("T")[0];
       const newStreak=p.last_login===yesterday?(p.streak||0)+1:1;
-      let bonusCoins=getMCBoost(p.subscription||"starter");
+      // Bonus quotidien (connexion streak)
+      let bonusCoins=50;
       let bonusMsg=`🔥 Streak ${newStreak} jour${newStreak>1?"s":""} ! +${bonusCoins} MC`;
       if(newStreak===3){bonusCoins=30;bonusMsg="🔥 Streak 3 jours ! +30 MC bonus !";}
       if(newStreak===7){bonusCoins=100;bonusMsg="🔥🔥 STREAK 7 JOURS ! +100 MC !";}
       if(newStreak>7&&newStreak%7===0){bonusCoins=100;bonusMsg=`🔥🔥 STREAK ${newStreak} JOURS ! +100 MC !`;}
-      const newCoins=(p.coins||0)+bonusCoins;
+      // Bonus hebdomadaire (premier login de la semaine)
+      const wk=getWeekKey();
+      let weeklyBonus=0;
+      if(p.last_mc_week!==wk){
+        weeklyBonus=getMCBoost(p.subscription||"starter");
+      }
+      const newCoins=(p.coins||0)+bonusCoins+weeklyBonus;
       const {newXP,newLevel,newSC,messages}=applyXPGain(p.xp,3);
-      await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify({last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,updated_at:new Date().toISOString()})});
-      setProfile(pr=>({...pr,last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC}));
-      profileRef.current={...profileRef.current,last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC};
+      const updates={last_login:today,streak:newStreak,coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,updated_at:new Date().toISOString()};
+      if(weeklyBonus>0) updates.last_mc_week=wk;
+      await req(`profiles?id=eq.${userId}`,{method:"PATCH",_token:token,body:JSON.stringify(updates)});
+      setProfile(pr=>({...pr,...updates}));
+      profileRef.current={...profileRef.current,...updates};
       showToast(bonusMsg);
+      if(weeklyBonus>0) setTimeout(()=>showToast(`📅 Bonus hebdo +${weeklyBonus} MC !`,"win"),800);
       messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
     }catch{}
   };
@@ -411,7 +421,7 @@ function AppInner() {
     const{token,user,refreshToken}=googlePendingUser;
     setGooglePendingUser(null);setGoogleUsername("");setGooglePhone("");setGoogleStep("username");
     const refCode=generateReferralCode(googleUsername.trim());
-    const np={id:user.id,username:googleUsername.trim(),coins:3000,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:null,referral_code:refCode,referral_sc_earned:0,phone:clean,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    const np={id:user.id,username:googleUsername.trim(),coins:1500,store_coins:0,xp:0,level:1,total_bets:0,total_wins:0,total_profit:0,favorite_club:null,referral_code:refCode,referral_sc_earned:0,phone:clean,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
     try{await req("profiles",{method:"POST",_token:token,body:JSON.stringify(np)});}catch{}
     await handleAuth(token,user,refreshToken,null,clean);
     setGooglePhoneLoading(false);

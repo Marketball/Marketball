@@ -24,7 +24,7 @@ export const getSubPlan = (profile) => profile?.subscription || "starter";
 export const getSubColor = (sub) => ({ starter:"#94a3b8", elite:"#f59e0b" })[sub] || "#94a3b8";
 export const getSubEmoji = (sub) => ({ starter:"🌱", elite:"👑" })[sub] || "🌱";
 export const getSubLabel = (sub) => ({ starter:"Free", elite:"Premium" })[sub] || "Free";
-export const getMCBoost = (sub) => ({ starter:1000, elite:8000 })[sub] || 1000;
+export const getMCBoost = (sub) => ({ starter:500, elite:3000 })[sub] || 500;
 export const isElite = (profile) => profile?.subscription === "elite";
 export const isPro = (profile) => profile?.subscription === "elite";
 export const getBadge = (level) => BADGES.find(b => level >= b.minLevel && level <= b.maxLevel) || BADGES[0];
