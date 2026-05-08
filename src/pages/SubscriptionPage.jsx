@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SUBSCRIPTION_PLANS } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost } from "../lib/helpers.js";
 import { useLang } from "../lib/i18n.jsx";
@@ -5,6 +6,7 @@ import { useLang } from "../lib/i18n.jsx";
 export default function SubscriptionPage({ profile, onSubscribe }) {
   const currentSub=getSubPlan(profile);
   const { t } = useLang();
+  const [showCancelConfirm,setShowCancelConfirm]=useState(false);
   return <div className="page-enter">
     {/* HERO */}
     <div style={{ position:"relative", textAlign:"center", padding:"32px 20px 28px", marginBottom:32, background:"linear-gradient(180deg,rgba(16,185,129,0.06),transparent)", borderRadius:24, border:"1px solid rgba(16,185,129,0.08)", overflow:"hidden" }}>
@@ -88,7 +90,7 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
             {isCurrent?(
               <div style={{ display:"flex", gap:8 }}>
                 <div style={{ flex:1, padding:"12px 0", borderRadius:12, background:`${color}12`, border:`1px solid ${color}25`, color, fontWeight:800, fontSize:13, textAlign:"center" }}>{t("sub.current_label")}</div>
-                {plan.id!=="starter"&&<button onClick={()=>onSubscribe("starter")} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("sub.cancel_sub")}</button>}
+                {plan.id!=="starter"&&<button onClick={()=>setShowCancelConfirm(true)} style={{ padding:"12px 16px", borderRadius:12, border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.05)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>{t("sub.cancel_sub")}</button>}
               </div>
             ):(
               <button onClick={()=>onSubscribe(plan.id)} style={{ width:"100%", padding:"14px 0", borderRadius:13, border:"none", background:plan.id==="starter"?"rgba(241,245,249,0.04)":`linear-gradient(135deg,${color},${color}aa)`, color:plan.id==="starter"?"rgba(241,245,249,0.25)":"#fff", fontWeight:800, fontSize:14, cursor:plan.id==="starter"?"default":"pointer", boxShadow:plan.id!=="starter"?`0 10px 30px ${color}30`:"none", letterSpacing:plan.id!=="starter"?0.5:0, transition:"all 0.2s" }}>
@@ -103,5 +105,27 @@ export default function SubscriptionPage({ profile, onSubscribe }) {
     <div style={{ marginTop:24, padding:"12px 16px", background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:12, fontSize:11, color:"rgba(241,245,249,0.25)", lineHeight:1.7 }}>
       Plafond de dépenses : 14,99€/mois. Les MarketCoins n'ont aucune valeur monétaire. Résiliation possible à tout moment. Conforme à la loi JONUM française.
     </div>
+
+    {/* Modal confirmation résiliation */}
+    {showCancelConfirm&&<div onClick={()=>setShowCancelConfirm(false)} style={{ position:"fixed",inset:0,background:"rgba(3,7,18,0.85)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(12px)",padding:16,animation:"fadeIn 0.2s ease" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"rgba(15,23,42,0.98)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:22,padding:28,width:380,maxWidth:"95vw",boxShadow:"0 50px 100px rgba(0,0,0,0.6)",animation:"fadeInUp 0.25s ease" }}>
+        <div style={{ textAlign:"center",marginBottom:20 }}>
+          <div style={{ fontSize:36,marginBottom:10 }}>⚠️</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,marginBottom:8 }}>RÉSILIER L'ABONNEMENT ?</div>
+          <div style={{ fontSize:13,color:"rgba(241,245,249,0.45)",lineHeight:1.6 }}>
+            Tu vas perdre tous les avantages de ton plan actuel.<br/>
+            Tu repasseras en <strong style={{ color:"#94a3b8" }}>Starter gratuit</strong> immédiatement.
+          </div>
+        </div>
+        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+          <button onClick={async()=>{setShowCancelConfirm(false);await onSubscribe("starter");}} style={{ width:"100%",padding:"14px 0",borderRadius:12,border:"none",background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 8px 25px rgba(239,68,68,0.3)" }}>
+            Oui, résilier mon abonnement
+          </button>
+          <button onClick={()=>setShowCancelConfirm(false)} style={{ width:"100%",padding:"13px 0",borderRadius:12,border:"1px solid rgba(241,245,249,0.1)",background:"transparent",color:"rgba(241,245,249,0.6)",fontWeight:700,fontSize:13,cursor:"pointer" }}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>}
   </div>;
 }
