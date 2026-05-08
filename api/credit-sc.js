@@ -30,8 +30,9 @@ export default async function handler(req, res) {
   if (!proposedId) return res.status(400).json({ error: "proposedId manquant" });
 
   try {
-    const proposed = await sbReq(`proposed_markets?id=eq.${proposedId}&select=proposer_id`);
+    const proposed = await sbReq(`proposed_markets?id=eq.${proposedId}&select=proposer_id,title`);
     const proposerId = proposed?.[0]?.proposer_id;
+    const marketTitle = proposed?.[0]?.title || "ton marché";
     if (!proposerId) return res.status(200).json({ success: true, note: "Pas de proposer_id" });
 
     const profiles = await sbReq(`profiles?id=eq.${proposerId}&select=store_coins`);
@@ -41,6 +42,16 @@ export default async function handler(req, res) {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({ store_coins: current + 2 }),
+    });
+
+    await sbReq(`notifications`, {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        user_id: proposerId,
+        message: `🎉 Ton marché "${marketTitle}" a été approuvé par l'admin ! Tu reçois +2 SC 💎`,
+        read: false,
+      }),
     });
 
     return res.status(200).json({ success: true, credited: 2 });

@@ -92,6 +92,15 @@ function AppInner() {
 
   const showToast=(msg,type="success")=>{setToast({msg,type});if(type==="win")setShowConfetti(true);};
 
+  const loadNotifications=useCallback(async(token,userId)=>{
+    try{
+      const data=await req(`notifications?user_id=eq.${userId}&read=eq.false&order=created_at.asc`,{_token:token});
+      if(!data?.length) return;
+      data.forEach((n,i)=>setTimeout(()=>showToast(n.message,"win"),i*1200));
+      await req(`notifications?user_id=eq.${userId}&read=eq.false`,{method:"PATCH",_token:token,body:JSON.stringify({read:true})});
+    }catch{}
+  },[]);
+
   const loadLeaderboard=useCallback(async(token)=>{
     try{
       const data=await req("profiles?select=id,username,coins,store_coins,xp,level,total_wins,total_bets,total_profit,weekly_profit,subscription&order=weekly_profit.desc&limit=50",{_token:token});
@@ -342,6 +351,7 @@ function AppInner() {
     if(mb?.length) await checkAndResolveBets(token,user.id,loadedMatches,mb);
     await handleDailyStreak(token,user.id);
     loadPendingFriends(token,user.id);
+    loadNotifications(token,user.id);
     if(!localStorage.getItem("mb_onboarded"))setShowOnboarding(true);
     // Interval unique 60s : recharge matchs + résout les paris terminés
     const interval=setInterval(async()=>{
