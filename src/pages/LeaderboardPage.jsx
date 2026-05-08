@@ -103,8 +103,8 @@ export function PublicProfilePage({ username, onBack, session, profile: myProfil
     <div style={{ background:`linear-gradient(135deg,${div.color}18,rgba(3,7,18,0.95))`, border:`1px solid ${div.color}30`, borderRadius:20, padding:"24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${div.color}20,transparent 70%)`, pointerEvents:"none" }} />
       <div style={{ display:"flex", gap:16, alignItems:"center", marginBottom:12 }}>
-        <div style={{ width:64, height:64, borderRadius:18, background:`${div.color}20`, border:`2px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0, boxShadow:`0 8px 25px ${div.color}30`, fontFamily:"'Bebas Neue',sans-serif", color:div.color, letterSpacing:1 }}>
-          {div.tier==="diamond"?"◆":div.tier==="gold"?"●":div.tier==="silver"?"●":div.tier==="bronze"?"●":"○"}
+        <div style={{ width:64, height:64, borderRadius:18, background:`${div.color}20`, border:`2px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:30, flexShrink:0, boxShadow:`0 8px 25px ${div.color}30` }}>
+          {div.icon}
         </div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, letterSpacing:1 }}>{profileData.username}</div>

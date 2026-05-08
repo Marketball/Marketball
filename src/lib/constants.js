@@ -12,9 +12,9 @@ export const DIVISIONS = [
   { id:"gold3",    name:"Gold III",   min:175001,  max:250000,  color:"#f59e0b", tier:"gold",    icon:"⭐", top1:30, top2:27, top3:25, bonus:5  },
   { id:"gold2",    name:"Gold II",    min:250001,  max:400000,  color:"#f59e0b", tier:"gold",    icon:"🌟", top1:38, top2:35, top3:32, bonus:5  },
   { id:"gold1",    name:"Gold I",     min:400001,  max:600000,  color:"#fbbf24", tier:"gold",    icon:"👑", top1:48, top2:45, top3:42, bonus:5  },
-  { id:"diamond3", name:"Diamant 3",  min:600001,  max:1000000, color:"#67e8f9", tier:"diamond", icon:"💎", top1:65, top2:60, top3:55, bonus:10 },
-  { id:"diamond2", name:"Diamant 2",  min:1000001, max:5000000, color:"#22d3ee", tier:"diamond", icon:"💎", top1:75, top2:70, top3:65, bonus:10 },
-  { id:"diamond1", name:"Diamant 1",  min:5000001, max:Infinity,color:"#a5f3fc", tier:"diamond", icon:"🏆", top1:85, top2:80, top3:75, bonus:10 },
+  { id:"diamond3", name:"Diamant III", min:600001,  max:1000000, color:"#67e8f9", tier:"diamond", icon:"💎", top1:65, top2:60, top3:55, bonus:10 },
+  { id:"diamond2", name:"Diamant II",  min:1000001, max:5000000, color:"#22d3ee", tier:"diamond", icon:"💎", top1:75, top2:70, top3:65, bonus:10 },
+  { id:"diamond1", name:"Diamant I",   min:5000001, max:Infinity,color:"#a5f3fc", tier:"diamond", icon:"🏆", top1:85, top2:80, top3:75, bonus:10 },
 ];
 
 // ============================================================

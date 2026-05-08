@@ -5,6 +5,7 @@ gsap.registerPlugin(ScrollTrigger);
 import { useLang } from "../lib/i18n.jsx";
 import { req } from "../lib/supabase.js";
 import Avatar from "../components/ui/Avatar.jsx";
+import { getDivision } from "../lib/helpers.js";
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
 const G  = "#10b981";
@@ -197,6 +198,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
   const { t } = useLang();
   const [posts, setPosts]   = useState([]);
   const [polls, setPolls]   = useState([]);
+  const [postCoins, setPostCoins] = useState({});
   const [input, setInput]   = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -220,8 +222,16 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
         req("community_posts?order=created_at.desc&limit=50").catch(() => []),
         req("community_polls?order=created_at.desc&limit=20").catch(()  => []),
       ]);
-      setPosts((p  || []).reverse());
+      const posts = (p || []).reverse();
+      setPosts(posts);
       setPolls(po  || []);
+      const ids = [...new Set(posts.map(x => x.user_id).filter(Boolean))];
+      if (ids.length) {
+        const profiles = await req(`profiles?id=in.(${ids.join(",")})&select=id,coins`).catch(() => []);
+        const map = {};
+        (profiles || []).forEach(x => { map[x.id] = x.coins || 0; });
+        setPostCoins(map);
+      }
     } catch {}
     setLoading(false);
   };
@@ -276,6 +286,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
       });
       const newPost = res?.[0] || { id:Date.now(), user_id:session.user.id, username:profile?.username, content, created_at:new Date().toISOString() };
       setPosts(prev => [...prev, newPost]);
+      setPostCoins(prev => ({ ...prev, [session.user.id]: profile?.coins || 0 }));
       setInput("");
     } catch(e) { showToast("Erreur : " + e.message, "error"); }
     setSending(false);
@@ -455,6 +466,7 @@ function ChatTab({ posts, loading, session, profile, input, setInput, sending, h
                 <Avatar username={post.username} size={30} radius={8} />
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                    <span style={{ fontSize:13, lineHeight:1 }}>{getDivision(postCoins[post.user_id]||0).icon}</span>
                     <span
                       onClick={() => onViewProfile?.(post.username)}
                       style={{ fontFamily:MONO, fontWeight:800, fontSize:12, letterSpacing:1,
@@ -574,8 +586,8 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
     const friendIds    = (accepted||[]).map(f => f.requester_id===userId ? f.recipient_id : f.requester_id);
     const requesterIds = (pendingIn||[]).map(f => f.requester_id);
     const [fp, rp] = await Promise.all([
-      friendIds.length    ? req(`profiles?id=in.(${friendIds.join(",")})&select=id,username,xp,total_bets,total_wins`) : Promise.resolve([]),
-      requesterIds.length ? req(`profiles?id=in.(${requesterIds.join(",")})&select=id,username,xp`)                  : Promise.resolve([]),
+      friendIds.length    ? req(`profiles?id=in.(${friendIds.join(",")})&select=id,username,coins,total_bets,total_wins`) : Promise.resolve([]),
+      requesterIds.length ? req(`profiles?id=in.(${requesterIds.join(",")})&select=id,username,coins`)                   : Promise.resolve([]),
     ]);
     setFriends((fp||[]).map(p => ({ ...p, friendship:accepted.find(f => f.requester_id===p.id||f.recipient_id===p.id) })));
     setPending((pendingIn||[]).map(f => ({ ...f, profile:rp?.find(p => p.id===f.requester_id) })));
@@ -588,7 +600,7 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
   const searchUsers = async () => {
     if (!search.trim()) return;
     setSearching(true);
-    const results = await req(`profiles?username=ilike.*${encodeURIComponent(search.trim())}*&select=id,username,xp&limit=10`).catch(()=>[]);
+    const results = await req(`profiles?username=ilike.*${encodeURIComponent(search.trim())}*&select=id,username,coins&limit=10`).catch(()=>[]);
     setSearchResults((results||[]).filter(r => r.id !== userId));
     setSearching(false);
   };
@@ -662,14 +674,17 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
                 }}>
                 <Avatar username={f.username} size={36} radius={10} />
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div onClick={() => onViewProfile?.(f.username)}
-                    style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1,
-                             cursor:"pointer", textDecoration:"underline",
-                             textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>
-                    {f.username.toUpperCase()}
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:14 }}>{getDivision(f.coins||0).icon}</span>
+                    <span onClick={() => onViewProfile?.(f.username)}
+                      style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1,
+                               cursor:"pointer", textDecoration:"underline",
+                               textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>
+                      {f.username.toUpperCase()}
+                    </span>
                   </div>
                   <div style={{ fontFamily:MONO, fontSize:10, color:"rgba(241,245,249,0.25)", marginTop:3, letterSpacing:1 }}>
-                    {f.total_wins||0}W / {f.total_bets||0} PARIS
+                    {getDivision(f.coins||0).name} · {f.total_wins||0}W / {f.total_bets||0} PARIS
                   </div>
                 </div>
                 <button onClick={() => removeFriend(f.friendship?.id)}
@@ -699,11 +714,14 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                 <Avatar username={f.profile?.username||"?"} size={36} radius={10} />
                 <div>
-                  <div style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1 }}>
-                    {(f.profile?.username||"Joueur").toUpperCase()}
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:14 }}>{getDivision(f.profile?.coins||0).icon}</span>
+                    <span style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1 }}>
+                      {(f.profile?.username||"Joueur").toUpperCase()}
+                    </span>
                   </div>
                   <div style={{ fontFamily:MONO, fontSize:10, color:"rgba(241,245,249,0.3)", marginTop:2, letterSpacing:1 }}>
-                    {t("friends.wants_friend")}
+                    {getDivision(f.profile?.coins||0).name} · {t("friends.wants_friend")}
                   </div>
                 </div>
               </div>
@@ -746,10 +764,16 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
               }}>
               <Avatar username={r.username} size={36} radius={10} />
               <div style={{ flex:1 }}>
-                <div onClick={() => onViewProfile?.(r.username)}
-                  style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1, cursor:"pointer",
-                           textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>
-                  {r.username.toUpperCase()}
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ fontSize:14 }}>{getDivision(r.coins||0).icon}</span>
+                  <span onClick={() => onViewProfile?.(r.username)}
+                    style={{ fontFamily:MONO, fontWeight:800, fontSize:13, letterSpacing:1, cursor:"pointer",
+                             textDecoration:"underline", textDecorationStyle:"dotted", textDecorationColor:"rgba(241,245,249,0.2)" }}>
+                    {r.username.toUpperCase()}
+                  </span>
+                </div>
+                <div style={{ fontFamily:MONO, fontSize:10, color:"rgba(241,245,249,0.25)", marginTop:3, letterSpacing:1 }}>
+                  {getDivision(r.coins||0).name}
                 </div>
               </div>
               {friends.some(f => f.id===r.id)
