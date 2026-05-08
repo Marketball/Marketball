@@ -1,9 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+async function sbReq(path, opts = {}) {
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...opts.headers,
+    },
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+  return data;
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -17,24 +30,18 @@ export default async function handler(req, res) {
   if (!proposedId) return res.status(400).json({ error: "proposedId manquant" });
 
   try {
-    const { data: proposed } = await supabase
-      .from("proposed_markets")
-      .select("proposer_id")
-      .eq("id", proposedId)
-      .single();
+    const proposed = await sbReq(`proposed_markets?id=eq.${proposedId}&select=proposer_id`);
+    const proposerId = proposed?.[0]?.proposer_id;
+    if (!proposerId) return res.status(200).json({ success: true, note: "Pas de proposer_id" });
 
-    if (!proposed?.proposer_id) return res.status(200).json({ success: true, note: "Pas de proposer_id" });
+    const profiles = await sbReq(`profiles?id=eq.${proposerId}&select=store_coins`);
+    const current = profiles?.[0]?.store_coins || 0;
 
-    const { data: proposer } = await supabase
-      .from("profiles")
-      .select("store_coins")
-      .eq("id", proposed.proposer_id)
-      .single();
-
-    await supabase
-      .from("profiles")
-      .update({ store_coins: (proposer?.store_coins || 0) + 2 })
-      .eq("id", proposed.proposer_id);
+    await sbReq(`profiles?id=eq.${proposerId}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ store_coins: current + 2 }),
+    });
 
     return res.status(200).json({ success: true, credited: 2 });
   } catch (e) {
