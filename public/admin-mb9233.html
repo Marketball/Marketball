@@ -600,12 +600,15 @@ function renderProposed() {
 
 async function creditProposerSC(proposedId) {
   try {
-    await fetch("/api/credit-sc", {
+    const res = await fetch("/api/credit-sc", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ proposedId, adminPwd: ADMIN_PASSWORD }),
     });
-  } catch (e) { console.error("Erreur SC crédit :", e); }
+    const data = await res.json();
+    if (!res.ok) showToast("⚠️ SC non crédité : " + (data?.error || res.status), "error");
+    else if (data?.note) showToast("⚠️ SC : " + data.note, "warning");
+  } catch (e) { showToast("⚠️ SC crédit erreur : " + e.message, "error"); }
 }
 
 async function approveProposed(id, title, category, titleEn) {
