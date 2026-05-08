@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { req } from "../lib/supabase.js";
 import Avatar from "../components/ui/Avatar.jsx";
+import { getDivision } from "../lib/helpers.js";
 
 export default function FriendsPage({ profile, session, onViewProfile, showToast }) {
   const [tab, setTab] = useState("friends");
@@ -30,8 +31,8 @@ export default function FriendsPage({ profile, session, onViewProfile, showToast
       const requesterIds = (pendingIn || []).map(f => f.requester_id);
 
       const [friendProfiles, requesterProfiles] = await Promise.all([
-        friendIds.length ? req(`profiles?id=in.(${friendIds.join(",")})&select=id,username,xp,total_bets,total_wins`) : Promise.resolve([]),
-        requesterIds.length ? req(`profiles?id=in.(${requesterIds.join(",")})&select=id,username,xp`) : Promise.resolve([]),
+        friendIds.length ? req(`profiles?id=in.(${friendIds.join(",")})&select=id,username,coins,total_bets,total_wins`) : Promise.resolve([]),
+        requesterIds.length ? req(`profiles?id=in.(${requesterIds.join(",")})&select=id,username,coins`) : Promise.resolve([]),
       ]);
 
       setFriends((friendProfiles || []).map(p => ({
@@ -55,7 +56,7 @@ export default function FriendsPage({ profile, session, onViewProfile, showToast
     if (!search.trim()) return;
     setSearching(true);
     try {
-      const results = await req(`profiles?username=ilike.*${encodeURIComponent(search.trim())}*&select=id,username,xp&limit=10`);
+      const results = await req(`profiles?username=ilike.*${encodeURIComponent(search.trim())}*&select=id,username,coins&limit=10`);
       setSearchResults((results || []).filter(r => r.id !== userId));
     } catch {}
     setSearching(false);
@@ -135,8 +136,11 @@ export default function FriendsPage({ profile, session, onViewProfile, showToast
               <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(241,245,249,0.02)", border: "1px solid rgba(241,245,249,0.06)", borderRadius: 12, padding: "12px 14px" }}>
                 <Avatar username={f.username} size={38} radius={10} />
                 <div style={{ flex: 1 }}>
-                  <div onClick={() => onViewProfile?.(f.username)} style={{ fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: "rgba(241,245,249,0.2)" }}>{f.username}</div>
-                  <div style={{ fontSize: 11, color: "rgba(241,245,249,0.3)", marginTop: 2 }}>{f.total_wins || 0}/{f.total_bets || 0} paris</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                    <span style={{ fontSize:14 }}>{getDivision(f.coins||0).icon}</span>
+                    <span onClick={() => onViewProfile?.(f.username)} style={{ fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: "rgba(241,245,249,0.2)" }}>{f.username}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(241,245,249,0.3)", marginTop: 2 }}>{getDivision(f.coins||0).name} · {f.total_wins || 0}/{f.total_bets || 0} paris</div>
                 </div>
                 <button onClick={() => removeFriend(f.friendship?.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "rgba(239,68,68,0.5)", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>Retirer</button>
               </div>
@@ -156,8 +160,11 @@ export default function FriendsPage({ profile, session, onViewProfile, showToast
                 <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(241,245,249,0.02)", border: "1px solid rgba(241,245,249,0.06)", borderRadius: 12, padding: "12px 14px" }}>
                   <Avatar username={f.profile?.username || "?"} size={38} radius={10} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{f.profile?.username || "Joueur inconnu"}</div>
-                    <div style={{ fontSize: 11, color: "rgba(241,245,249,0.3)", marginTop: 2 }}>veut être ton ami</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                      <span style={{ fontSize:14 }}>{getDivision(f.profile?.coins||0).icon}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{f.profile?.username || "Joueur inconnu"}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "rgba(241,245,249,0.3)", marginTop: 2 }}>{getDivision(f.profile?.coins||0).name} · veut être ton ami</div>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => acceptRequest(f.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>✓</button>
@@ -192,7 +199,11 @@ export default function FriendsPage({ profile, session, onViewProfile, showToast
                 <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(241,245,249,0.02)", border: "1px solid rgba(241,245,249,0.06)", borderRadius: 12, padding: "12px 14px" }}>
                   <Avatar username={r.username} size={38} radius={10} />
                   <div style={{ flex: 1 }}>
-                    <div onClick={() => onViewProfile?.(r.username)} style={{ fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{r.username}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                      <span style={{ fontSize:14 }}>{getDivision(r.coins||0).icon}</span>
+                      <span onClick={() => onViewProfile?.(r.username)} style={{ fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{r.username}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "rgba(241,245,249,0.3)", marginTop: 2 }}>{getDivision(r.coins||0).name}</div>
                   </div>
                   {isFriend(r.id) ? (
                     <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>✓ Ami</span>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { req } from "../../lib/supabase.js";
+import { getDivision } from "../../lib/helpers.js";
 
 function timeAgo(date) {
   const diff = Date.now() - new Date(date).getTime();
@@ -12,15 +13,24 @@ function timeAgo(date) {
 
 export default function CommentsSection({ refId, refType = "market", session, profile }) {
   const [comments, setComments] = useState(null);
+  const [userCoins, setUserCoins] = useState({});
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const MAX = 200;
 
-  useEffect(() => {
-    req(`comments?ref_id=eq.${encodeURIComponent(refId)}&ref_type=eq.${refType}&order=created_at.asc&limit=50`)
-      .then(d => setComments(d || []))
-      .catch(() => setComments([]));
-  }, [refId]);
+  const loadComments = async () => {
+    const data = await req(`comments?ref_id=eq.${encodeURIComponent(refId)}&ref_type=eq.${refType}&order=created_at.asc&limit=50`).catch(() => []);
+    setComments(data || []);
+    const ids = [...new Set((data || []).map(c => c.user_id).filter(Boolean))];
+    if (ids.length) {
+      const profiles = await req(`profiles?id=in.(${ids.join(",")})&select=id,coins`).catch(() => []);
+      const map = {};
+      (profiles || []).forEach(p => { map[p.id] = p.coins || 0; });
+      setUserCoins(map);
+    }
+  };
+
+  useEffect(() => { loadComments(); }, [refId]);
 
   const handlePost = async () => {
     if (!session || !input.trim() || sending) return;
@@ -33,6 +43,7 @@ export default function CommentsSection({ refId, refType = "market", session, pr
       });
       const nc = res?.[0] || { id: Date.now(), user_id: session.user.id, username: profile?.username || "Anonyme", content, created_at: new Date().toISOString() };
       setComments(p => [...p, nc]);
+      setUserCoins(prev => ({ ...prev, [session.user.id]: profile?.coins || 0 }));
       setInput("");
     } catch {}
     setSending(false);
@@ -54,18 +65,24 @@ export default function CommentsSection({ refId, refType = "market", session, pr
         <div style={{ textAlign:"center", padding:"16px 0", color:"rgba(241,245,249,0.2)", fontSize:12 }}>Aucun commentaire — sois le premier !</div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10, maxHeight:220, overflowY:"auto" }}>
-          {comments.map(c => (
-            <div key={c.id} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:10, padding:"8px 10px" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
-                <span style={{ fontWeight:700, fontSize:11, color: c.user_id===session?.user?.id?"#10b981":"#f1f5f9" }}>{c.username}</span>
-                <span style={{ fontSize:9, color:"rgba(241,245,249,0.2)" }}>{timeAgo(c.created_at)}</span>
-                {c.user_id===session?.user?.id && (
-                  <button onClick={() => handleDelete(c.id)} style={{ marginLeft:"auto", background:"none", border:"none", color:"rgba(241,245,249,0.2)", cursor:"pointer", fontSize:11, padding:0 }}>✕</button>
-                )}
+          {comments.map(c => {
+            const coins = userCoins[c.user_id] ?? 0;
+            const divIcon = getDivision(coins).icon;
+            const isMe = c.user_id === session?.user?.id;
+            return (
+              <div key={c.id} style={{ background:"rgba(241,245,249,0.03)", border:"1px solid rgba(241,245,249,0.05)", borderRadius:10, padding:"8px 10px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
+                  <span style={{ fontSize:13, lineHeight:1 }}>{divIcon}</span>
+                  <span style={{ fontWeight:700, fontSize:11, color: isMe?"#10b981":"#f1f5f9" }}>{c.username}</span>
+                  <span style={{ fontSize:9, color:"rgba(241,245,249,0.2)" }}>{timeAgo(c.created_at)}</span>
+                  {isMe && (
+                    <button onClick={() => handleDelete(c.id)} style={{ marginLeft:"auto", background:"none", border:"none", color:"rgba(241,245,249,0.2)", cursor:"pointer", fontSize:11, padding:0 }}>✕</button>
+                  )}
+                </div>
+                <div style={{ fontSize:12, color:"rgba(241,245,249,0.65)", lineHeight:1.5 }}>{c.content}</div>
               </div>
-              <div style={{ fontSize:12, color:"rgba(241,245,249,0.65)", lineHeight:1.5 }}>{c.content}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {session ? (

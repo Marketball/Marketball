@@ -342,7 +342,7 @@ function DivisionLeaderboard({ division, username, onViewProfile, session }) {
     <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:14, padding:"14px 16px", marginBottom:16 }}>
       <div style={{ fontSize:10, fontWeight:700, color:"rgba(241,245,249,0.3)", letterSpacing:2, marginBottom:10 }}>RÉCOMPENSES LUNDI</div>
       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-        {[{label:"🥇 Top 1",sc:division.top1,color:"#fbbf24"},{label:"🥈 Top 2",sc:division.top2,color:"#94a3b8"},{label:"🥉 Top 3",sc:division.top3,color:"#cd7f32"},{label:`🎯 Top ${Math.round(players.length*0.3)||"30%"}`,sc:division.bonus,color:"#10b981"}].map(r=>(
+        {[{label:"🥇 Top 1",sc:division.top1,color:"#fbbf24"},{label:"🥈 Top 2",sc:division.top2,color:"#94a3b8"},{label:"🥉 Top 3",sc:division.top3,color:"#cd7f32"},{label:"🎯 Top 30%",sc:division.bonus,color:"#10b981"}].map(r=>(
           <div key={r.label} style={{ flex:"1 1 70px", background:`${r.color}10`, border:`1px solid ${r.color}25`, borderRadius:10, padding:"8px 6px", textAlign:"center" }}>
             <div style={{ fontSize:10, color:"rgba(241,245,249,0.4)", marginBottom:3 }}>{r.label}</div>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:r.color, letterSpacing:1 }}>+{r.sc} SC</div>
