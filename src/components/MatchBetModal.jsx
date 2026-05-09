@@ -56,7 +56,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const amtNum=parseInt(amount)||0;
   const gain=Math.round(amtNum*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
-  const isFrozen=betsFrozenUntil&&Date.now()<betsFrozenUntil;
+  const isFrozen=betsFrozenUntil>0&&Date.now()<betsFrozenUntil;
   const isFinished=match.status==="FINISHED";
   const elapsed=match.elapsed||0;
   // Bloquer vainqueur + score exact à partir de la 85e min (trop manipulable)

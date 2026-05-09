@@ -94,7 +94,7 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
   const amtNum = parseInt(amount) || 0;
   const gain = Math.round(amtNum * currentOdds);
   const finalPred = betType === "exact_score" ? `${homeGoals}-${awayGoals}` : prediction;
-  const isFrozen = betsFrozenUntil && Date.now() < betsFrozenUntil;
+  const isFrozen = betsFrozenUntil > 0 && Date.now() < betsFrozenUntil;
   const lateStage = isLive && elapsed >= 85;
   const lateStageLocked = lateStage && (betType==="winner" || betType==="exact_score");
   const ouSettled = betType==="over_under" && prediction ? isOverUnderSettled(prediction, match) : false;
