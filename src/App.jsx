@@ -36,6 +36,8 @@ import CommunityPage from "./pages/CommunityPage.jsx";
 import OnboardingModal from "./components/OnboardingModal.jsx";
 import FriendsPage from "./pages/FriendsPage.jsx";
 import LeaguesPage from "./pages/LeaguesPage.jsx";
+import MatchDetailPage from "./pages/MatchDetailPage.jsx";
+import ProposeMarketPage from "./pages/ProposeMarketPage.jsx";
 
 // PublicProfilePage est dans LeaderboardPage
 import { PublicProfilePage } from "./pages/LeaderboardPage.jsx";
@@ -51,6 +53,7 @@ function AppInner() {
   const [page,setPage]=useState("home");
   const navigateTo=(p)=>{setPage(p);if(p==="community")setPendingFriendCount(0);};
   const viewMarketDetail=(market)=>{setSelectedMarket(market);navigateTo("market");};
+  const viewMatchDetail=(match)=>{setSelectedMatch(match);navigateTo("match-detail");};
   const pageGuestRef=useRef(null);
   const pageAuthRef=useRef(null);
   useEffect(()=>{
@@ -67,6 +70,7 @@ function AppInner() {
   // Refs pour stocker les intervals et pouvoir les nettoyer au logout
   const intervalsRef=useRef([]);
   const [selectedMarket,setSelectedMarket]=useState(null);
+  const [selectedMatch,setSelectedMatch]=useState(null);
   const [betModal,setBetModal]=useState(null);
   const [betInitialSide,setBetInitialSide]=useState("yes");
   const [matchBetModal,setMatchBetModal]=useState(null);
@@ -823,8 +827,9 @@ function AppInner() {
       {/* Contenu public */}
       <div key={page} ref={pageGuestRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
         {page==="home"&&<HomePage markets={markets} coins={500} sc={0} username="Visiteur" onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} onNavigate={setPage} matches={matches} onMatchBet={()=>setShowAuthModal(true)} profile={null} leaderboard={leaderboard} />}
-        {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} loading={matchesLoading} />}
-        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} profile={null} session={null} showToast={showToast} loading={marketsLoading} />}
+        {page==="matches"&&<MatchesPage matches={matches} onBet={()=>setShowAuthModal(true)} onViewMatch={viewMatchDetail} loading={matchesLoading} />}
+        {page==="match-detail"&&selectedMatch&&<MatchDetailPage match={matches.find(m=>m.id===selectedMatch.id)||selectedMatch} onBack={()=>navigateTo("matches")} onBet={()=>setShowAuthModal(true)} session={null} profile={null} />}
+        {page==="markets"&&<MarketsPage markets={markets} onBet={()=>setShowAuthModal(true)} onViewDetail={viewMarketDetail} onPropose={()=>setShowAuthModal(true)} profile={null} session={null} showToast={showToast} loading={marketsLoading} />}
         {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setShowAuthModal(true);}} session={null} profile={null} />}
         {page==="leaderboard"&&<LeaderboardPage leaderboard={leaderboard} username="" onViewProfile={()=>setShowAuthModal(true)} />}
         {page==="community"&&<CommunityPage session={null} profile={null} showToast={showToast} onViewProfile={()=>setShowAuthModal(true)} />}
@@ -933,8 +938,10 @@ function AppInner() {
 
     <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} onAwardXP={async(xp)=>{const{newXP,newLevel,newSC}=applyXPGain(profile?.xp,xp);await updateProfile({xp:newXP,level:newLevel,store_coins:newSC},session.token,session.user.id);}} />}
-      {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} profile={profile} session={session} showToast={showToast} loading={marketsLoading} />}
+      {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} onViewMatch={viewMatchDetail} loading={matchesLoading} session={session} profile={profile} />}
+      {page==="match-detail"&&selectedMatch&&<MatchDetailPage match={matches.find(m=>m.id===selectedMatch.id)||selectedMatch} onBack={()=>navigateTo("matches")} onBet={(m)=>{setMatchBetModal(m);setMatchBetInitialPred("");}} session={session} profile={profile} />}
+      {page==="propose-market"&&<ProposeMarketPage profile={profile} session={session} showToast={showToast} onBack={()=>navigateTo("markets")} />}
+      {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onPropose={()=>navigateTo("propose-market")} profile={profile} session={session} showToast={showToast} loading={marketsLoading} />}
       {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} session={session} profile={profile} />}
       {page==="wallet"&&<WalletPage coins={coins} sc={sc} bets={bets} matchBets={matchBets} profile={profile} onSpin={handleSpin} onWatchAd={handleWatchAd} onConvertSC={handleConvertSC} onConvertMCtoSC={handleConvertMCtoSC} onCashout={handleCashout} markets={markets} session={session} showToast={showToast} />}
       {page==="leaderboard"&&!publicProfileUser&&<LeaderboardPage leaderboard={leaderboard.length?leaderboard:[{rank:1,username,coins,xp:profile?.xp||0,total_wins:profile?.total_wins||0,total_bets:profile?.total_bets||0,total_profit:0}]} username={username} onViewProfile={(u)=>setPublicProfileUser(u)} profile={profile} session={session} showToast={showToast} />}

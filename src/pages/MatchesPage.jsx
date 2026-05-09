@@ -4,19 +4,17 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 import { compColor, compEmoji, compLabel } from "../lib/helpers.js";
 import MatchCard from "../components/MatchCard.jsx";
-import MatchBetsModal from "../components/MatchBetsModal.jsx";
 import { useLang } from "../lib/i18n.jsx";
 import { SkeletonMatchCard } from "../components/ui/Skeleton.jsx";
 
 const INTL_SLUGS = ["WC","EURO","NL","FR","WCQ_UEFA","AFCON","COPA","U21UEFA"];
 const CLUB_SLUGS = ["PL","FL1","CL","PD","BL1","SA","PPL","EL","BSA","MLS","ERE","TSL"];
 
-export default function MatchesPage({ matches, onBet, loading, session, profile }) {
+export default function MatchesPage({ matches, onBet, onViewMatch, loading, session, profile }) {
   const { t } = useLang();
   const contentRef = useRef(null);
   const [tab,setTab]=useState("clubs");
   const [subComp,setSubComp]=useState("Tous");
-  const [statsMatch,setStatsMatch]=useState(null);
 
   const clubMatches=matches.filter(m=>CLUB_SLUGS.includes(m.competition));
   const intlMatches=matches.filter(m=>INTL_SLUGS.includes(m.competition));
@@ -94,7 +92,7 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:"#ef4444" }}>{t("matches.live")}</div>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:24 }}>
-        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+        {live.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onView={onViewMatch} />)}
       </div>
     </>}
 
@@ -106,7 +104,7 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
         <div key={day} style={{ marginBottom:20 }}>
           <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.4)", letterSpacing:1.5, textTransform:"uppercase", marginBottom:8, paddingLeft:4 }}>{day}</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11 }}>
-            {dayMatches.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+            {dayMatches.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onView={onViewMatch} />)}
           </div>
         </div>
       ))}
@@ -114,9 +112,8 @@ export default function MatchesPage({ matches, onBet, loading, session, profile 
     {!loading&&finished.length>0&&live.length===0&&upcoming.length===0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, marginBottom:12, color:"rgba(241,245,249,0.3)" }}>{t("matches.finished")}</div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:11, marginBottom:12 }}>
-        {finished.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onStats={setStatsMatch} />)}
+        {finished.map(m=><MatchCard key={m.id} match={m} onBet={onBet} onView={onViewMatch} />)}
       </div>
     </>}
-    {statsMatch&&<MatchBetsModal match={statsMatch} onClose={()=>setStatsMatch(null)} onBet={(m)=>{setStatsMatch(null);onBet(m);}} session={session} profile={profile} />}
   </div>;
 }

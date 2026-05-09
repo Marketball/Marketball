@@ -5,7 +5,7 @@ gsap.registerPlugin(ScrollTrigger);
 import { calcLiveMatchOdds } from "../lib/amm.js";
 import { compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 
-export default function MatchCard({ match, onBet, onStats }) {
+export default function MatchCard({ match, onBet, onStats, onView }) {
   const [hover, setHover] = useState(false);
   const [imgErr, setImgErr] = useState({});
   const cardRef = useRef(null);
@@ -54,7 +54,7 @@ export default function MatchCard({ match, onBet, onStats }) {
     className="card-hover"
     onMouseEnter={handleEnter}
     onMouseLeave={handleLeave}
-    onClick={() => !isFinished && onBet(match)}
+    onClick={() => (onView || onBet)(match)}
     style={{
       background: hover ? "rgba(241,245,249,0.045)" : "rgba(241,245,249,0.02)",
       border: `1px solid ${isLive ? "rgba(239,68,68,0.32)" : hover ? "rgba(16,185,129,0.18)" : "rgba(241,245,249,0.07)"}`,
@@ -123,11 +123,11 @@ export default function MatchCard({ match, onBet, onStats }) {
 
     {/* Footer */}
     <div style={{ display: "flex", gap: 5, paddingTop: 2 }}>
-      <button className="btn-animated" onClick={e => { e.stopPropagation(); onStats && onStats(match); }}
+      <button className="btn-animated" onClick={e => { e.stopPropagation(); (onView||onStats)&&(onView||onStats)(match); }}
         style={{ padding: "9px 11px", borderRadius: 6, border: "1px solid rgba(241,245,249,0.08)", background: "transparent", color: "rgba(241,245,249,0.35)", fontSize: 13, cursor: "pointer" }}>📊</button>
-      {!isFinished && <button className="btn-animated" onClick={e => { e.stopPropagation(); onBet(match); }}
+      {!isFinished && <button className="btn-animated" onClick={e => { e.stopPropagation(); (onView||onBet)(match); }}
         style={{ flex: 1, padding: "9px 0", borderRadius: 6, border: `1px solid ${hover ? "rgba(16,185,129,0.42)" : "rgba(241,245,249,0.1)"}`, background: hover ? "rgba(16,185,129,0.08)" : "transparent", color: hover ? "#10b981" : "rgba(241,245,249,0.38)", fontWeight: 800, fontSize: 10, letterSpacing: "2.5px", textTransform: "uppercase", cursor: "pointer" }}>PARIER →</button>}
-      {isFinished && <button className="btn-animated" onClick={e => { e.stopPropagation(); onStats && onStats(match); }}
+      {isFinished && <button className="btn-animated" onClick={e => { e.stopPropagation(); (onView||onStats)&&(onView||onStats)(match); }}
         style={{ flex: 1, padding: "9px 0", borderRadius: 6, border: "1px solid rgba(241,245,249,0.08)", background: "transparent", color: "rgba(241,245,249,0.28)", fontWeight: 800, fontSize: 10, letterSpacing: "2.5px", textTransform: "uppercase", cursor: "pointer" }}>STATS →</button>}
     </div>
   </div>;

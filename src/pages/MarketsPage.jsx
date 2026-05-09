@@ -2,17 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
-import { req } from "../lib/supabase.js";
 import { isElite, catColor } from "../lib/helpers.js";
 import MarketCard from "../components/MarketCard.jsx";
-import ProposeMarketModal from "../components/ProposeMarketModal.jsx";
 import { useLang } from "../lib/i18n.jsx";
 import { SkeletonMarketCard } from "../components/ui/Skeleton.jsx";
 
-export default function MarketsPage({ markets, onBet, onViewDetail, profile, session, showToast, loading }) {
+export default function MarketsPage({ markets, onBet, onViewDetail, onPropose, profile, session, showToast, loading }) {
   const [cat,setCat]=useState("Tous");
   const [search,setSearch]=useState("");
-  const [showPropose,setShowPropose]=useState(false);
   const userIsElite=isElite(profile);
   const openMarkets=markets.filter(m=>m.status==="open"&&(!m.elite_only||userIsElite));
   const cats=["Tous",...new Set(openMarkets.map(m=>m.category).filter(Boolean))];
@@ -32,18 +29,6 @@ export default function MarketsPage({ markets, onBet, onViewDetail, profile, ses
     );
   }, [cat, search]);
 
-  const handlePropose=async({title,title_en,category,proposed_by})=>{
-    try{
-      await req("proposed_markets",{method:"POST",_token:session?.token,body:JSON.stringify({
-        title,title_en:title_en||null,category,proposed_by,
-        proposer_id:session?.user?.id,
-        status:"pending",
-        created_at:new Date().toISOString()
-      })});
-      showToast(t("markets.propose_sent"));
-    }catch(e){showToast("Erreur : "+e.message,"error");}
-  };
-
   return <div className="page-enter">
     <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:30,letterSpacing:2 }}>{t("markets.title")}</div>
@@ -51,7 +36,7 @@ export default function MarketsPage({ markets, onBet, onViewDetail, profile, ses
 
     {/* Section proposer un marché */}
     {userIsElite?(
-      <div onClick={()=>setShowPropose(true)} className="card-hover" style={{ background:"linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))",border:"1px solid rgba(245,158,11,0.2)",borderRadius:16,padding:"16px 20px",marginBottom:20,cursor:"pointer",display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
+      <div onClick={()=>onPropose&&onPropose()} className="card-hover" style={{ background:"linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03))",border:"1px solid rgba(245,158,11,0.2)",borderRadius:16,padding:"16px 20px",marginBottom:20,cursor:"pointer",display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,158,11,0.1),transparent 70%)" }} />
         <div style={{ width:44,height:44,borderRadius:12,background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>👑</div>
         <div>
@@ -91,6 +76,5 @@ export default function MarketsPage({ markets, onBet, onViewDetail, profile, ses
     )}
     {!loading&&filtered.length===0&&<div style={{ textAlign:"center",padding:60,color:"rgba(241,245,249,0.25)" }}>{search?t("markets.no_results"):t("markets.none_open")}</div>}
     {!loading&&<div ref={gridRef} style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:11 }}>{filtered.map(m=><MarketCard key={m.id} market={m} onBet={onBet} onViewDetail={onViewDetail} isNew={m.created_at&&Date.now()-new Date(m.created_at).getTime()<86400000} isTrending={m.id===trendingId&&m.total_volume>0} session={session} profile={profile} showToast={showToast} />)}</div>}
-    {showPropose&&<ProposeMarketModal profile={profile} onClose={()=>setShowPropose(false)} onSubmit={handlePropose} />}
   </div>;
 }
