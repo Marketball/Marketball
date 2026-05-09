@@ -64,37 +64,44 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
   }, []);
 
   return <div ref={contentRef} className="page-enter">
-    {/* HERO WELCOME */}
-    <div ref={heroRef} style={{ background:`linear-gradient(135deg,${div.color}15,rgba(59,130,246,0.04))`, border:`1px solid ${div.color}20`, borderRadius:22, padding:"22px 24px", marginBottom:18, position:"relative", overflow:"hidden" }}>
-      <div ref={orbRef} style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${div.color}20,transparent 70%)`, pointerEvents:"none" }} />
-      <div data-hero style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
-            <span style={{ fontSize:11 }}>🏆</span>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} {t("home.this_week")}</span>
-          </div>}
-          {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
-            <span style={{ fontSize:12 }}>🔥</span>
-            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#f59e0b", letterSpacing:1 }}>{profile.streak}J</span>
-          </div>}
-        </div>
-      </div>
-      <div data-hero style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-        <div style={{ width:44, height:44, borderRadius:12, background:`${div.color}18`, border:`1.5px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:`0 0 14px ${div.color}30`, flexShrink:0 }}>
-          {div.icon}
-        </div>
-        <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:div.color, letterSpacing:2, lineHeight:1 }}>{div.name}</div>
-          <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", letterSpacing:1, marginTop:2 }}>Division actuelle</div>
-        </div>
-      </div>
-      <div data-hero><XPBar coins={profile?.coins||0} /></div>
-      <div data-hero style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
-    </div>
+    {/* LIGNE HERO : [Quêtes] [Hero] [Classement] sur desktop, hero seul sur mobile */}
+    <div style={{ display:(!isMobile&&session)?"grid":"block", gridTemplateColumns:"1fr 2fr 1fr", gap:12, marginBottom:18, alignItems:"stretch" }}>
 
-    {/* BULLES QUÊTES + CLASSEMENT — desktop (entre hero et missions) */}
-    {session && !isMobile && <InfoBubbles profile={profile} session={session} leaderboard={leaderboard} onNavigate={onNavigate} />}
+      {/* Bulle gauche — quêtes */}
+      {!isMobile && session && <QuestsBubble profile={profile} session={session} onNavigate={onNavigate} />}
+
+      {/* Hero central */}
+      <div ref={heroRef} style={{ background:`linear-gradient(135deg,${div.color}15,rgba(59,130,246,0.04))`, border:`1px solid ${div.color}20`, borderRadius:22, padding:"22px 24px", position:"relative", overflow:"hidden", ...(isMobile||!session?{marginBottom:0}:{}) }}>
+        <div ref={orbRef} style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${div.color}20,transparent 70%)`, pointerEvents:"none" }} />
+        <div data-hero style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {rankDisplay&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:20, padding:"3px 10px" }}>
+              <span style={{ fontSize:11 }}>🏆</span>
+              <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#fbbf24", letterSpacing:1 }}>#{rankDisplay} {t("home.this_week")}</span>
+            </div>}
+            {(profile?.streak||0)>0&&<div style={{ display:"flex", alignItems:"center", gap:4, background:"rgba(245,158,11,0.12)", border:"1px solid rgba(245,158,11,0.25)", borderRadius:20, padding:"3px 10px" }}>
+              <span style={{ fontSize:12 }}>🔥</span>
+              <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:"#f59e0b", letterSpacing:1 }}>{profile.streak}J</span>
+            </div>}
+          </div>
+        </div>
+        <div data-hero style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+          <div style={{ width:44, height:44, borderRadius:12, background:`${div.color}18`, border:`1.5px solid ${div.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:`0 0 14px ${div.color}30`, flexShrink:0 }}>
+            {div.icon}
+          </div>
+          <div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:div.color, letterSpacing:2, lineHeight:1 }}>{div.name}</div>
+            <div style={{ fontSize:10, color:"rgba(241,245,249,0.3)", letterSpacing:1, marginTop:2 }}>Division actuelle</div>
+          </div>
+        </div>
+        <div data-hero><XPBar coins={profile?.coins||0} /></div>
+        <div data-hero style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
+      </div>
+
+      {/* Bulle droite — classement */}
+      {!isMobile && session && <RankingBubble profile={profile} leaderboard={leaderboard} onNavigate={onNavigate} />}
+    </div>
 
     {/* MISSIONS DÉMARRAGE */}
     <MissionsStarter profile={profile} session={session} onNavigate={onNavigate} onAwardXP={onAwardXP} showToast={showToast} />
