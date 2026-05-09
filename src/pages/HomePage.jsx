@@ -14,21 +14,23 @@ import MatchCard from "../components/MatchCard.jsx";
 import MarketCard from "../components/MarketCard.jsx";
 import ChallengeModal from "../components/ChallengeModal.jsx";
 
-function useIsMobile() {
-  const [m, setM] = useState(() => window.innerWidth < 768);
+// "wide" ≥1350px → bulles absolues dehors | "mid" 768-1349 → bulles dessous | "mobile" <768
+function useLayout() {
+  const get = () => window.innerWidth >= 1350 ? "wide" : window.innerWidth >= 768 ? "mid" : "mobile";
+  const [l, setL] = useState(get);
   useEffect(() => {
-    const h = () => setM(window.innerWidth < 768);
+    const h = () => setL(get());
     window.addEventListener("resize", h, { passive: true });
     return () => window.removeEventListener("resize", h);
   }, []);
-  return m;
+  return l;
 }
 
 export default function HomePage({ markets, coins, sc, username, onBet, onViewDetail, onNavigate, matches, onMatchBet, profile, leaderboard, session, showToast, onAwardXP }) {
   const live=matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").slice(0,3);
   const upcoming=matches.filter(m=>m.status==="SCHEDULED").slice(0,3);
   const div=getDivision(profile?.coins||0);
-  const isMobile = useIsMobile();
+  const layout = useLayout();
   const topMarket=markets.length>0?markets.reduce((a,b)=>(b.total_volume||0)>(a.total_volume||0)?b:a,markets[0]):null;
   const myRank=leaderboard?.findIndex(p=>p.id===profile?.id);
   const rankDisplay=myRank>=0?myRank+1:null;
@@ -64,14 +66,19 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
   }, []);
 
   return <div ref={contentRef} className="page-enter">
-    {/* LIGNE HERO : [Quêtes] [Hero] [Classement] sur desktop, hero seul sur mobile */}
-    <div style={{ display:(!isMobile&&session)?"grid":"block", gridTemplateColumns:"1fr 2fr 1fr", gap:12, marginBottom:18, alignItems:"stretch" }}>
+    {/* HERO + bulles flottantes ------------------------------------------------- */}
+    {/* Wrapper position:relative, overflow:visible → les bulles débordent à gauche/droite */}
+    <div style={{ position:"relative", marginBottom:18 }}>
 
-      {/* Bulle gauche — quêtes */}
-      {!isMobile && session && <QuestsBubble profile={profile} session={session} onNavigate={onNavigate} />}
+      {/* Bulle gauche — absolue hors colonne (wide desktop uniquement) */}
+      {layout==="wide" && session && (
+        <div style={{ position:"absolute", top:0, bottom:0, right:"calc(100% + 12px)", width:180 }}>
+          <QuestsBubble profile={profile} session={session} onNavigate={onNavigate} xStyle={{ height:"100%" }} />
+        </div>
+      )}
 
-      {/* Hero central */}
-      <div ref={heroRef} style={{ background:`linear-gradient(135deg,${div.color}15,rgba(59,130,246,0.04))`, border:`1px solid ${div.color}20`, borderRadius:22, padding:"22px 24px", position:"relative", overflow:"hidden", ...(isMobile||!session?{marginBottom:0}:{}) }}>
+      {/* Hero — pleine largeur, inchangé */}
+      <div ref={heroRef} style={{ background:`linear-gradient(135deg,${div.color}15,rgba(59,130,246,0.04))`, border:`1px solid ${div.color}20`, borderRadius:22, padding:"22px 24px", position:"relative", overflow:"hidden" }}>
         <div ref={orbRef} style={{ position:"absolute", top:-60, right:-60, width:200, height:200, borderRadius:"50%", background:`radial-gradient(circle,${div.color}20,transparent 70%)`, pointerEvents:"none" }} />
         <div data-hero style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
           <div style={{ fontSize:11, fontWeight:700, color:"#10b981", letterSpacing:3 }}>{t("home.welcome")} {username?.toUpperCase()}</div>
@@ -99,9 +106,16 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
         <div data-hero style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:14 }}><MCBadge amount={coins} size="lg" /><SCBadge amount={sc} size="lg" /></div>
       </div>
 
-      {/* Bulle droite — classement */}
-      {!isMobile && session && <RankingBubble profile={profile} leaderboard={leaderboard} onNavigate={onNavigate} />}
+      {/* Bulle droite — absolue hors colonne (wide desktop uniquement) */}
+      {layout==="wide" && session && (
+        <div style={{ position:"absolute", top:0, bottom:0, left:"calc(100% + 12px)", width:180 }}>
+          <RankingBubble profile={profile} leaderboard={leaderboard} onNavigate={onNavigate} xStyle={{ height:"100%" }} />
+        </div>
+      )}
     </div>
+
+    {/* Bulles en 2 colonnes sous le hero (desktop intermédiaire 768-1349px) */}
+    {layout==="mid" && session && <InfoBubbles profile={profile} session={session} leaderboard={leaderboard} onNavigate={onNavigate} />}
 
     {/* MISSIONS DÉMARRAGE */}
     <MissionsStarter profile={profile} session={session} onNavigate={onNavigate} onAwardXP={onAwardXP} showToast={showToast} />
@@ -163,7 +177,7 @@ export default function HomePage({ markets, coins, sc, username, onBet, onViewDe
     </>}
 
     {/* BULLES QUÊTES + CLASSEMENT — mobile (après les matchs) */}
-    {session && isMobile && <InfoBubbles profile={profile} session={session} leaderboard={leaderboard} onNavigate={onNavigate} />}
+    {session && layout==="mobile" && <InfoBubbles profile={profile} session={session} leaderboard={leaderboard} onNavigate={onNavigate} />}
 
     {/* GUIDE CTA */}
     <div onClick={()=>onNavigate("howto")} className="card-hover" style={{ marginTop:26, background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)", borderRadius:16, padding:"18px 20px", display:"flex", alignItems:"center", gap:14, cursor:"pointer", transition:"all 0.2s" }}>
@@ -188,7 +202,7 @@ function InfoBubbles({ profile, session, leaderboard, onNavigate }) {
 }
 
 // ── Bulle quêtes du jour + défis saison ─────────────────────────────────────
-function QuestsBubble({ profile, session, onNavigate }) {
+function QuestsBubble({ profile, session, onNavigate, xStyle }) {
   const today = new Date().toISOString().split("T")[0];
   const questKey = `mb_quests_${today}_${profile?.id||""}`;
   const permKey  = `mb_pquests_${profile?.id||""}`;
@@ -229,7 +243,7 @@ function QuestsBubble({ profile, session, onNavigate }) {
   const pct = Math.round((claimedCount / quests.length) * 100);
 
   return (
-    <div style={{ background:"rgba(251,191,36,0.03)", border:"1px solid rgba(251,191,36,0.12)", borderRadius:18, padding:"14px 14px", display:"flex", flexDirection:"column" }}>
+    <div style={{ background:"rgba(251,191,36,0.03)", border:"1px solid rgba(251,191,36,0.12)", borderRadius:18, padding:"14px 14px", display:"flex", flexDirection:"column", ...xStyle }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
         <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"#f1f5f9" }}>⚡ QUÊTES DU JOUR</div>
@@ -291,7 +305,7 @@ function QuestsBubble({ profile, session, onNavigate }) {
 }
 
 // ── Bulle mini classement division ───────────────────────────────────────────
-function RankingBubble({ profile, leaderboard, onNavigate }) {
+function RankingBubble({ profile, leaderboard, onNavigate, xStyle }) {
   const div = getDivision(profile?.coins || 0);
   const [divRank, setDivRank] = useState(null);
   const [divPlayers, setDivPlayers] = useState([]);
@@ -316,7 +330,7 @@ function RankingBubble({ profile, leaderboard, onNavigate }) {
   const MEDALS = ["🥇","🥈","🥉"];
 
   return (
-    <div style={{ background:`linear-gradient(135deg,${div.color}0d,rgba(3,7,18,0.4))`, border:`1px solid ${div.color}20`, borderRadius:18, padding:"14px 14px", display:"flex", flexDirection:"column" }}>
+    <div style={{ background:`linear-gradient(135deg,${div.color}0d,rgba(3,7,18,0.4))`, border:`1px solid ${div.color}20`, borderRadius:18, padding:"14px 14px", display:"flex", flexDirection:"column", ...xStyle }}>
       {/* Division header */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
         <div style={{ width:32, height:32, borderRadius:9, background:`${div.color}18`, border:`1.5px solid ${div.color}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>
