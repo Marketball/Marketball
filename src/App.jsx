@@ -538,7 +538,7 @@ function AppInner() {
       const newBet=res?.[0]||{id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"};
       setMatchBets(prev=>[newBet,...prev]);
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
-      setMatchBetModal(null);
+      if(matchBetModal) setMatchBetModal(null);
       showToast("Pari place ! +5 XP");
       messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       await loadLeaderboard(session.token);
@@ -939,7 +939,7 @@ function AppInner() {
     <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} onAwardXP={async(xp)=>{const{newXP,newLevel,newSC}=applyXPGain(profile?.xp,xp);await updateProfile({xp:newXP,level:newLevel,store_coins:newSC},session.token,session.user.id);}} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} onViewMatch={viewMatchDetail} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="match-detail"&&selectedMatch&&<MatchDetailPage match={matches.find(m=>m.id===selectedMatch.id)||selectedMatch} onBack={()=>navigateTo("matches")} onBet={(m)=>{setMatchBetModal(m);setMatchBetInitialPred("");}} session={session} profile={profile} />}
+      {page==="match-detail"&&selectedMatch&&<MatchDetailPage match={matches.find(m=>m.id===selectedMatch.id)||selectedMatch} onBack={()=>navigateTo("matches")} onConfirm={handleMatchBetConfirm} coins={coins} betsFrozenUntil={betsFrozenUntil} session={session} profile={profile} />}
       {page==="propose-market"&&<ProposeMarketPage profile={profile} session={session} showToast={showToast} onBack={()=>navigateTo("markets")} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onPropose={()=>navigateTo("propose-market")} profile={profile} session={session} showToast={showToast} loading={marketsLoading} />}
       {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} session={session} profile={profile} />}
