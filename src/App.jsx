@@ -505,7 +505,7 @@ function AppInner() {
       }
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
-      showToast("Prediction placee ! +5 XP");
+      showToast("Prédiction placée !");
       messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       setTimeout(()=>loadBets(session.token,session.user.id),500);
       await loadLeaderboard(session.token);
@@ -527,7 +527,7 @@ function AppInner() {
       try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
-      showToast("Prediction placee ! +5 XP");
+      showToast("Prédiction placée !");
       messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       setTimeout(()=>loadBets(session.token,session.user.id),500);
       await loadLeaderboard(session.token);
@@ -548,7 +548,7 @@ function AppInner() {
       setMatchBets(prev=>[newBet,...prev]);
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       if(matchBetModal) setMatchBetModal(null);
-      showToast("Pari place ! +5 XP");
+      showToast("Pari placé !");
       messages.forEach((m,i)=>setTimeout(()=>showToast(m,"win"),600*(i+1)));
       await loadLeaderboard(session.token);
     }catch(e){showToast(`Erreur : ${e.message}`,"error");}
