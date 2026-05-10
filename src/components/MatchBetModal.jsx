@@ -67,7 +67,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
   const ouSettled=betType==="over_under"&&prediction?isOverUnderSettled(prediction,match):false;
   const firstScorerLocked=isLive&&totalGoals>0;
   const exactScoreImpossible=isLive&&(homeGoals<liveHome||awayGoals<liveAway);
-  const canBet=!isFrozen&&!isFinished&&!lateStageLocked&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins&&remaining>0;
+  const canBet=!isFrozen&&!isFinished&&!lateStageLocked&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins&&amtNum<=remaining&&remaining>0;
 
   const lateStage=isLive&&elapsed>=85;
   const BET_TYPES=[

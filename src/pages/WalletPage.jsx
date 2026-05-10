@@ -324,9 +324,6 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
       </div>
     </div>
 
-    {/* Historique Défis */}
-    {session?.token&&profile?.id&&<ChallengeHistory session={session} profile={profile} />}
-
     {/* Mes paris */}
     {allBets.length>0&&<>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, marginBottom:12 }}>{t("wallet.my_bets")}</div>
@@ -353,6 +350,9 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         </div>
         <ChartSVG points={chartPoints} />
       </div>}
+
+      {/* Historique Défis */}
+      {session?.token&&profile?.id&&<ChallengeHistory session={session} profile={profile} />}
 
       {/* Filtre */}
       <div style={{ display:"flex", gap:6, marginBottom:12 }}>

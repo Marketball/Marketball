@@ -494,6 +494,7 @@ function AppInner() {
     try{
       const safeGain=Math.max(cost+1, gain||cost+1);
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending"})});
+      setBets(prev=>[{user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side,amount,cost,potential_gain:safeGain,status:"pending",created_at:new Date().toISOString()},...prev]);
       const updMarket=markets.find(m=>m.id===betModal.id);
       const upd=markets.map(m=>m.id===betModal.id?{...m,q_yes:side==="yes"?m.q_yes+amount:m.q_yes,q_no:side==="no"?m.q_no+amount:m.q_no,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
@@ -520,6 +521,7 @@ function AppInner() {
     const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
+      setBets(prev=>[{user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending",created_at:new Date().toISOString()},...prev]);
       const upd=markets.map(m=>m.id===betModal.id?{...m,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
       try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}

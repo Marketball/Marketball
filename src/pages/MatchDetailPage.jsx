@@ -104,7 +104,7 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
   const ouSettled = betType==="over_under" && prediction ? isOverUnderSettled(prediction, match) : false;
   const firstScorerLocked = isLive && totalGoals > 0;
   const exactScoreImpossible = isLive && (homeGoals < liveHome || awayGoals < liveAway);
-  const canBet = !isFrozen && !isFinished && !lateStageLocked && !ouSettled && !exactScoreImpossible && finalPred && amtNum >= 1 && amtNum <= (coins||0) && remaining > 0;
+  const canBet = !isFrozen && !isFinished && !lateStageLocked && !ouSettled && !exactScoreImpossible && finalPred && amtNum >= 1 && amtNum <= (coins||0) && amtNum <= remaining && remaining > 0;
 
   const BET_TYPES = [
     { id:"winner",      label:"🏆 Vainqueur",  desc: lateStage?"🔒 Fermé (85e+)":"1X2",                  locked: isFinished||lateStage },
