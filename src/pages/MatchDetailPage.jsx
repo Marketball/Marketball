@@ -31,7 +31,9 @@ function Logo({ logo, name }) {
   return <div style={{ width:48, height:48, borderRadius:"50%", background:`${clubColor}20`, border:`2px solid ${clubColor}45`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 8px", fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:clubColor }}>{init}</div>;
 }
 
-export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsFrozenUntil, session, profile }) {
+const MAX_BET = 100000;
+
+export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsFrozenUntil, session, profile, alreadyBet=0 }) {
   const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
   const isFinished = match.status === "FINISHED";
   const cc = compColor(match.competition);
@@ -91,6 +93,8 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
     return 2;
   };
   const currentOdds = getOdds();
+  const remaining = Math.max(0, MAX_BET - alreadyBet);
+  const maxInput = Math.min(remaining, coins || 0);
   const amtNum = parseInt(amount) || 0;
   const gain = Math.round(amtNum * currentOdds);
   const finalPred = betType === "exact_score" ? `${homeGoals}-${awayGoals}` : prediction;
@@ -100,7 +104,7 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
   const ouSettled = betType==="over_under" && prediction ? isOverUnderSettled(prediction, match) : false;
   const firstScorerLocked = isLive && totalGoals > 0;
   const exactScoreImpossible = isLive && (homeGoals < liveHome || awayGoals < liveAway);
-  const canBet = !isFrozen && !isFinished && !lateStageLocked && !ouSettled && !exactScoreImpossible && finalPred && amtNum >= 1 && amtNum <= (coins||0);
+  const canBet = !isFrozen && !isFinished && !lateStageLocked && !ouSettled && !exactScoreImpossible && finalPred && amtNum >= 1 && amtNum <= (coins||0) && remaining > 0;
 
   const BET_TYPES = [
     { id:"winner",      label:"🏆 Vainqueur",  desc: lateStage?"🔒 Fermé (85e+)":"1X2",                  locked: isFinished||lateStage },
@@ -317,13 +321,17 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
           <div style={{ marginBottom:14 }}>{renderBetInputs()}</div>
 
           {/* Mise */}
-          <input type="number" value={amount} placeholder="Mise en MC…" min={1} max={coins||0}
-            onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(coins||0,Math.max(1,parseInt(v)||1)).toString());}}}
-            style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+          {alreadyBet>0&&<div style={{ fontSize:10, color:remaining===0?"#ef4444":"rgba(241,245,249,0.35)", textAlign:"right", marginBottom:6 }}>{remaining===0?"🔒 Limite de 100 000 MC atteinte sur ce match":`${remaining.toLocaleString()} MC restants sur ce match`}</div>}
+          {remaining===0
+            ? <div style={{ textAlign:"center", padding:"14px 0", marginBottom:8, fontSize:13, color:"#ef4444", fontWeight:700, background:"rgba(239,68,68,0.06)", borderRadius:11, border:"1px solid rgba(239,68,68,0.15)" }}>🔒 Tu as déjà misé 100 000 MC sur ce match</div>
+            : <input type="number" value={amount} placeholder="Mise en MC…" min={1} max={maxInput}
+                onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(maxInput,Math.max(1,parseInt(v)||1)).toString());}}}
+                style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+          }
           <div style={{ display:"flex", gap:6, marginBottom:14 }}>
             {[50,100,200,500].map(v=>(
-              <button key={v} onClick={()=>setAmount(String(Math.min(v,coins||0)))}
-                style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===String(v)?"rgba(16,185,129,0.1)":"transparent", color:amount===String(v)?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>
+              <button key={v} onClick={()=>remaining>0&&setAmount(String(Math.min(v,maxInput)))}
+                style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===String(v)?"rgba(16,185,129,0.1)":"transparent", color:remaining===0?"rgba(241,245,249,0.15)":amount===String(v)?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:remaining===0?"not-allowed":"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>
                 {v}
               </button>
             ))}
@@ -357,7 +365,7 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
           {session ? (
             <button onClick={handleConfirm} disabled={!canBet&&!exactScoreImpossible}
               style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
-              {isFrozen?"Paris suspendus ⏳":ouSettled?"Non disponible":!finalPred?"Choisir une prédiction":!amtNum?"Entrer une mise":(coins||0)<amtNum?"Pas assez de MC":"CONFIRMER →"}
+              {remaining===0?"Limite atteinte 🔒":isFrozen?"Paris suspendus ⏳":ouSettled?"Non disponible":!finalPred?"Choisir une prédiction":!amtNum?"Entrer une mise":(coins||0)<amtNum?"Pas assez de MC":"CONFIRMER →"}
             </button>
           ) : (
             <button onClick={onBack}

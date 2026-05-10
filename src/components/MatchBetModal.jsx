@@ -15,7 +15,9 @@ const isOverUnderSettled = (predLabel, match) => {
   return false;
 };
 
-export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFrozenUntil, initialPrediction }) {
+const MAX_BET = 100000;
+
+export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFrozenUntil, initialPrediction, alreadyBet=0 }) {
   const isLive=match.status==="IN_PLAY"||match.status==="PAUSED";
   const liveHome=match.home_score??0, liveAway=match.away_score??0;
 
@@ -53,20 +55,19 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
     return 2;
   };
   const currentOdds=getOdds();
+  const remaining=Math.max(0, MAX_BET - alreadyBet);
+  const maxInput=Math.min(remaining, coins);
   const amtNum=parseInt(amount)||0;
   const gain=Math.round(amtNum*currentOdds);
   const finalPred=betType==="exact_score"?`${homeGoals}-${awayGoals}`:prediction;
   const isFrozen=betsFrozenUntil>0&&Date.now()<betsFrozenUntil;
   const isFinished=match.status==="FINISHED";
   const elapsed=match.elapsed||0;
-  // Bloquer vainqueur + score exact à partir de la 85e min (trop manipulable)
   const lateStageLocked=isLive&&elapsed>=85&&(betType==="winner"||betType==="exact_score");
   const ouSettled=betType==="over_under"&&prediction?isOverUnderSettled(prediction,match):false;
-  // 1er buteur désactivé si déjà un but en live
   const firstScorerLocked=isLive&&totalGoals>0;
-  // Score exact impossible si en dessous du score actuel
   const exactScoreImpossible=isLive&&(homeGoals<liveHome||awayGoals<liveAway);
-  const canBet=!isFrozen&&!isFinished&&!lateStageLocked&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins;
+  const canBet=!isFrozen&&!isFinished&&!lateStageLocked&&!ouSettled&&!exactScoreImpossible&&finalPred&&amtNum>=1&&amtNum<=coins&&remaining>0;
 
   const lateStage=isLive&&elapsed>=85;
   const BET_TYPES=[
@@ -154,8 +155,12 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
         {BET_TYPES.map(t=><button key={t.id} onClick={()=>{if(t.locked)return;setBetType(t.id);setPrediction("");setScorerTeam("home");setSelectedPlayerPos("");}} style={{ padding:"10px 12px", borderRadius:10, border:`2px solid ${t.locked?"rgba(241,245,249,0.03)":betType===t.id?"#10b981":"rgba(241,245,249,0.06)"}`, background:t.locked?"rgba(241,245,249,0.01)":betType===t.id?"rgba(16,185,129,0.08)":"transparent", color:t.locked?"rgba(241,245,249,0.2)":betType===t.id?"#10b981":"rgba(241,245,249,0.35)", fontWeight:700, fontSize:11, cursor:t.locked?"not-allowed":"pointer", textAlign:"left", transition:"all 0.2s", opacity:t.locked?0.5:1 }}><div>{t.label}</div><div style={{ fontSize:9, fontWeight:400, opacity:0.6, marginTop:1 }}>{t.desc}</div></button>)}
       </div>
       <div style={{ marginBottom:16 }}>{renderInputs()}</div>
-      <input type="number" value={amount} placeholder="Ex: 200" min={1} max={coins} onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(coins,Math.max(1,parseInt(v)||1)).toString());}}} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
-      <div style={{ display:"flex", gap:6, marginBottom:14 }}>{[50,100,200,500].map(v=><button key={v} onClick={()=>setAmount(Math.min(v,coins))} style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===v?"rgba(16,185,129,0.1)":"transparent", color:amount===v?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>)}</div>
+      {alreadyBet>0&&<div style={{ fontSize:10, color:remaining===0?"#ef4444":"rgba(241,245,249,0.35)", textAlign:"right", marginBottom:6 }}>{remaining===0?"🔒 Limite de 100 000 MC atteinte sur ce match":`${remaining.toLocaleString()} MC restants sur ce match`}</div>}
+      {remaining===0
+        ? <div style={{ textAlign:"center", padding:"14px 0", marginBottom:8, fontSize:13, color:"#ef4444", fontWeight:700, background:"rgba(239,68,68,0.06)", borderRadius:11, border:"1px solid rgba(239,68,68,0.15)" }}>🔒 Tu as déjà misé 100 000 MC sur ce match</div>
+        : <input type="number" value={amount} placeholder="Ex: 200" min={1} max={maxInput} onChange={e=>{const v=e.target.value;if(v===""){setAmount("");}else{setAmount(Math.min(maxInput,Math.max(1,parseInt(v)||1)).toString());}}} style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", marginBottom:8, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+      }
+      <div style={{ display:"flex", gap:6, marginBottom:14 }}>{[50,100,200,500].map(v=><button key={v} onClick={()=>remaining>0&&setAmount(String(Math.min(v,maxInput)))} style={{ flex:1, padding:"7px 0", borderRadius:9, border:"1px solid rgba(241,245,249,0.07)", background:amount===String(v)?"rgba(16,185,129,0.1)":"transparent", color:remaining===0?"rgba(241,245,249,0.15)":amount===String(v)?"#10b981":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:remaining===0?"not-allowed":"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>)}</div>
       <div style={{ background:"rgba(241,245,249,0.02)", border:"1px solid rgba(241,245,249,0.06)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Prediction</span><span style={{ fontWeight:700, fontSize:13 }}>{finalPred||"—"}</span></div>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}><span style={{ fontSize:13, color:"rgba(241,245,249,0.35)" }}>Cote</span><span style={{ fontFamily:"'Bebas Neue',sans-serif", color:"#fbbf24", fontSize:18, letterSpacing:1 }}>x{currentOdds}</span></div>
@@ -168,7 +173,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
       {ouSettled==="win"&&<div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#10b981", fontWeight:700, textAlign:"center" }}>✅ Issue déjà garantie — pari non disponible</div>}
       {ouSettled==="loss"&&<div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:12, color:"#ef4444", fontWeight:700, textAlign:"center" }}>❌ Issue impossible — pari non disponible</div>}
       <button onClick={()=>{if(exactScoreImpossible){setTriedConfirm(true);return;}canBet&&onConfirm(match,betType,finalPred,amtNum,gain,currentOdds);}} disabled={!canBet&&!exactScoreImpossible} style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#10b981,#059669)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(16,185,129,0.3)":"none" }}>
-        {isFrozen?"Paris suspendus ⏳":ouSettled?"Non disponible":!finalPred?"Choisir une prediction":coins<amount?"Pas assez de MC":"CONFIRMER →"}
+        {remaining===0?"Limite atteinte 🔒":isFrozen?"Paris suspendus ⏳":ouSettled?"Non disponible":!finalPred?"Choisir une prediction":coins<amount?"Pas assez de MC":"CONFIRMER →"}
       </button>
     </div>
   </div>;

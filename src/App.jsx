@@ -488,6 +488,8 @@ function AppInner() {
     if(!session) return;
     const newCoins=(profile?.coins||0)-cost;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
+    const alreadyOnMarket=bets.filter(b=>b.market_id===betModal.id).reduce((s,b)=>s+(b.cost||0),0);
+    if(alreadyOnMarket+cost>100000){showToast("Limite de 100 000 MC atteinte sur ce marché !","error");return;}
     const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       const safeGain=Math.max(cost+1, gain||cost+1);
@@ -513,6 +515,8 @@ function AppInner() {
     if(!session) return;
     const newCoins=(profile?.coins||0)-cost;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
+    const alreadyOnMarket=bets.filter(b=>b.market_id===betModal.id).reduce((s,b)=>s+(b.cost||0),0);
+    if(alreadyOnMarket+cost>100000){showToast("Limite de 100 000 MC atteinte sur ce marché !","error");return;}
     const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
@@ -532,6 +536,9 @@ function AppInner() {
     if(!session) return;
     const newCoins=(profile?.coins||0)-amount;
     if(newCoins<0){showToast("Pas assez de MC !","error");return;}
+    const mTitle=`${match.home_team} vs ${match.away_team}`;
+    const alreadyOnMatch=matchBets.filter(b=>b.match_title===mTitle).reduce((s,b)=>s+(b.cost||0),0);
+    if(alreadyOnMatch+amount>100000){showToast("Limite de 100 000 MC atteinte sur ce match !","error");return;}
     const {newXP,newLevel,newSC,messages}=applyXPGain(profile?.xp,5);
     try{
       const res=await req("match_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",match_id:null,match_title:`${match.home_team} vs ${match.away_team}`,bet_type:betType,prediction,cost:amount,potential_gain:gain,status:"pending"})});
@@ -939,7 +946,7 @@ function AppInner() {
     <div key={page} ref={pageAuthRef} className="page-content" style={{ maxWidth:980, margin:"0 auto", padding:"24px 20px 32px", position:"relative", zIndex:1 }}>
       {page==="home"&&<HomePage markets={markets} coins={coins} sc={sc} username={username} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onNavigate={navigateTo} matches={matches} onMatchBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} profile={profile} leaderboard={leaderboard} session={session} showToast={showToast} onAwardXP={async(xp)=>{const{newXP,newLevel,newSC}=applyXPGain(profile?.xp,xp);await updateProfile({xp:newXP,level:newLevel,store_coins:newSC},session.token,session.user.id);}} />}
       {page==="matches"&&<MatchesPage matches={matches} onBet={(m,pred)=>{setMatchBetModal(m);setMatchBetInitialPred(pred||"");}} onViewMatch={viewMatchDetail} loading={matchesLoading} session={session} profile={profile} />}
-      {page==="match-detail"&&selectedMatch&&<MatchDetailPage match={matches.find(m=>m.id===selectedMatch.id)||selectedMatch} onBack={()=>navigateTo("matches")} onConfirm={handleMatchBetConfirm} coins={coins} betsFrozenUntil={betsFrozenUntil} session={session} profile={profile} />}
+      {page==="match-detail"&&selectedMatch&&(()=>{const _m=matches.find(m=>m.id===selectedMatch.id)||selectedMatch;const _ab=matchBets.filter(b=>b.match_title===`${_m.home_team} vs ${_m.away_team}`).reduce((s,b)=>s+(b.cost||0),0);return <MatchDetailPage match={_m} onBack={()=>navigateTo("matches")} onConfirm={handleMatchBetConfirm} coins={coins} betsFrozenUntil={betsFrozenUntil} session={session} profile={profile} alreadyBet={_ab} />;})()}
       {page==="propose-market"&&<ProposeMarketPage profile={profile} session={session} showToast={showToast} onBack={()=>navigateTo("markets")} />}
       {page==="markets"&&<MarketsPage markets={markets} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} onViewDetail={viewMarketDetail} onPropose={()=>navigateTo("propose-market")} profile={profile} session={session} showToast={showToast} loading={marketsLoading} />}
       {page==="market"&&selectedMarket&&<MarketDetailPage market={selectedMarket} onBack={()=>navigateTo("markets")} onBet={(m,side)=>{setBetModal(m);setBetInitialSide(side||"yes");}} session={session} profile={profile} />}
@@ -977,11 +984,8 @@ function AppInner() {
       ))}
     </div>
 
-{betModal&&(betModal.market_type==="multi"
-  ?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} />
-  :<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} initialSide={betInitialSide} />
-)}
-    {matchBetModal&&<MatchBetModal match={matches.find(m=>m.id===matchBetModal.id)||matchBetModal} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} />}
+{betModal&&(()=>{const _ab=bets.filter(b=>b.market_id===betModal.id).reduce((s,b)=>s+(b.cost||0),0);return betModal.market_type==="multi"?<MultiBetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleMultiBetConfirm} alreadyBet={_ab} />:<BetModal market={betModal} coins={coins} onClose={()=>setBetModal(null)} onConfirm={handleBetConfirm} initialSide={betInitialSide} alreadyBet={_ab} />;})()}
+    {matchBetModal&&(()=>{const _m=matches.find(m=>m.id===matchBetModal.id)||matchBetModal;const _ab=matchBets.filter(b=>b.match_title===`${_m.home_team} vs ${_m.away_team}`).reduce((s,b)=>s+(b.cost||0),0);return <MatchBetModal match={_m} coins={coins} onClose={()=>setMatchBetModal(null)} onConfirm={handleMatchBetConfirm} betsFrozenUntil={betsFrozenUntil} initialPrediction={matchBetInitialPred} alreadyBet={_ab} />;})()}
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)} />}
     {showConfetti&&<Confetti onDone={()=>setShowConfetti(false)} />}
     {showOnboarding&&<OnboardingModal username={username} onClose={()=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);}} onNavigate={(p)=>{localStorage.setItem("mb_onboarded","1");setShowOnboarding(false);navigateTo(p);}} />}

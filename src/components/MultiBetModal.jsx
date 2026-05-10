@@ -2,21 +2,25 @@ import { useState } from "react";
 import { fmt } from "../lib/helpers.js";
 import MCBadge from "./ui/MCBadge.jsx";
 
-export default function MultiBetModal({ market, onClose, onConfirm, coins }) {
+const MAX_BET = 100000;
+
+export default function MultiBetModal({ market, onClose, onConfirm, coins, alreadyBet=0 }) {
   const options = market.options || [];
   const [selected, setSelected] = useState(null);
   const [coinsInput, setCoinsInput] = useState("");
 
-  const coinsNum = coinsInput === "" ? 0 : Math.max(0, Math.min(coins, parseInt(coinsInput) || 0));
+  const remaining = Math.max(0, MAX_BET - alreadyBet);
+  const maxInput = Math.min(remaining, coins);
+  const coinsNum = coinsInput === "" ? 0 : Math.max(0, Math.min(maxInput, parseInt(coinsInput) || 0));
   const selectedOpt = options.find(o => o.label === selected);
   const gain = selectedOpt && coinsNum > 0 ? Math.round(coinsNum * selectedOpt.odds) : 0;
-  const canBet = selected && coinsNum >= 1 && coinsNum <= coins;
+  const canBet = selected && coinsNum >= 1 && coinsNum <= coins && remaining > 0;
 
   const handleInput = (e) => {
     const val = e.target.value;
     if (val === "") { setCoinsInput(""); return; }
     const n = parseInt(val);
-    if (!isNaN(n)) setCoinsInput(Math.min(coins, Math.max(0, n)).toString());
+    if (!isNaN(n)) setCoinsInput(Math.min(maxInput, Math.max(0, n)).toString());
   };
 
   return <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(16px)", animation:"fadeIn 0.2s ease" }}>
@@ -42,14 +46,20 @@ export default function MultiBetModal({ market, onClose, onConfirm, coins }) {
       </div>
 
       <div style={{ marginBottom:16 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)", marginBottom:7 }}>COMBIEN DE MC TU MISES ?</div>
-        <input type="number" value={coinsInput} placeholder="Ex: 100" min={1} max={coins}
-          onChange={handleInput}
-          style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.35)" }}>COMBIEN DE MC TU MISES ?</div>
+          {alreadyBet>0&&<div style={{ fontSize:10, color:remaining===0?"#ef4444":"rgba(241,245,249,0.3)" }}>{remaining===0?"🔒 Limite atteinte":`${remaining.toLocaleString()} MC restants`}</div>}
+        </div>
+        {remaining===0
+          ? <div style={{ textAlign:"center", padding:"14px 0", fontSize:13, color:"#ef4444", fontWeight:700, background:"rgba(239,68,68,0.06)", borderRadius:11, border:"1px solid rgba(239,68,68,0.15)" }}>🔒 Tu as déjà misé 100 000 MC sur ce marché</div>
+          : <input type="number" value={coinsInput} placeholder="Ex: 100" min={1} max={maxInput}
+              onChange={handleInput}
+              style={{ width:"100%", padding:"11px 14px", background:"rgba(241,245,249,0.04)", border:"1px solid rgba(241,245,249,0.08)", borderRadius:11, color:"#f1f5f9", fontSize:22, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1 }} />
+        }
         <div style={{ display:"flex", gap:6, marginTop:8 }}>
           {[50,100,200,500].map(v => (
-            <button key={v} onClick={() => setCoinsInput(Math.min(v, coins).toString())}
-              style={{ flex:1, padding:"7px 0", borderRadius:9, border:`1px solid ${coinsInput===v.toString()?"rgba(245,158,11,0.3)":"rgba(241,245,249,0.07)"}`, background:coinsInput===v.toString()?"rgba(245,158,11,0.1)":"transparent", color:coinsInput===v.toString()?"#f59e0b":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>
+            <button key={v} onClick={() => remaining>0&&setCoinsInput(Math.min(v, maxInput).toString())}
+              style={{ flex:1, padding:"7px 0", borderRadius:9, border:`1px solid ${coinsInput===v.toString()?"rgba(245,158,11,0.3)":"rgba(241,245,249,0.07)"}`, background:coinsInput===v.toString()?"rgba(245,158,11,0.1)":"transparent", color:remaining===0?"rgba(241,245,249,0.15)":coinsInput===v.toString()?"#f59e0b":"rgba(241,245,249,0.4)", fontSize:13, fontWeight:700, cursor:remaining===0?"not-allowed":"pointer", fontFamily:"'Bebas Neue',sans-serif" }}>{v}</button>
           ))}
         </div>
       </div>
@@ -62,7 +72,7 @@ export default function MultiBetModal({ market, onClose, onConfirm, coins }) {
 
       <button onClick={() => canBet && onConfirm(selected, selectedOpt.odds, coinsNum, gain)} disabled={!canBet}
         style={{ width:"100%", padding:"13px 0", borderRadius:12, border:"none", background:canBet?"linear-gradient(135deg,#f59e0b,#d97706)":"rgba(241,245,249,0.04)", color:canBet?"#fff":"rgba(241,245,249,0.2)", fontWeight:800, fontSize:15, cursor:canBet?"pointer":"not-allowed", transition:"all 0.2s", boxShadow:canBet?"0 8px 25px rgba(245,158,11,0.3)":"none" }}>
-        {!selected?"Choisis une option":coinsNum===0?"Entrer un montant":"CONFIRMER →"}
+        {remaining===0?"Limite atteinte 🔒":!selected?"Choisis une option":coinsNum===0?"Entrer un montant":"CONFIRMER →"}
       </button>
     </div>
   </div>;
