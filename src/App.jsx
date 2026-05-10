@@ -957,7 +957,7 @@ function AppInner() {
       {page==="subscription"&&<SubscriptionPage profile={profile} onSubscribe={handleSubscribe} />}
       {page==="profile"&&<ProfilePage profile={profile} username={username} onLogout={handleLogout} onNavigate={navigateTo} session={session} />}
       {page==="howto"&&<HowItWorksPage onNavigate={navigateTo} />}
-      {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} onViewProfile={(u)=>{setPublicProfileUser(u);navigateTo("leaderboard");}} />}
+      {page==="community"&&<CommunityPage session={session} profile={profile} showToast={showToast} onViewProfile={(u)=>{setPublicProfileUser(u);navigateTo("leaderboard");}} onWinAlert={(amount,opponent)=>showToast(`🏆 Victoire défi vs ${opponent} ! +${fmt(amount)} MC`,"win")} />}
       {page==="friends"&&<FriendsPage profile={profile} session={session} onViewProfile={(u)=>setPublicProfileUser(u)} showToast={showToast} />}
       {page==="leagues"&&<LeaguesPage profile={profile} session={session} showToast={showToast} onNavigate={navigateTo} />}
     </div>

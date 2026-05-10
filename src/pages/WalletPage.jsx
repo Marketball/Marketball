@@ -37,6 +37,74 @@ function ChartSVG({ points }) {
   );
 }
 
+function ChallengeHistory({ session, profile }) {
+  const [challenges, setChallenges] = useState([]);
+  const [open, setOpen] = useState(false);
+  const userId = profile?.id;
+
+  useEffect(() => {
+    if (!userId) return;
+    req(
+      `friend_challenges?or=(challenger_id.eq.${userId},challenged_id.eq.${userId})&status=in.(resolved,declined,cancelled)&order=created_at.desc&limit=20`,
+      { _token: session?.token }
+    ).then(d => setChallenges(d || [])).catch(() => {});
+  }, [userId]);
+
+  if (!challenges.length) return null;
+
+  const wins = challenges.filter(c => c.status === "resolved" && c.winner_id === userId).length;
+  const losses = challenges.filter(c => c.status === "resolved" && c.winner_id && c.winner_id !== userId).length;
+  const totalGained = challenges.filter(c => c.status === "resolved" && c.winner_id === userId).reduce((s, c) => s + c.amount * 2, 0);
+
+  return (
+    <div style={{ background:"rgba(245,158,11,0.03)", border:"1px solid rgba(245,158,11,0.12)", borderRadius:16, padding:"16px 18px", marginBottom:20 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width:"100%", background:"none", border:"none", cursor:"pointer", padding:0, textAlign:"left" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color:"#f59e0b" }}>HISTORIQUE DÉFIS</div>
+            <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>
+              {wins}V · {losses}D · Gain net : <span style={{ color: totalGained > 0 ? "#10b981" : "#ef4444" }}>+{totalGained.toLocaleString("fr-FR")} MC</span>
+            </div>
+          </div>
+          <span style={{ fontSize:16, color:"rgba(241,245,249,0.3)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}>▼</span>
+        </div>
+      </button>
+
+      {open && (
+        <div style={{ marginTop:14 }}>
+          {challenges.map(c => {
+            const won = c.status === "resolved" && c.winner_id === userId;
+            const lost = c.status === "resolved" && c.winner_id && c.winner_id !== userId;
+            const opponent = userId === c.challenger_id ? c.challenged_username : c.challenger_username;
+            return (
+              <div key={c.id} style={{
+                display:"flex", alignItems:"center", gap:10,
+                padding:"10px 12px", borderRadius:10, marginBottom:8,
+                background: won ? "rgba(16,185,129,0.06)" : lost ? "rgba(239,68,68,0.05)" : "rgba(241,245,249,0.02)",
+                border: `1px solid ${won ? "rgba(16,185,129,0.18)" : lost ? "rgba(239,68,68,0.12)" : "rgba(241,245,249,0.05)"}`,
+              }}>
+                <span style={{ fontSize:20, flexShrink:0 }}>{won ? "🏆" : lost ? "💀" : "↩"}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#f1f5f9", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {c.market_title}
+                  </div>
+                  <div style={{ fontSize:11, color:"rgba(241,245,249,0.35)" }}>vs {opponent}</div>
+                </div>
+                <div style={{ textAlign:"right", flexShrink:0 }}>
+                  {won && <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#10b981", letterSpacing:1 }}>+{(c.amount * 2).toLocaleString("fr-FR")} MC</div>}
+                  {lost && <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:"#ef4444", letterSpacing:1 }}>−{c.amount.toLocaleString("fr-FR")} MC</div>}
+                  {(c.status === "cancelled" || c.status === "declined") && <div style={{ fontSize:10, color:"rgba(241,245,249,0.25)", fontWeight:700 }}>{c.status === "cancelled" ? "ANNULÉ" : "REFUSÉ"}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin, onWatchAd, onConvertSC, onConvertMCtoSC, onCashout, markets, session, showToast }) {
   const [mcConvertAmount,setMcConvertAmount]=useState(500);
   const [cashoutConfirm,setCashoutConfirm]=useState(null);
@@ -255,6 +323,9 @@ export default function WalletPage({ coins, sc, bets, matchBets, profile, onSpin
         })}
       </div>
     </div>
+
+    {/* Historique Défis */}
+    {session?.token&&profile?.id&&<ChallengeHistory session={session} profile={profile} />}
 
     {/* Mes paris */}
     {allBets.length>0&&<>

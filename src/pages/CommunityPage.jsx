@@ -194,7 +194,7 @@ function PollCard({ poll, session, profile, showToast, t }) {
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
-export default function CommunityPage({ session, profile, showToast, onViewProfile }) {
+export default function CommunityPage({ session, profile, showToast, onViewProfile, onWinAlert }) {
   const { t } = useLang();
   const [posts, setPosts]   = useState([]);
   const [polls, setPolls]   = useState([]);
@@ -414,7 +414,7 @@ export default function CommunityPage({ session, profile, showToast, onViewProfi
 
       {/* ── AMIS / DÉFIS ── */}
       {tab === "amis"  && <FriendsTab    profile={profile} session={session} showToast={showToast} onViewProfile={onViewProfile} />}
-      {tab === "defis" && <ChallengesTab profile={profile} session={session} showToast={showToast} />}
+      {tab === "defis" && <ChallengesTab profile={profile} session={session} showToast={showToast} onWinAlert={onWinAlert} />}
     </div>
   );
 }
@@ -794,7 +794,7 @@ function FriendsTab({ profile, session, showToast, onViewProfile }) {
 }
 
 // ─── Challenges tab ───────────────────────────────────────────────────────────
-function ChallengesTab({ profile, session, showToast }) {
+function ChallengesTab({ profile, session, showToast, onWinAlert }) {
   const { t } = useLang();
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -803,6 +803,8 @@ function ChallengesTab({ profile, session, showToast }) {
   const userId = profile?.id;
   const token  = session?.token;
 
+  const NOTIF_KEY = `mb_ch_notified_${userId||""}`;
+
   const load = async () => {
     if (!userId) return;
     setLoading(true);
@@ -810,8 +812,26 @@ function ChallengesTab({ profile, session, showToast }) {
       `friend_challenges?or=(challenger_id.eq.${userId},challenged_id.eq.${userId})&order=created_at.desc&limit=50`,
       { _token:token }
     ).catch(() => []);
-    setChallenges(data || []);
+    const list = data || [];
+    setChallenges(list);
     setLoading(false);
+
+    // Notify wins not yet seen
+    if (onWinAlert) {
+      let notified = {};
+      try { notified = JSON.parse(localStorage.getItem(NOTIF_KEY) || "{}"); } catch {}
+      const newNotified = { ...notified };
+      let changed = false;
+      for (const c of list) {
+        if (c.status === "resolved" && c.winner_id === userId && !notified[c.id]) {
+          const opponent = c.winner_id === c.challenger_id ? c.challenged_username : c.challenger_username;
+          onWinAlert(c.amount, opponent || "adversaire");
+          newNotified[c.id] = true;
+          changed = true;
+        }
+      }
+      if (changed) localStorage.setItem(NOTIF_KEY, JSON.stringify(newNotified));
+    }
   };
 
   useEffect(() => { load(); }, [userId]);
@@ -978,17 +998,45 @@ function ChallengesTab({ profile, session, showToast }) {
           {subtab==="recus"      && (received.length===0    ? <EmptyState icon="⚔" label={t("challenges.no_received")} /> : received.map(c    => <ChallengeCard key={c.id} c={c} showActions="accept" />))}
           {subtab==="encours"    && (inProgress.length===0  ? <EmptyState icon="⚔" label={t("challenges.no_ongoing")} /> : inProgress.map(c  => <ChallengeCard key={c.id} c={c} showActions={null} />))}
           {subtab==="envoyes"    && (sentC.length===0        ? <EmptyState icon="📤" label={t("challenges.no_sent")} />    : sentC.map(c       => <ChallengeCard key={c.id} c={c} showActions="cancel" />))}
-          {subtab==="historique" && (history.length===0      ? <EmptyState icon="◎" label={t("challenges.no_history")} /> : history.map(c => (
-            <div key={c.id}>
-              {c.status==="resolved" && (
-                <div style={{ textAlign:"center", fontFamily:MONO, fontSize:11, fontWeight:800, letterSpacing:2,
-                              color:c.winner_id===userId ? G : "#ef4444", marginBottom:4 }}>
-                  {c.winner_id===userId ? `VICTOIRE +${c.amount} MC` : `DÉFAITE -${c.amount} MC`}
+          {subtab==="historique" && (history.length===0 ? <EmptyState icon="◎" label={t("challenges.no_history")} /> : history.map(c => {
+            const won = c.status==="resolved" && c.winner_id===userId;
+            const lost = c.status==="resolved" && c.winner_id && c.winner_id!==userId;
+            const cancelled = c.status==="cancelled";
+            const declined = c.status==="declined";
+            return (
+              <div key={c.id} style={{ marginBottom:12 }}>
+                {(c.status==="resolved") && (
+                  <div style={{
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                    padding:"6px 14px", borderRadius:"12px 12px 0 0",
+                    background: won ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.08)",
+                    border: `1px solid ${won ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.18)"}`,
+                    borderBottom:"none",
+                  }}>
+                    <span style={{ fontSize:16 }}>{won ? "🏆" : "💀"}</span>
+                    <span style={{ fontFamily:MONO, fontSize:12, fontWeight:900, letterSpacing:2,
+                                   color: won ? G : "#ef4444" }}>
+                      {won ? `VICTOIRE · +${(c.amount * 2).toLocaleString("fr-FR")} MC` : `DÉFAITE · -${c.amount.toLocaleString("fr-FR")} MC`}
+                    </span>
+                  </div>
+                )}
+                {(cancelled || declined) && (
+                  <div style={{
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                    padding:"5px 14px", borderRadius:"12px 12px 0 0",
+                    background:"rgba(107,114,128,0.08)", border:"1px solid rgba(107,114,128,0.15)", borderBottom:"none",
+                  }}>
+                    <span style={{ fontFamily:MONO, fontSize:11, fontWeight:800, letterSpacing:1.5, color:"rgba(241,245,249,0.3)" }}>
+                      {cancelled ? "ANNULÉ" : "REFUSÉ"}
+                    </span>
+                  </div>
+                )}
+                <div style={{ borderRadius: c.status==="resolved"||cancelled||declined ? "0 0 15px 15px" : 15, overflow:"hidden" }}>
+                  <ChallengeCard c={c} showActions={null} />
                 </div>
-              )}
-              <ChallengeCard c={c} showActions={null} />
-            </div>
-          )))}
+              </div>
+            );
+          }))}
         </>
       )}
     </div>
