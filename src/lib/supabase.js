@@ -2,15 +2,16 @@ export const SUPABASE_URL = "https://aiesvzdvlownkcjbkgjv.supabase.co";
 export const SUPABASE_KEY = "sb_publishable_Ipu5bJO_zD1ckygwQmpcuw_Tl5xWmyK";
 
 export const req = async (path, opts = {}) => {
-  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${opts._token || SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation", ...opts.headers };
+  const isPatch = opts.method === "PATCH" || opts.method === "DELETE";
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${opts._token || SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: isPatch ? "return=minimal" : "return=representation", ...opts.headers };
   delete opts._token;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  try { if (text) data = JSON.parse(text); } catch { /* réponse texte brut */ }
   if (!res.ok) {
-    const msg = data?.message || data?.error_description || JSON.stringify(data);
+    const msg = data?.message || data?.error_description || data?.hint || (typeof data === "string" ? data : null) || text || `HTTP ${res.status}`;
     if (msg?.includes("JWT") || msg?.includes("expired") || res.status === 401) {
-      // Token expire - recharger la page pour forcer reconnexion
       setTimeout(() => window.location.reload(), 1000);
     }
     throw new Error(msg);
