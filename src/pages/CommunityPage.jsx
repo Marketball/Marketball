@@ -439,22 +439,32 @@ function EmptyState({ icon, label }) {
 function ChatTab({ posts, postCoins, loading, session, profile, input, setInput, sending, handlePost, handleDelete, bottomRef, onViewProfile, MAX, t }) {
   const { lang } = useLang();
   const [translations, setTranslations] = useState({});
+  const [translating, setTranslating] = useState(false);
 
-  const translateMsg = async (postId, content) => {
-    if (translations[postId]?.text) {
-      setTranslations(prev => { const n = {...prev}; delete n[postId]; return n; });
-      return;
-    }
-    setTranslations(prev => ({ ...prev, [postId]: { loading: true } }));
-    const langpair = lang === "en" ? "fr|en" : "en|fr";
-    try {
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(content.slice(0, 500))}&langpair=${langpair}`);
-      const data = await res.json();
-      const text = data.responseData?.translatedText || content;
-      setTranslations(prev => ({ ...prev, [postId]: { text } }));
-    } catch {
-      setTranslations(prev => { const n = {...prev}; delete n[postId]; return n; });
-    }
+  const allTranslated = posts.length > 0 && posts.every(p => translations[p.id]?.text);
+  const langpair = lang === "en" ? "fr|en" : "en|fr";
+  const translateLabel = lang === "en" ? "Translate" : "Traduction";
+
+  const translateAll = async () => {
+    if (allTranslated) { setTranslations({}); return; }
+    setTranslating(true);
+    setTranslations(prev => {
+      const next = { ...prev };
+      posts.forEach(p => { if (!next[p.id]?.text) next[p.id] = { loading: true }; });
+      return next;
+    });
+    await Promise.all(posts.map(async post => {
+      if (translations[post.id]?.text) return;
+      try {
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(post.content.slice(0, 500))}&langpair=${langpair}`);
+        const data = await res.json();
+        const text = data.responseData?.translatedText || post.content;
+        setTranslations(prev => ({ ...prev, [post.id]: { text } }));
+      } catch {
+        setTranslations(prev => ({ ...prev, [post.id]: { text: post.content } }));
+      }
+    }));
+    setTranslating(false);
   };
 
   return (
@@ -471,9 +481,25 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14, paddingBottom:10, borderBottom:"1px solid rgba(241,245,249,0.04)" }}>
           <div style={{ width:6, height:6, borderRadius:"50%", background:G, animation:"cpulse 2s ease-in-out infinite" }} />
           <span style={{ fontFamily:MONO, fontSize:10, fontWeight:700, color:G, letterSpacing:3 }}>LIVE CHAT</span>
-          <span style={{ fontFamily:MONO, fontSize:10, color:"rgba(241,245,249,0.2)", marginLeft:"auto", letterSpacing:1 }}>
+          <span style={{ fontFamily:MONO, fontSize:10, color:"rgba(241,245,249,0.2)", letterSpacing:1 }}>
             {posts.length} MSG
           </span>
+          {posts.length > 0 && (
+            <button onClick={translateAll} disabled={translating}
+              style={{
+                marginLeft:"auto", display:"flex", alignItems:"center", gap:5,
+                padding:"4px 10px", borderRadius:20, border:"none", cursor:translating?"wait":"pointer",
+                background: allTranslated ? "rgba(59,130,246,0.18)" : "rgba(241,245,249,0.06)",
+                color: allTranslated ? "#60a5fa" : "rgba(241,245,249,0.45)",
+                fontFamily:MONO, fontSize:10, fontWeight:700, letterSpacing:1,
+                transition:"all 0.2s",
+              }}
+              onMouseEnter={e => { if (!allTranslated && !translating) e.currentTarget.style.background="rgba(241,245,249,0.1)"; }}
+              onMouseLeave={e => { if (!allTranslated && !translating) e.currentTarget.style.background="rgba(241,245,249,0.06)"; }}>
+              <span style={{ fontSize:11 }}>🌐</span>
+              {translating ? "···" : allTranslated ? (lang === "en" ? "Hide" : "Masquer") : translateLabel}
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -505,17 +531,6 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
                     <span style={{ fontFamily:MONO, fontSize:9, color:"rgba(241,245,249,0.2)", letterSpacing:1 }}>
                       {timeAgo(post.created_at)}
                     </span>
-                    <button onClick={() => translateMsg(post.id, post.content)}
-                      title={lang === "en" ? "Translate to English" : "Traduire en français"}
-                      style={{ marginLeft:2, padding:"1px 5px", borderRadius:5, border:"none",
-                               background: translations[post.id]?.text ? "rgba(59,130,246,0.15)" : "transparent",
-                               color: translations[post.id]?.text ? "#60a5fa" : "rgba(241,245,249,0.18)",
-                               cursor:"pointer", fontSize:9, fontFamily:MONO, letterSpacing:1,
-                               transition:"all 0.2s" }}
-                      onMouseEnter={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.5)"; }}
-                      onMouseLeave={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.18)"; }}>
-                      {translations[post.id]?.loading ? "···" : "🌐"}
-                    </button>
                     {isSelf && (
                       <button onClick={() => handleDelete(post.id)}
                         style={{ marginLeft:"auto", padding:"1px 6px", borderRadius:5, border:"none",
