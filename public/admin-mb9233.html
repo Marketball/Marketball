@@ -279,13 +279,25 @@
     <div class="card-title" style="color:#60a5fa">🗳️ SONDAGES COMMUNAUTÉ</div>
     <div style="background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.12);border-radius:14px;padding:18px;margin-bottom:20px">
       <div style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;margin-bottom:14px">CRÉER UN SONDAGE</div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>QUESTION *</label>
-        <input class="form-inp" id="pollQuestion" placeholder="Ex: Qui sera le Ballon d'Or 2026 ?" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group">
+          <label>🇫🇷 QUESTION *</label>
+          <input class="form-inp" id="pollQuestion" placeholder="Ex: Qui sera le Ballon d'Or 2026 ?" />
+        </div>
+        <div class="form-group">
+          <label>🇬🇧 QUESTION (EN) <span style="font-weight:400;opacity:0.5">optionnel</span></label>
+          <input class="form-inp" id="pollQuestionEn" placeholder="Ex: Who will win the 2026 Ballon d'Or?" />
+        </div>
       </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>OPTIONS (une par ligne, min. 2) *</label>
-        <textarea class="form-inp" id="pollOptions" rows="4" style="resize:vertical;line-height:1.6" placeholder="Mbappé&#10;Bellingham&#10;Vinicius Jr&#10;Pedri"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group">
+          <label>🇫🇷 OPTIONS (une par ligne, min. 2) *</label>
+          <textarea class="form-inp" id="pollOptions" rows="4" style="resize:vertical;line-height:1.6" placeholder="Mbappé&#10;Bellingham&#10;Vinicius Jr&#10;Pedri"></textarea>
+        </div>
+        <div class="form-group">
+          <label>🇬🇧 OPTIONS EN ANGLAIS <span style="font-weight:400;opacity:0.5">même ordre que FR</span></label>
+          <textarea class="form-inp" id="pollOptionsEn" rows="4" style="resize:vertical;line-height:1.6" placeholder="Mbappé&#10;Bellingham&#10;Vinicius Jr&#10;Pedri"></textarea>
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>EXPIRE LE (optionnel)</label>
@@ -1283,18 +1295,25 @@ function renderPolls() {
 async function createPoll() {
   const question = document.getElementById("pollQuestion").value.trim();
   const optionsRaw = document.getElementById("pollOptions").value.trim();
+  const questionEn = document.getElementById("pollQuestionEn").value.trim();
+  const optionsEnRaw = document.getElementById("pollOptionsEn").value.trim();
   const expiryVal = document.getElementById("pollExpiry").value;
   if (!question) { showToast("La question est obligatoire !", "error"); return; }
   const options = optionsRaw.split("\n").map(o => o.trim()).filter(o => o);
   if (options.length < 2) { showToast("Minimum 2 options requises !", "error"); return; }
+  const optionsEn = optionsEnRaw ? optionsEnRaw.split("\n").map(o => o.trim()).filter(o => o) : null;
   const votes = {};
   options.forEach(o => { votes[o] = 0; });
   const payload = { question, options, votes, expires_at: expiryVal ? new Date(expiryVal).toISOString() : null };
+  if (questionEn) payload.question_en = questionEn;
+  if (optionsEn && optionsEn.length === options.length) payload.options_en = optionsEn;
   try {
     await sbReq("community_polls", { method: "POST", body: JSON.stringify(payload) });
     showToast("✅ Sondage publié !");
     document.getElementById("pollQuestion").value = "";
     document.getElementById("pollOptions").value = "";
+    document.getElementById("pollQuestionEn").value = "";
+    document.getElementById("pollOptionsEn").value = "";
     document.getElementById("pollExpiry").value = "";
     loadPolls();
   } catch(e) { showToast("Erreur : " + e.message, "error"); }

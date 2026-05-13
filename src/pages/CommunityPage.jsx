@@ -76,6 +76,7 @@ function timeAgo(date) {
 
 // ─── PollCard ────────────────────────────────────────────────────────────────
 function PollCard({ poll, session, profile, showToast, t }) {
+  const { lang }    = useLang();
   const options     = Array.isArray(poll.options) ? poll.options : [];
   const rawVotes    = poll.votes || {};
   const counts      = {};
@@ -83,6 +84,11 @@ function PollCard({ poll, session, profile, showToast, t }) {
   const totalVotes  = options.reduce((s, opt) => s + counts[opt], 0);
   const userKey     = profile?.id ? `user_${profile.id}` : null;
   const alreadyVoted = userKey ? (rawVotes[userKey] || null) : null;
+
+  // EN translations (from dedicated columns)
+  const enOptions   = Array.isArray(poll.options_en) && poll.options_en.length === options.length ? poll.options_en : null;
+  const displayQ    = (lang === "en" && poll.question_en) ? poll.question_en : poll.question;
+  const displayOpts = options.map((key, i) => ({ key, label: (lang === "en" && enOptions?.[i]) ? enOptions[i] : key }));
 
   const [selected, setSelected]       = useState(null);
   const [localVoted, setLocalVoted]   = useState(alreadyVoted);
@@ -118,7 +124,7 @@ function PollCard({ poll, session, profile, showToast, t }) {
 
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
         <div style={{ fontFamily:MONO, fontSize:17, fontWeight:800, color:LIGHT, lineHeight:1.3, flex:1, letterSpacing:"0.02em" }}>
-          {poll.question}
+          {displayQ}
         </div>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, marginLeft:12, flexShrink:0 }}>
           <span style={{ fontSize:9, fontWeight:800, color:"#60a5fa", background:"rgba(59,130,246,0.12)", padding:"3px 9px", borderRadius:20, border:"1px solid rgba(59,130,246,0.25)", letterSpacing:2 }}>
@@ -129,15 +135,15 @@ function PollCard({ poll, session, profile, showToast, t }) {
       </div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-        {options.map(opt => {
-          const pct     = localTotal > 0 ? Math.round((localCounts[opt] / localTotal) * 100) : 0;
-          const isChosen = localVoted === opt;
-          const isPicked = selected === opt && !localVoted;
-          const isTop    = opt === topOpt && showResults && localTotal > 0;
+        {displayOpts.map(({ key, label }) => {
+          const pct     = localTotal > 0 ? Math.round((localCounts[key] / localTotal) * 100) : 0;
+          const isChosen = localVoted === key;
+          const isPicked = selected === key && !localVoted;
+          const isTop    = key === topOpt && showResults && localTotal > 0;
           return (
-            <div key={opt}
+            <div key={key}
               className="c-poll-opt"
-              onClick={() => !localVoted && !isExpired && setSelected(opt)}
+              onClick={() => !localVoted && !isExpired && setSelected(key)}
               style={{
                 padding:"11px 14px", borderRadius:11,
                 border:`1.5px solid ${isChosen?"#3b82f6":isPicked?"rgba(59,130,246,0.45)":"rgba(241,245,249,0.07)"}`,
@@ -158,7 +164,7 @@ function PollCard({ poll, session, profile, showToast, t }) {
                   {isChosen && <span style={{ color:"#3b82f6", fontWeight:900, fontSize:14 }}>✓</span>}
                   {isPicked && <span style={{ color:"#93c5fd", fontSize:10 }}>●</span>}
                   <span style={{ fontFamily:MONO, fontSize:13, fontWeight:isChosen||isPicked?800:500, color:isChosen?"#93c5fd":isPicked?"#bfdbfe":"rgba(241,245,249,0.7)", letterSpacing:"0.01em" }}>
-                    {opt}
+                    {label}
                   </span>
                 </div>
                 {showResults && (
@@ -431,6 +437,25 @@ function EmptyState({ icon, label }) {
 
 // ─── Chat tab ─────────────────────────────────────────────────────────────────
 function ChatTab({ posts, postCoins, loading, session, profile, input, setInput, sending, handlePost, handleDelete, bottomRef, onViewProfile, MAX, t }) {
+  const { lang } = useLang();
+  const [translations, setTranslations] = useState({});
+
+  const translateMsg = async (postId, content) => {
+    if (translations[postId]?.text) {
+      setTranslations(prev => { const n = {...prev}; delete n[postId]; return n; });
+      return;
+    }
+    setTranslations(prev => ({ ...prev, [postId]: { loading: true } }));
+    try {
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(content.slice(0, 500))}&langpair=fr|en`);
+      const data = await res.json();
+      const text = data.responseData?.translatedText || content;
+      setTranslations(prev => ({ ...prev, [postId]: { text } }));
+    } catch {
+      setTranslations(prev => { const n = {...prev}; delete n[postId]; return n; });
+    }
+  };
+
   return (
     <>
       {/* Chat feed */}
@@ -479,6 +504,19 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
                     <span style={{ fontFamily:MONO, fontSize:9, color:"rgba(241,245,249,0.2)", letterSpacing:1 }}>
                       {timeAgo(post.created_at)}
                     </span>
+                    {lang === "en" && (
+                      <button onClick={() => translateMsg(post.id, post.content)}
+                        title="Translate"
+                        style={{ marginLeft:2, padding:"1px 5px", borderRadius:5, border:"none",
+                                 background: translations[post.id]?.text ? "rgba(59,130,246,0.15)" : "transparent",
+                                 color: translations[post.id]?.text ? "#60a5fa" : "rgba(241,245,249,0.2)",
+                                 cursor:"pointer", fontSize:9, fontFamily:MONO, letterSpacing:1,
+                                 transition:"all 0.2s" }}
+                        onMouseEnter={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.5)"; }}
+                        onMouseLeave={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.2)"; }}>
+                        {translations[post.id]?.loading ? "···" : "🌐"}
+                      </button>
+                    )}
                     {isSelf && (
                       <button onClick={() => handleDelete(post.id)}
                         style={{ marginLeft:"auto", padding:"1px 6px", borderRadius:5, border:"none",
@@ -497,6 +535,14 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
                                 border:isSelf ? `1px solid ${GA}0.08)` : "none" }}>
                     {post.content}
                   </div>
+                  {translations[post.id]?.text && (
+                    <div style={{ fontSize:12, color:"rgba(96,165,250,0.75)", lineHeight:1.55, marginTop:4,
+                                  padding:"5px 10px", background:"rgba(59,130,246,0.06)",
+                                  borderRadius:"4px 10px 10px 10px", border:"1px solid rgba(59,130,246,0.12)",
+                                  fontStyle:"italic", wordBreak:"break-word" }}>
+                      {translations[post.id].text}
+                    </div>
+                  )}
                 </div>
               </div>
             );
