@@ -11,8 +11,12 @@ export default async function handler(req, res) {
 
   const squadKey = `squad_${teamId}`;
   const now = new Date();
-  const season = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  const statsKey = `stats_${teamId}_${season}`;
+  // Saison en cours (commence en août): si on est avant juillet → saison de l'année précédente
+  const currentSeason = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  // On utilise la saison PRÉCÉDENTE (terminée, données complètes)
+  // La saison en cours n'a souvent que les données UCL dans l'API
+  const statsSeason = currentSeason - 1;
+  const statsKey = `stats_${teamId}_${statsSeason}`;
 
   const squadCached = squadCache[squadKey] && Date.now() - squadCache[squadKey].ts < SQUAD_CACHE_DURATION;
   const statsCached = statsCache[statsKey] && Date.now() - statsCache[statsKey].ts < STATS_CACHE_DURATION;
@@ -22,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   const headers = { "x-apisports-key": process.env.API_FOOTBALL_KEY };
-  const statsUrl = (page) => `https://v3.football.api-sports.io/players?team=${teamId}&season=${season}&page=${page}`;
+  const statsUrl = (page) => `https://v3.football.api-sports.io/players?team=${teamId}&season=${statsSeason}&page=${page}`;
 
   try {
     // Fetch squad + pages 1 & 2 des stats en parallèle (40 joueurs couverts)
