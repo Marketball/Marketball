@@ -371,20 +371,38 @@ export const resolveBet = (bet, matchResult) => {
 // Filtre joueurs : attaquants et milieux offensifs, triés par priorité buteur
 export const filterScorers = (squad) => {
   if (!squad?.length) return [];
-  const EXCLUDE = ["Goalkeeper","Centre-Back","Left-Back","Right-Back","Defensive Midfield","Sweeper","Keeper","Goalie"];
-  // Priorité : attaquants d'abord, milieux ensuite
-  const priority = (pos) => {
-    if (["Centre-Forward","Second Striker","Attacker","Forward"].some(p => pos.includes(p))) return 0;
-    if (["Left Winger","Right Winger","Attacking Midfield","Winger"].some(p => pos.includes(p))) return 1;
-    if (["Central Midfield","Left Midfield","Right Midfield","Midfielder"].some(p => pos.includes(p))) return 2;
-    return 3;
+  const EXCLUDE_POS = ["Goalkeeper","Centre-Back","Left-Back","Right-Back","Defensive Midfield","Sweeper","Keeper","Goalie"];
+
+  const posScore = (pos) => {
+    const p = pos || "";
+    if (["Centre-Forward","Second Striker","Attacker","Forward"].some(x => p.includes(x))) return 4;
+    if (["Left Winger","Right Winger","Attacking Midfield","Winger"].some(x => p.includes(x))) return 3;
+    if (["Central Midfield","Left Midfield","Right Midfield","Midfielder"].some(x => p.includes(x))) return 2;
+    return 1;
   };
-  return squad
-    .filter(p => {
-      const pos = p.position || "";
-      return !EXCLUDE.some(e => pos.includes(e)) && priority(pos) < 3;
-    })
-    .sort((a, b) => priority(a.position || "") - priority(b.position || ""))
+
+  // Si au moins un joueur a des apparitions, les stats saison sont disponibles
+  const hasStats = squad.some(p => (p.appearances || 0) > 0);
+
+  const active = squad.filter(p => {
+    const pos = p.position || "";
+    if (EXCLUDE_POS.some(e => pos.includes(e))) return false;
+    if (posScore(pos) < 2) return false;
+    // Quand les stats sont dispo : exclure les joueurs sans aucune apparition ni but
+    if (hasStats && (p.appearances || 0) === 0 && (p.goals || 0) === 0) return false;
+    return true;
+  });
+
+  // Score de pertinence : buts/match + apparitions + position
+  const relevance = (p) => {
+    const apps = p.appearances || 0;
+    const goals = p.goals || 0;
+    const gpa = apps >= 3 ? goals / apps : 0;
+    return gpa * 10 + apps * 0.1 + posScore(p.position || "");
+  };
+
+  return active
+    .sort((a, b) => relevance(b) - relevance(a))
     .map(p => ({ name: p.name, position: p.position || "", goals: p.goals || 0, appearances: p.appearances || 0, rating: p.rating || 0 }))
     .slice(0, 20);
 };

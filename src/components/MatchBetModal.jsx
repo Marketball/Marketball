@@ -147,7 +147,7 @@ export default function MatchBetModal({ match, onClose, onConfirm, coins, betsFr
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:hasScored?"rgba(241,245,249,0.2)":"#fbbf24", fontSize:12, flexShrink:0 }}>{hasScored?"—":`x${o}`}</span>
                 </div>
                 <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                  {goals>0&&<span style={{ fontSize:9, color:"rgba(241,245,249,0.4)" }}>⚽{goals}{appearances>0&&` / ${appearances}`}</span>}
+                  {appearances>0&&<span style={{ fontSize:9, color:"rgba(241,245,249,0.35)" }}>{goals}⚽ · {appearances}m</span>}
                   {rating>0&&<span style={{ fontSize:9, color:"rgba(251,191,36,0.55)" }}>★{rating.toFixed(1)}</span>}
                   {isStarter===true&&<span style={{ fontSize:8, fontWeight:800, color:"#10b981", background:"rgba(16,185,129,0.12)", padding:"1px 4px", borderRadius:4 }}>TITU</span>}
                   {isStarter===false&&<span style={{ fontSize:8, fontWeight:800, color:"rgba(241,245,249,0.3)", background:"rgba(241,245,249,0.05)", padding:"1px 4px", borderRadius:4 }}>REM.</span>}
