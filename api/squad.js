@@ -1,6 +1,6 @@
 const squadCache = {};
 const statsCache = {};
-const SQUAD_CACHE_DURATION = 60 * 60 * 1000;   // 1h
+const SQUAD_CACHE_DURATION = 60 * 60 * 1000;    // 1h
 const STATS_CACHE_DURATION = 48 * 60 * 60 * 1000; // 48h
 
 export default async function handler(req, res) {
@@ -22,13 +22,19 @@ export default async function handler(req, res) {
   }
 
   const headers = { "x-apisports-key": process.env.API_FOOTBALL_KEY };
+  const statsUrl = (page) => `https://v3.football.api-sports.io/players?team=${teamId}&season=${season}&page=${page}`;
 
   try {
-    const calls = [];
-    if (!squadCached) calls.push(fetch(`https://v3.football.api-sports.io/players/squads?team=${teamId}`, { headers }));
-    if (!statsCached) calls.push(fetch(`https://v3.football.api-sports.io/players?team=${teamId}&season=${season}&page=1`, { headers }));
+    // Fetch squad + pages 1 & 2 des stats en parallèle (40 joueurs couverts)
+    const fetches = [];
+    if (!squadCached) fetches.push(fetch(`https://v3.football.api-sports.io/players/squads?team=${teamId}`, { headers }).then(r => r.json()));
+    if (!statsCached) {
+      fetches.push(fetch(statsUrl(1), { headers }).then(r => r.json()));
+      fetches.push(fetch(statsUrl(2), { headers }).then(r => r.json()));
+      fetches.push(fetch(statsUrl(3), { headers }).then(r => r.json()));
+    }
 
-    const results = await Promise.allSettled(calls.map(p => p.then(r => r.json())));
+    const results = await Promise.allSettled(fetches);
     let idx = 0;
 
     if (!squadCached) {
@@ -47,22 +53,26 @@ export default async function handler(req, res) {
     }
 
     if (!statsCached) {
-      const data = results[idx++];
-      if (data.status === "fulfilled" && data.value?.response) {
-        const statsMap = {};
-        for (const item of data.value.response) {
+      const page1 = results[idx++];
+      const page2 = results[idx++];
+      const page3 = results[idx++];
+      const statsMap = {};
+
+      for (const pageData of [page1, page2, page3]) {
+        if (pageData.status !== "fulfilled" || !pageData.value?.response) continue;
+        for (const item of pageData.value.response) {
           const s = item.statistics?.[0];
           if (!s) continue;
           statsMap[item.player.id] = {
-            goals:       s.goals?.total   || 0,
-            assists:     s.goals?.assists || 0,
-            appearances: s.games?.appearences || 0,  // typo intentionnel de l'API
-            lineups:     s.games?.lineups || 0,
+            goals:       s.goals?.total      || 0,
+            assists:     s.goals?.assists    || 0,
+            appearances: s.games?.appearences || 0, // typo volontaire de l'API Football
+            lineups:     s.games?.lineups    || 0,
             rating:      parseFloat(s.games?.rating) || 0,
           };
         }
-        statsCache[statsKey] = { data: statsMap, ts: Date.now() };
       }
+      statsCache[statsKey] = { data: statsMap, ts: Date.now() };
     }
 
     if (!squadCache[squadKey]) throw new Error("Pas de squad");
