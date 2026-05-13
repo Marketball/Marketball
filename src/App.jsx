@@ -522,9 +522,18 @@ function AppInner() {
     try{
       await req("user_bets",{method:"POST",_token:session.token,body:JSON.stringify({user_id:session.user.id,username:profile?.username||"Anonyme",market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending"})});
       setBets(prev=>[{user_id:session.user.id,market_id:betModal.id,market_title:betModal.title,side:optionLabel,amount:cost,cost,potential_gain:gain,status:"pending",created_at:new Date().toISOString()},...prev]);
-      const upd=markets.map(m=>m.id===betModal.id?{...m,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
+      const BASE_TOTAL=1000;
+      const currentMarket=markets.find(m=>m.id===betModal.id);
+      const currentOpts=(currentMarket?.options||betModal.options||[]);
+      const withInitial=currentOpts.map(o=>({...o,pct_initial:o.pct_initial??o.pct??Math.round(100/o.odds)}));
+      const sumPcts=withInitial.reduce((s,o)=>s+(o.pct_initial||0),0)||100;
+      const withPools=withInitial.map(o=>({...o,pool:(o.pool||0)+(o.label===optionLabel?cost:0)}));
+      const effPools=withPools.map(o=>(BASE_TOTAL*(o.pct_initial||0)/sumPcts)+(o.pool||0));
+      const totalEff=effPools.reduce((s,p)=>s+p,0);
+      const newOptions=withPools.map((o,i)=>({...o,pct:Math.round(effPools[i]/totalEff*100),odds:Math.max(1.05,Math.round((totalEff/effPools[i])*0.93*100)/100)}));
+      const upd=markets.map(m=>m.id===betModal.id?{...m,options:newOptions,total_volume:m.total_volume+cost,participants:m.participants+1}:m);
       setMarkets(upd);saveOdds(upd);
-      try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({total_volume:(markets.find(m=>m.id===betModal.id)?.total_volume||0)+cost,participants:(markets.find(m=>m.id===betModal.id)?.participants||0)+1})});}catch{}
+      try{await req(`custom_markets?id=eq.${betModal.id}`,{method:"PATCH",_token:session.token,body:JSON.stringify({options:newOptions,total_volume:(currentMarket?.total_volume||0)+cost,participants:(currentMarket?.participants||0)+1})});}catch{}
       await updateProfile({coins:newCoins,xp:newXP,level:newLevel,store_coins:newSC,total_bets:(profile?.total_bets||0)+1},session.token,session.user.id);
       setBetModal(null);
       showToast("Prédiction placée !");

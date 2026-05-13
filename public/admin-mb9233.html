@@ -261,6 +261,40 @@
       <div class="empty">Chargement...</div>
     </div>
   </div>
+
+  <!-- Marchés Résolus -->
+  <div class="card" style="border-color:rgba(16,185,129,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="color:#10b981;margin-bottom:0">
+        🏁 MARCHÉS RÉSOLUS
+        <span class="badge-count" id="resolvedCount">—</span>
+      </div>
+      <button onclick="loadResolvedMarkets()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(241,245,249,0.1);background:transparent;color:rgba(241,245,249,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">↻ Rafraichir</button>
+    </div>
+    <div id="resolvedList"><div class="empty">Chargement...</div></div>
+  </div>
+
+  <!-- Sondages -->
+  <div class="card" style="border-color:rgba(59,130,246,0.2)">
+    <div class="card-title" style="color:#60a5fa">🗳️ SONDAGES COMMUNAUTÉ</div>
+    <div style="background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.12);border-radius:14px;padding:18px;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;color:rgba(241,245,249,0.4);letter-spacing:0.5px;margin-bottom:14px">CRÉER UN SONDAGE</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>QUESTION *</label>
+        <input class="form-inp" id="pollQuestion" placeholder="Ex: Qui sera le Ballon d'Or 2026 ?" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>OPTIONS (une par ligne, min. 2) *</label>
+        <textarea class="form-inp" id="pollOptions" rows="4" style="resize:vertical;line-height:1.6" placeholder="Mbappé&#10;Bellingham&#10;Vinicius Jr&#10;Pedri"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>EXPIRE LE (optionnel)</label>
+        <input class="form-inp" type="datetime-local" id="pollExpiry" />
+      </div>
+      <button class="submit-btn" onclick="createPoll()">PUBLIER LE SONDAGE →</button>
+    </div>
+    <div id="pollsList"><div class="empty">Aucun sondage pour l'instant</div></div>
+  </div>
 </div>
 
 <!-- EDIT RUMEUR MODAL -->
@@ -498,7 +532,7 @@ function doLogout() {
   document.getElementById("pwdInput").value = "";
 }
 
-function loadAll() { loadMarkets(); loadProposed(); loadRumeurs(); }
+function loadAll() { loadMarkets(); loadProposed(); loadRumeurs(); loadResolvedMarkets(); loadPolls(); }
 
 function showToast(msg, type = "success") {
   const t = document.createElement("div");
@@ -1139,6 +1173,145 @@ document.getElementById("editModal").addEventListener("click", function(e) {
 document.getElementById("resolveModal").addEventListener("click", function(e) {
   if (e.target === this) closeResolveModal();
 });
+
+// ============================================================
+// MARCHÉS RÉSOLUS
+// ============================================================
+let allResolvedMarkets = [];
+
+async function loadResolvedMarkets() {
+  document.getElementById("resolvedList").innerHTML = '<div class="empty">Chargement...</div>';
+  try {
+    const data = await sbReq("custom_markets?status=eq.closed&order=created_at.desc&limit=100");
+    allResolvedMarkets = data || [];
+    document.getElementById("resolvedCount").textContent = allResolvedMarkets.length;
+    renderResolvedMarkets();
+  } catch(e) {
+    document.getElementById("resolvedList").innerHTML = `<div class="empty" style="color:#f87171">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderResolvedMarkets() {
+  const list = document.getElementById("resolvedList");
+  if (!allResolvedMarkets.length) {
+    list.innerHTML = '<div class="empty">Aucun marché résolu</div>';
+    return;
+  }
+  list.innerHTML = allResolvedMarkets.map(m => {
+    const cc = CAT_COLORS[m.category] || "#6b7280";
+    const date = new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+    const isMulti = m.market_type === "multi";
+    const winner = m.winning_side;
+    const optionsBars = isMulti && (m.options || []).length ? `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        ${(m.options || []).map(o => {
+          const isWin = winner && (o.label === winner);
+          return `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${isWin ? "background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)" : "background:rgba(241,245,249,0.04);color:rgba(241,245,249,0.4);border:1px solid rgba(241,245,249,0.08)"}">${isWin ? "🏆 " : ""}${o.label} · ${o.pct || Math.round(100/o.odds)}%</span>`;
+        }).join("")}
+      </div>` : "";
+    return `
+      <div class="market-item" style="flex-direction:column;align-items:stretch;opacity:0.85">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div class="market-item-title">${isMulti ? "🎯 " : ""}${m.title}</div>
+            <div class="market-item-meta">
+              <span class="cat-badge" style="background:${cc}18;color:${cc};border:1px solid ${cc}25">${m.category}</span>
+              ${winner ? `<span class="cat-badge" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.2)">🏆 ${winner}</span>` : '<span class="cat-badge" style="background:rgba(107,114,128,0.1);color:#6b7280;border:1px solid rgba(107,114,128,0.2)">Fermé</span>'}
+              · ${(m.total_volume || 0).toLocaleString()} MC · ${m.participants || 0} parieurs · ${date}
+            </div>
+            ${optionsBars}
+          </div>
+          <button class="delete-btn" onclick="deleteMarket('${m.id}')">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ============================================================
+// SONDAGES
+// ============================================================
+let allPolls = [];
+
+async function loadPolls() {
+  document.getElementById("pollsList").innerHTML = '<div class="empty">Chargement...</div>';
+  try {
+    const data = await sbReq("community_polls?order=created_at.desc&limit=50");
+    allPolls = data || [];
+    renderPolls();
+  } catch(e) {
+    document.getElementById("pollsList").innerHTML = `<div class="empty" style="color:#f87171">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderPolls() {
+  const list = document.getElementById("pollsList");
+  if (!allPolls.length) {
+    list.innerHTML = '<div class="empty">Aucun sondage actif</div>';
+    return;
+  }
+  list.innerHTML = allPolls.map(p => {
+    const totalVotes = Object.values(p.votes || {}).reduce((s, v) => s + v, 0);
+    const expires = p.expires_at ? new Date(p.expires_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Sans limite";
+    const isExpired = p.expires_at && new Date(p.expires_at) < new Date();
+    const barsHtml = (p.options || []).map(opt => {
+      const count = (p.votes || {})[opt] || 0;
+      const pct = totalVotes > 0 ? Math.round(count / totalVotes * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <div style="flex:1;background:rgba(241,245,249,0.04);border-radius:6px;overflow:hidden;height:24px;position:relative">
+          <div style="position:absolute;inset:0;background:rgba(59,130,246,0.18);border-radius:6px;width:${pct}%;transition:width 0.3s"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700">${opt}</div>
+        </div>
+        <div style="font-size:12px;color:rgba(241,245,249,0.45);min-width:65px;text-align:right">${count} (${pct}%)</div>
+      </div>`;
+    }).join("");
+    return `
+      <div class="market-item" style="flex-direction:column;align-items:stretch;${isExpired ? "opacity:0.55;" : ""}margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+          <div style="flex:1">
+            <div class="market-item-title">🗳️ ${p.question}</div>
+            <div class="market-item-meta">${totalVotes} vote${totalVotes !== 1 ? "s" : ""} · Expire : ${expires}${isExpired ? ' · <span style="color:#f87171;font-weight:700">EXPIRÉ</span>' : ''}</div>
+          </div>
+          <button class="delete-btn" onclick="deletePoll('${p.id}')">🗑</button>
+        </div>
+        ${barsHtml}
+      </div>
+    `;
+  }).join("");
+}
+
+async function createPoll() {
+  const question = document.getElementById("pollQuestion").value.trim();
+  const optionsRaw = document.getElementById("pollOptions").value.trim();
+  const expiryVal = document.getElementById("pollExpiry").value;
+  if (!question) { showToast("La question est obligatoire !", "error"); return; }
+  const options = optionsRaw.split("\n").map(o => o.trim()).filter(o => o);
+  if (options.length < 2) { showToast("Minimum 2 options requises !", "error"); return; }
+  const votes = {};
+  options.forEach(o => { votes[o] = 0; });
+  const payload = { question, options, votes, expires_at: expiryVal ? new Date(expiryVal).toISOString() : null };
+  try {
+    await sbReq("community_polls", { method: "POST", body: JSON.stringify(payload) });
+    showToast("✅ Sondage publié !");
+    document.getElementById("pollQuestion").value = "";
+    document.getElementById("pollOptions").value = "";
+    document.getElementById("pollExpiry").value = "";
+    loadPolls();
+  } catch(e) { showToast("Erreur : " + e.message, "error"); }
+}
+
+async function deletePoll(id) {
+  if (!confirm("Supprimer ce sondage définitivement ?")) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/community_polls?id=eq.${id}`, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    showToast("Sondage supprimé !");
+    loadPolls();
+  } catch(e) { showToast("Erreur : " + e.message, "error"); }
+}
 </script>
 
 <!-- RESOLVE MODAL -->
