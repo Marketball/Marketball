@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       includeAssets: ['favicon.png', 'favicon.svg'],
       manifest: {
         name: 'MarketBall',
@@ -33,25 +36,10 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        skipWaiting: true,
-        clientsClaim: true,
-        // Ne pas précacher le HTML — il est toujours récupéré depuis le réseau
+        // Ne pas précacher le HTML — servi depuis le réseau via NetworkFirst dans sw.js
         globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            // HTML : NetworkFirst → toujours la dernière version
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: { cacheName: 'html-cache', networkTimeoutSeconds: 3 },
-          },
-          {
-            urlPattern: /^https:\/\/aiesvzdvlownkcjbkgjv\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'supabase-cache', networkTimeoutSeconds: 10 },
-          },
-        ],
       },
     }),
   ],
