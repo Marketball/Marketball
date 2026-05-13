@@ -385,6 +385,6 @@ export const filterScorers = (squad) => {
       return !EXCLUDE.some(e => pos.includes(e)) && priority(pos) < 3;
     })
     .sort((a, b) => priority(a.position || "") - priority(b.position || ""))
-    .map(p => ({ name: p.name, position: p.position || "" }))
+    .map(p => ({ name: p.name, position: p.position || "", goals: p.goals || 0, appearances: p.appearances || 0, rating: p.rating || 0 }))
     .slice(0, 20);
 };
