@@ -446,8 +446,9 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
       return;
     }
     setTranslations(prev => ({ ...prev, [postId]: { loading: true } }));
+    const langpair = lang === "en" ? "fr|en" : "en|fr";
     try {
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(content.slice(0, 500))}&langpair=fr|en`);
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(content.slice(0, 500))}&langpair=${langpair}`);
       const data = await res.json();
       const text = data.responseData?.translatedText || content;
       setTranslations(prev => ({ ...prev, [postId]: { text } }));
@@ -504,19 +505,17 @@ function ChatTab({ posts, postCoins, loading, session, profile, input, setInput,
                     <span style={{ fontFamily:MONO, fontSize:9, color:"rgba(241,245,249,0.2)", letterSpacing:1 }}>
                       {timeAgo(post.created_at)}
                     </span>
-                    {lang === "en" && (
-                      <button onClick={() => translateMsg(post.id, post.content)}
-                        title="Translate"
-                        style={{ marginLeft:2, padding:"1px 5px", borderRadius:5, border:"none",
-                                 background: translations[post.id]?.text ? "rgba(59,130,246,0.15)" : "transparent",
-                                 color: translations[post.id]?.text ? "#60a5fa" : "rgba(241,245,249,0.2)",
-                                 cursor:"pointer", fontSize:9, fontFamily:MONO, letterSpacing:1,
-                                 transition:"all 0.2s" }}
-                        onMouseEnter={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.5)"; }}
-                        onMouseLeave={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.2)"; }}>
-                        {translations[post.id]?.loading ? "···" : "🌐"}
-                      </button>
-                    )}
+                    <button onClick={() => translateMsg(post.id, post.content)}
+                      title={lang === "en" ? "Translate to English" : "Traduire en français"}
+                      style={{ marginLeft:2, padding:"1px 5px", borderRadius:5, border:"none",
+                               background: translations[post.id]?.text ? "rgba(59,130,246,0.15)" : "transparent",
+                               color: translations[post.id]?.text ? "#60a5fa" : "rgba(241,245,249,0.18)",
+                               cursor:"pointer", fontSize:9, fontFamily:MONO, letterSpacing:1,
+                               transition:"all 0.2s" }}
+                      onMouseEnter={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.5)"; }}
+                      onMouseLeave={e => { if (!translations[post.id]?.text) e.currentTarget.style.color="rgba(241,245,249,0.18)"; }}>
+                      {translations[post.id]?.loading ? "···" : "🌐"}
+                    </button>
                     {isSelf && (
                       <button onClick={() => handleDelete(post.id)}
                         style={{ marginLeft:"auto", padding:"1px 6px", borderRadius:5, border:"none",
