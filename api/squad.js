@@ -56,7 +56,7 @@ export default async function handler(req, res) {
           statsMap[item.player.id] = {
             goals:       s.goals?.total   || 0,
             assists:     s.goals?.assists || 0,
-            appearances: s.games?.appearances || 0,
+            appearances: s.games?.appearences || 0,  // typo intentionnel de l'API
             lineups:     s.games?.lineups || 0,
             rating:      parseFloat(s.games?.rating) || 0,
           };
