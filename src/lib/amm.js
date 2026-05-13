@@ -275,10 +275,12 @@ export const calcScorerOdds = (player, isFirst, position, stats = {}) => {
   // Classification position
   const isFwd = pos.includes("Forward") || pos.includes("Centre-Forward") || pos.includes("Winger") || pos.includes("Striker");
   const isMid = pos.includes("Midfield") && !pos.includes("Defensive");
-  const isDef = pos.includes("Back") || pos.includes("Defensive") || pos.includes("Goalkeeper") || pos.includes("Keeper");
+  // Latéraux offensifs (Left-Back/Right-Back) : base plus haute que défenseur central
+  const isFullBack = (pos.includes("Left-Back") || pos.includes("Right-Back")) && !pos.includes("Centre-Back");
+  const isDef = !isFullBack && (pos.includes("Back") || pos.includes("Defensive") || pos.includes("Goalkeeper") || pos.includes("Keeper"));
 
   // Probabilité de base selon position
-  let basePct = isFwd ? 0.33 : isMid ? 0.14 : isDef ? 0.05 : 0.22;
+  let basePct = isFwd ? 0.33 : isMid ? 0.14 : isFullBack ? 0.09 : isDef ? 0.05 : 0.22;
 
   // Buts par match (statistique clé) — fiable à partir de 4 apparitions
   const gpa = appearances >= 4 ? goals / appearances : 0;
@@ -371,25 +373,33 @@ export const resolveBet = (bet, matchResult) => {
 // Filtre joueurs : attaquants et milieux offensifs, triés par priorité buteur
 export const filterScorers = (squad) => {
   if (!squad?.length) return [];
-  const EXCLUDE_POS = ["Goalkeeper","Centre-Back","Left-Back","Right-Back","Defensive Midfield","Sweeper","Keeper","Goalie"];
 
   const posScore = (pos) => {
     const p = pos || "";
     if (["Centre-Forward","Second Striker","Attacker","Forward"].some(x => p.includes(x))) return 4;
     if (["Left Winger","Right Winger","Attacking Midfield","Winger"].some(x => p.includes(x))) return 3;
     if (["Central Midfield","Left Midfield","Right Midfield","Midfielder"].some(x => p.includes(x))) return 2;
-    return 1;
+    return 1; // défenseurs / latéraux
   };
 
-  // Si au moins un joueur a des apparitions, les stats saison sont disponibles
   const hasStats = squad.some(p => (p.appearances || 0) > 0);
 
   const active = squad.filter(p => {
     const pos = p.position || "";
-    if (EXCLUDE_POS.some(e => pos.includes(e))) return false;
-    if (posScore(pos) < 2) return false;
-    // Quand les stats sont dispo : exclure les joueurs sans aucune apparition ni but
-    if (hasStats && (p.appearances || 0) === 0 && (p.goals || 0) === 0) return false;
+    const goals = p.goals || 0;
+    const appearances = p.appearances || 0;
+
+    // Gardiens : toujours exclus
+    if (["Goalkeeper","Keeper","Goalie"].some(e => pos.includes(e))) return false;
+
+    // Défenseurs (Centre-Back, Left-Back, Right-Back, Sweeper, Defensive Mid) :
+    // inclus SEULEMENT s'ils ont déjà marqué (ex: Hakimi latéral offensif)
+    const isDefensive = ["Centre-Back","Left-Back","Right-Back","Sweeper","Defensive Midfield"].some(e => pos.includes(e));
+    if (isDefensive && goals === 0) return false;
+
+    // Joueurs sans la moindre apparition ni but (stats dispo) : exclus
+    if (hasStats && appearances === 0 && goals === 0) return false;
+
     return true;
   });
 
