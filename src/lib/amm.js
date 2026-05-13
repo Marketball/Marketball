@@ -268,26 +268,48 @@ export const calcExactScoreOdds = (hG, aG, odds, match = null) => {
   return Math.min(100, Math.max(3, +((1 / Math.max(poi(lH, hG) * poi(lA, aG), 0.001)) * 1.1).toFixed(1)));
 };
 
-export const calcScorerOdds = (player, isFirst, position) => {
-  // Utilise la position API si disponible, sinon fallback sur le nom
+export const calcScorerOdds = (player, isFirst, position, stats = {}) => {
+  const { goals = 0, appearances = 0, rating = 0, isStarter = null } = stats;
   const pos = position || "";
+
+  // Classification position
   const isFwd = pos.includes("Forward") || pos.includes("Centre-Forward") || pos.includes("Winger") || pos.includes("Striker");
   const isMid = pos.includes("Midfield") && !pos.includes("Defensive");
   const isDef = pos.includes("Back") || pos.includes("Defensive") || pos.includes("Goalkeeper") || pos.includes("Keeper");
 
-  // Fallback noms connus si pas de position
-  const TOP = ["Haaland","Kane","Mbappe","Salah","Vinicius","Lewandowski","Lautaro","Vlahovic","Osimhen","Guirassy","Watkins","Isak"];
-  const isTopName = TOP.some(a => player?.includes(a));
+  // Probabilité de base selon position
+  let basePct = isFwd ? 0.33 : isMid ? 0.14 : isDef ? 0.05 : 0.22;
 
+  // Buts par match (statistique clé) — fiable à partir de 4 apparitions
+  const gpa = appearances >= 4 ? goals / appearances : 0;
+
+  // Fusion stats réelles + base position
+  // Plus il y a d'apparitions, plus on fait confiance aux stats
   let pScore;
-  if (isTopName) pScore = 0.52;
-  else if (isFwd) pScore = 0.35;
-  else if (isMid) pScore = 0.18;
-  else if (isDef) pScore = 0.05;
-  else pScore = 0.22; // inconnu = attaquant probable vu le filtrage
+  if (appearances >= 8) {
+    const w = Math.min(0.75, appearances / 25);
+    pScore = gpa * w + basePct * (1 - w);
+  } else if (appearances >= 4) {
+    pScore = gpa * 0.4 + basePct * 0.6;
+  } else {
+    pScore = basePct;
+  }
 
-  const pFirst = isFirst ? pScore / 4.0 : pScore;
-  return Math.min(isFirst ? 35 : 15, Math.max(isFirst ? 2.5 : 1.4, +((1.05 / Math.max(pFirst, 0.02))).toFixed(1)));
+  // Bonus/malus note de forme (0–10, API retourne ex. 7.85)
+  const r = parseFloat(rating) || 0;
+  if (r >= 7.8) pScore *= 1.18;
+  else if (r >= 7.3) pScore *= 1.08;
+  else if (r > 0 && r < 6.8) pScore *= 0.82;
+
+  // Statut titulaire/remplaçant — le facteur le plus important
+  // Un titulaire joue 90 min, un remplaçant ~25 min en moyenne
+  if (isStarter === true)  pScore *= 1.0;   // pleine confiance
+  if (isStarter === false) pScore *= 0.28;  // ~25/90 min + fatigue
+
+  const pFirst = pScore / 3.6;
+  return isFirst
+    ? Math.min(35, Math.max(2.5,  +(1.05 / Math.max(pFirst, 0.03)).toFixed(1)))
+    : Math.min(15, Math.max(1.35, +(1.05 / Math.max(pScore, 0.07)).toFixed(1)));
 };
 
 export const calcOverUnderOdds = (line, isOver, odds) => {

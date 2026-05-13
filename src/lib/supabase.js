@@ -26,4 +26,5 @@ export const authReq = async (path, body) => {
   return data;
 };
 
-export const squadReq = async (teamId) => { const res = await fetch(`/api/squad?teamId=${teamId}`); if (!res.ok) throw new Error("Erreur squad"); return res.json(); };
+export const squadReq   = async (teamId)    => { const res = await fetch(`/api/squad?teamId=${teamId}`);    if (!res.ok) throw new Error("Erreur squad");   return res.json(); };
+export const fixtureReq = async (fixtureId) => { const res = await fetch(`/api/fixtures?id=${fixtureId}`); if (!res.ok) throw new Error("Erreur fixture"); return res.json(); };

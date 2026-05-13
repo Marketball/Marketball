@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { req } from "../lib/supabase.js";
 import { fmt, compColor, compEmoji, compLabel, formatMatchDate, getClubColor } from "../lib/helpers.js";
 import { calcLiveMatchOdds, calcExactScoreOdds, calcScorerOdds, calcOverUnderOdds, filterScorers } from "../lib/amm.js";
+import { fixtureReq } from "../lib/supabase.js";
 import { squadReq } from "../lib/supabase.js";
 import CommentsSection from "../components/ui/CommentsSection.jsx";
 
@@ -53,6 +54,10 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
   const [awayPlayers, setAwayPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [selectedPlayerPos, setSelectedPlayerPos] = useState("");
+  const [homeStarters, setHomeStarters] = useState(new Set());
+  const [awayStarters, setAwayStarters] = useState(new Set());
+  const [homeSubs, setHomeSubs]     = useState(new Set());
+  const [awaySubs, setAwaySubs]     = useState(new Set());
   const [homeGoals, setHomeGoals] = useState(isLive ? liveHome : 1);
   const [awayGoals, setAwayGoals] = useState(isLive ? liveAway : 1);
   const [triedConfirm, setTriedConfirm] = useState(false);
@@ -76,9 +81,14 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
     Promise.all([
       match.home_team_id ? Promise.race([squadReq(match.home_team_id), timeout(9000)]) : Promise.resolve(null),
       match.away_team_id ? Promise.race([squadReq(match.away_team_id), timeout(9000)]) : Promise.resolve(null),
-    ]).then(([hD, aD]) => {
+      match.id ? Promise.race([fixtureReq(match.id), timeout(9000)]) : Promise.resolve(null),
+    ]).then(([hD, aD, fix]) => {
       if (hD?.squad) setHomePlayers(filterScorers(hD.squad));
       if (aD?.squad) setAwayPlayers(filterScorers(aD.squad));
+      if (fix?.home_starters?.length) setHomeStarters(new Set(fix.home_starters));
+      if (fix?.away_starters?.length) setAwayStarters(new Set(fix.away_starters));
+      if (fix?.home_subs?.length) setHomeSubs(new Set(fix.home_subs));
+      if (fix?.away_subs?.length) setAwaySubs(new Set(fix.away_subs));
     }).catch(()=>{}).finally(()=>setLoadingPlayers(false));
   }, [match.home_team_id, match.away_team_id]);
 
@@ -87,8 +97,8 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
   const getOdds = () => {
     if (betType==="winner") { if(prediction===match.home_team)return odds.oddsHome; if(prediction==="Nul")return odds.oddsDraw; if(prediction===match.away_team)return odds.oddsAway; return 2; }
     if (betType==="exact_score") return calcExactScoreOdds(homeGoals, awayGoals, odds, match);
-    if (betType==="first_scorer") return prediction ? calcScorerOdds(prediction, true, selectedPlayerPos) : 5;
-    if (betType==="scorer") return prediction ? calcScorerOdds(prediction, false, selectedPlayerPos) : 3;
+    if (betType==="first_scorer") return prediction ? calcScorerOdds(prediction, true, selectedPlayerPos, currentPlayers.find(p=>(p.name||p)===prediction)||{}) : 5;
+    if (betType==="scorer") return prediction ? calcScorerOdds(prediction, false, selectedPlayerPos, currentPlayers.find(p=>(p.name||p)===prediction)||{}) : 3;
     if (betType==="over_under") { const line=prediction.includes("1.5")?1.5:prediction.includes("3.5")?3.5:2.5; return calcOverUnderOdds(line,prediction.startsWith("Plus"),odds); }
     return 2;
   };
@@ -176,12 +186,28 @@ export default function MatchDetailPage({ match, onBack, onConfirm, coins, betsF
                 {currentPlayers.map(p => {
                   const name = typeof p==="object" ? p.name : p;
                   const pos = typeof p==="object" ? p.position : "";
-                  const o = calcScorerOdds(name, betType==="first_scorer", pos);
+                  const goals = p.goals||0;
+                  const appearances = p.appearances||0;
+                  const rating = p.rating||0;
+                  const starterSet = scorerTeam==="home" ? homeStarters : awayStarters;
+                  const subSet     = scorerTeam==="home" ? homeSubs : awaySubs;
+                  const lineupKnown = starterSet.size>0||subSet.size>0;
+                  const isStarter = lineupKnown ? (starterSet.has(name)?true:subSet.has(name)?false:null) : null;
+                  const o = calcScorerOdds(name, betType==="first_scorer", pos, {goals,appearances,rating,isStarter});
                   const hasScored = alreadyScored.has(name);
+                  const sel = prediction===name;
                   return <button key={name} onClick={()=>!hasScored&&(setPrediction(name),setSelectedPlayerPos(pos))}
-                    style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${hasScored?"rgba(239,68,68,0.15)":prediction===name?"#10b981":"rgba(241,245,249,0.06)"}`, background:hasScored?"rgba(239,68,68,0.05)":prediction===name?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:hasScored?"rgba(239,68,68,0.4)":prediction===name?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:hasScored?"not-allowed":"pointer", display:"flex", justifyContent:"space-between", opacity:hasScored?0.5:1 }}>
-                    <span>{name}{hasScored?" ⚽":""}</span>
-                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:hasScored?"rgba(241,245,249,0.2)":"#fbbf24", fontSize:12 }}>{hasScored?"—":`x${o}`}</span>
+                    style={{ padding:"8px 10px", borderRadius:10, border:`1px solid ${hasScored?"rgba(239,68,68,0.15)":sel?"#10b981":"rgba(241,245,249,0.06)"}`, background:hasScored?"rgba(239,68,68,0.05)":sel?"rgba(16,185,129,0.1)":"rgba(241,245,249,0.02)", color:hasScored?"rgba(239,68,68,0.4)":sel?"#10b981":"rgba(241,245,249,0.55)", fontWeight:700, fontSize:11, cursor:hasScored?"not-allowed":"pointer", display:"flex", flexDirection:"column", gap:3, transition:"all 0.15s", opacity:hasScored?0.5:1, textAlign:"left" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:80 }}>{name}{hasScored?" ⚽":""}</span>
+                      <span style={{ fontFamily:"'Bebas Neue',sans-serif", color:hasScored?"rgba(241,245,249,0.2)":"#fbbf24", fontSize:12, flexShrink:0 }}>{hasScored?"—":`x${o}`}</span>
+                    </div>
+                    <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                      {goals>0&&<span style={{ fontSize:9, color:"rgba(241,245,249,0.4)" }}>⚽{goals}{appearances>0&&` / ${appearances}`}</span>}
+                      {rating>0&&<span style={{ fontSize:9, color:"rgba(251,191,36,0.55)" }}>★{rating.toFixed(1)}</span>}
+                      {isStarter===true&&<span style={{ fontSize:8, fontWeight:800, color:"#10b981", background:"rgba(16,185,129,0.12)", padding:"1px 4px", borderRadius:4 }}>TITU</span>}
+                      {isStarter===false&&<span style={{ fontSize:8, fontWeight:800, color:"rgba(241,245,249,0.3)", background:"rgba(241,245,249,0.05)", padding:"1px 4px", borderRadius:4 }}>REM.</span>}
+                    </div>
                   </button>;
                 })}
               </div>
