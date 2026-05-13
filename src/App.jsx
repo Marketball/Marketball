@@ -480,7 +480,7 @@ function AppInner() {
     const newXP=(oldXP||0)+addXP;
     const newLevel=getLevel(newXP);
     const {scBonus,messages}=calcLevelUpRewards(oldXP||0,newXP);
-    const newSC=(profile?.store_coins||0)+scBonus;
+    const newSC=(profileRef.current?.store_coins||0)+scBonus;
     return {newXP,newLevel,newSC,scBonus,messages};
   };
 
