@@ -421,6 +421,8 @@ const CAT_COLORS = {
 let currentFilter = "open";
 let allMarkets = [];
 let allProposed = [];
+let allResolvedMarkets = [];
+let allPolls = [];
 let currentProposedFilter = "pending";
 let currentMarketType = "binary";
 let optionCount = 0;
@@ -1189,8 +1191,6 @@ document.getElementById("resolveModal").addEventListener("click", function(e) {
 // ============================================================
 // MARCHÉS RÉSOLUS
 // ============================================================
-let allResolvedMarkets = [];
-
 async function loadResolvedMarkets() {
   document.getElementById("resolvedList").innerHTML = '<div class="empty">Chargement...</div>';
   try {
@@ -1243,8 +1243,6 @@ function renderResolvedMarkets() {
 // ============================================================
 // SONDAGES
 // ============================================================
-let allPolls = [];
-
 async function loadPolls() {
   document.getElementById("pollsList").innerHTML = '<div class="empty">Chargement...</div>';
   try {
