@@ -97,7 +97,7 @@ export default function MarketDetailPage({ market: marketProp, onBack, onBet, se
       `user_bets?market_id=eq.${marketProp.id}&select=side,cost,status,username,amount,created_at&order=created_at.asc&limit=500`,
       session ? { _token: session.token } : undefined
     ).then(d => setBets(d||[])).catch(()=>setBets([]));
-  }, [marketProp.id]);
+  }, [marketProp.id, marketProp.total_volume]);
 
   const distribution = {};
   (bets||[]).forEach(b => {
