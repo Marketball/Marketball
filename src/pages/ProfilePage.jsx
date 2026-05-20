@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
-import { Canvas, useFrame } from "@react-three/fiber";
 import { DIVISIONS, BADGES } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getDivision, getDivisionProgress, getDivisionNext, fmt } from "../lib/helpers.js";
 import Avatar from "../components/ui/Avatar.jsx";
@@ -87,6 +86,25 @@ function injectProfileStyles() {
     @keyframes activity-pulse {
       0%,100% { box-shadow: none; }
       50%      { box-shadow: 0 0 12px rgba(16,185,129,0.25); }
+    }
+    @keyframes sub-border-spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes sub-active-pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.75; transform:scale(0.96); }
+    }
+    @keyframes sub-icon-float {
+      0%,100% { transform: translateY(0) rotate(-4deg); }
+      50%      { transform: translateY(-4px) rotate(4deg); }
+    }
+    @keyframes shimmer-once {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(300%); }
+    }
+    @keyframes path-draw {
+      from { stroke-dashoffset: var(--path-len); }
+      to   { stroke-dashoffset: 0; }
     }
 
     .wallet-holo-scan {
@@ -536,7 +554,7 @@ function MatrixCounter({ value, color }) {
   }, [value]);
   return (
     <span ref={ref} className="matrix-char" style={{
-      fontFamily:"'Courier New',monospace", color,
+      fontFamily:"'Bebas Neue',sans-serif", color, letterSpacing:2,
       textShadow:`0 0 8px ${color}80, 0 0 20px ${color}30`,
     }}>
       {Math.round(value).toLocaleString()}
@@ -586,75 +604,119 @@ function WalletHolo({ mc, sc }) {
   );
 }
 
-/* ─── 3D Stat Orb (R3F) ──────────────────────────────────────────────────── */
-function StatOrb({ color, position, speed }) {
-  const mesh = useRef();
-  useFrame((state) => {
-    if (!mesh.current) return;
-    mesh.current.rotation.x += 0.008 * speed;
-    mesh.current.rotation.y += 0.015 * speed;
-    mesh.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * speed * 0.8) * 0.07;
-  });
+/* ─── Radar Chart SVG ────────────────────────────────────────────────────── */
+function RadarChart({ bets, wins, precision }) {
+  const wrapRef = useRef(null);
+  const [progress, setProgress] = useState(0);
+  const animRef = useRef(null);
+  const done    = useRef(false);
+  const [hovered, setHovered] = useState(null);
+
+  const W = 260, H = 200;
+  const cx = 130, cy = 104, R = 72;
+  const AXES = [
+    { label:"PARIS",     raw:bets,      max:500, color:"#3b82f6", angle:-90 },
+    { label:"VICTOIRES", raw:wins,      max:200, color:"#10b981", angle:30  },
+    { label:"PRÉCISION", raw:precision, max:100, color:"#a78bfa", angle:150, suffix:"%" },
+  ];
+  const norms = AXES.map(a => Math.min((a.raw||0) / a.max, 1));
+
+  const pt = (angle, r) => {
+    const rad = (angle * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  const poly = (radii) => AXES.map((a, i) => pt(a.angle, radii[i])).map((p, i) => `${i===0?"M":"L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ") + " Z";
+
+  useEffect(() => {
+    if (!wrapRef.current) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting || done.current) return;
+      obs.disconnect(); done.current = true;
+      let start = null;
+      const run = (ts) => {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / 1100, 1);
+        setProgress(p < 1 ? p : 1);
+        if (p < 1) animRef.current = requestAnimationFrame(run);
+      };
+      animRef.current = requestAnimationFrame(run);
+    }, { threshold: 0.3 });
+    obs.observe(wrapRef.current);
+    return () => { obs.disconnect(); cancelAnimationFrame(animRef.current); };
+  }, []);
+
+  const animNorms = norms.map(n => n * progress);
+  const LEVELS = [0.25, 0.5, 0.75, 1.0];
+
   return (
-    <mesh ref={mesh} position={position}>
-      <sphereGeometry args={[0.52, 32, 32]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.38} roughness={0.14} metalness={0.85} />
-    </mesh>
+    <div ref={wrapRef} style={{ position:"relative" }}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:"block", overflow:"visible" }}>
+        {/* Grid rings */}
+        {LEVELS.map(lv => (
+          <path key={lv} d={poly(AXES.map(() => R * lv))}
+            stroke="rgba(16,185,129,0.18)" strokeWidth={lv===1?1:0.5}
+            fill={lv===1?"rgba(16,185,129,0.025)":"none"} />
+        ))}
+        {/* Axis lines */}
+        {AXES.map((a, i) => {
+          const end = pt(a.angle, R);
+          return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke={`${a.color}35`} strokeWidth={1} />;
+        })}
+        {/* Data fill */}
+        <path d={poly(animNorms.map(n => n * R + 0.01))}
+          fill="rgba(16,185,129,0.12)" stroke="#10b981" strokeWidth={2} strokeLinejoin="round" />
+        {/* Data dots + hover */}
+        {AXES.map((a, i) => {
+          const p = pt(a.angle, animNorms[i] * R + 0.01);
+          return (
+            <circle key={i} cx={p.x} cy={p.y} r={hovered===i?6:4}
+              fill={a.color} stroke="rgba(3,7,18,0.85)" strokeWidth={1.5}
+              style={{ cursor:"pointer", transition:"r 0.15s" }}
+              onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}
+            />
+          );
+        })}
+        {/* Axis labels */}
+        {AXES.map((a, i) => {
+          const lp = pt(a.angle, R + 22);
+          const anchor = a.angle === -90 ? "middle" : a.angle > 0 && a.angle < 120 ? "start" : "end";
+          return (
+            <g key={i}>
+              <text x={lp.x} y={lp.y - 3} textAnchor={anchor}
+                fontFamily="'Barlow Condensed', sans-serif" fontWeight="700"
+                fontSize={8} letterSpacing={1.5} fill={`${a.color}80`}>
+                {a.label}
+              </text>
+              <text x={lp.x} y={lp.y + 10} textAnchor={anchor}
+                fontFamily="'Bebas Neue', sans-serif" fontSize={13} fill={a.color}>
+                {a.raw||0}{a.suffix||""}
+              </text>
+            </g>
+          );
+        })}
+        {/* Tooltip */}
+        {hovered !== null && (
+          <g>
+            <rect x={cx-40} y={cy-16} width={80} height={24} rx={6}
+              fill="rgba(3,7,18,0.9)" stroke={`${AXES[hovered].color}50`} strokeWidth={1} />
+            <text x={cx} y={cy+2} textAnchor="middle"
+              fontFamily="'Bebas Neue', sans-serif" fontSize={12} fill={AXES[hovered].color}>
+              {AXES[hovered].label}: {AXES[hovered].raw||0}{AXES[hovered].suffix||""}
+            </text>
+          </g>
+        )}
+      </svg>
+    </div>
   );
 }
 
-function OrbitDot({ color, center, radius, speed, offset }) {
-  const mesh = useRef();
-  useFrame((state) => {
-    if (!mesh.current) return;
-    const t = state.clock.elapsedTime * speed + offset;
-    mesh.current.position.x = center[0] + Math.cos(t) * radius;
-    mesh.current.position.y = center[1] + Math.sin(t * 0.7) * radius * 0.5;
-    mesh.current.position.z = Math.sin(t) * radius * 0.4;
-  });
-  return (
-    <mesh ref={mesh}>
-      <sphereGeometry args={[0.045, 8, 8]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.9} />
-    </mesh>
-  );
-}
-
-/* ─── Stats 3D section ───────────────────────────────────────────────────── */
-function Stats3D({ profile, wr }) {
-  const stats = [
-    { label:"PARIS",    val:profile?.total_bets||0,  color:"#3b82f6", isPercent:false },
-    { label:"VICTOIRES",val:profile?.total_wins||0,  color:"#10b981", isPercent:false },
-    { label:"PRÉCISION",val:wr,                       color:"#a78bfa", isPercent:true  },
-  ];
-  const SPHERES = [
-    { color:"#3b82f6", pos:[-1.6,0,0], speed:0.7, dots:["#60a5fa","#93c5fd"] },
-    { color:"#10b981", pos:[0,0,0],    speed:1.0, dots:["#34d399","#6ee7b7"] },
-    { color:"#a78bfa", pos:[1.6,0,0],  speed:0.55,dots:["#c4b5fd","#ddd6fe"] },
-  ];
+/* ─── Stats section wrapper ──────────────────────────────────────────────── */
+function StatsSection({ profile, wr }) {
   return (
     <div>
-      <div style={{ height:145, borderRadius:16, overflow:"hidden", border:"1px solid rgba(241,245,249,0.04)",
-        background:"linear-gradient(180deg,rgba(3,7,18,0.92) 0%,rgba(3,7,18,0.5) 100%)" }}>
-        <Canvas camera={{ position:[0,0,4.2], fov:50 }} gl={{ alpha:true, antialias:true }}>
-          <ambientLight intensity={0.2} />
-          <pointLight position={[3,3,3]}  intensity={2}   color="#3b82f6" />
-          <pointLight position={[-3,2,2]} intensity={1.5} color="#10b981" />
-          <pointLight position={[0,-2,3]} intensity={1}   color="#a78bfa" />
-          {SPHERES.map((s, si) => (
-            <group key={si}>
-              <StatOrb color={s.color} position={s.pos} speed={s.speed} />
-              {s.dots.map((dc, di) => (
-                <OrbitDot key={di} color={dc} center={s.pos} radius={0.72} speed={1.8 + di*0.4} offset={di * Math.PI} />
-              ))}
-            </group>
-          ))}
-        </Canvas>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:10 }}>
-        {stats.map((s, i) => (
-          <AnimStatCard key={s.label} label={s.label} value={s.val} color={s.color} delay={i+1} isPercent={s.isPercent} />
-        ))}
+      <div style={{ background:"rgba(241,245,249,0.01)", border:"1px solid rgba(241,245,249,0.04)", borderRadius:16, padding:"8px 8px 4px" }}>
+        <RadarChart bets={profile?.total_bets||0} wins={profile?.total_wins||0} precision={wr} />
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:8 }}>
         <AnimStatCard label="PROFIT TOTAL"  value={profile?.total_profit||0}  color="#34d399" delay={4} suffix=" MC" />
@@ -687,18 +749,12 @@ function LiquidXPBar({ coins, div }) {
           style={{ position:"absolute", left:0, top:0, bottom:0, borderRadius:99, overflow:"hidden",
             background:`linear-gradient(90deg, ${div.color}70, ${div.color}dd, ${div.color})` }}
         >
+          {/* One-shot shimmer sweep */}
           <div style={{
-            position:"absolute", inset:0,
-            background:`linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.22) 50%,transparent 100%)`,
-            backgroundSize:"50px 100%", animation:"liquid-wave 1.5s linear infinite",
+            position:"absolute", top:0, bottom:0, width:"40%",
+            background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)",
+            animation:"shimmer-once 1.2s ease-out 0.8s both",
           }} />
-          {[15,42,70].map((left, j) => (
-            <div key={j} style={{
-              position:"absolute", left:`${left}%`, bottom:3, width:3, height:3, borderRadius:"50%",
-              background:"rgba(255,255,255,0.55)",
-              animation:`liquid-bubble ${1.2+j*0.45}s ease-in-out infinite ${j*0.35}s`,
-            }} />
-          ))}
         </motion.div>
         {pct > 3 && (
           <div style={{
@@ -921,8 +977,11 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
     req(`profiles?referred_by=eq.${refCode}&select=id`).then(r => setReferralCount((r||[]).length)).catch(()=>{});
   }, [profile?.id]);
 
-  /* Confetti on mount */
+  /* Confetti — une seule fois au montage */
+  const confettiFired = useRef(false);
   useEffect(() => {
+    if (confettiFired.current) return;
+    confettiFired.current = true;
     import("canvas-confetti").then(({ default: confetti }) => {
       confetti({
         particleCount:25, spread:50, angle:90,
@@ -982,10 +1041,10 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         <WalletHolo mc={profile?.coins||0} sc={profile?.store_coins||0} />
       </Section>
 
-      {/* ── STATS 3D ────────────────────────────────────────────── */}
+      {/* ── STATS RADAR ─────────────────────────────────────────── */}
       <Section delay={3} style={{ marginBottom:22 }}>
         <SectionTitle accent="STATS" />
-        <Stats3D profile={profile} wr={wr} />
+        <StatsSection profile={profile} wr={wr} />
       </Section>
 
       {/* ── XP LIQUIDE ──────────────────────────────────────────── */}
@@ -995,85 +1054,158 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
 
       {/* ── SUBSCRIPTION ────────────────────────────────────────── */}
       <Section delay={4} style={{ marginBottom:22 }}>
-        <div style={{
-          background:`${getSubColor(sub)}08`, border:`1px solid ${getSubColor(sub)}20`,
-          borderRadius:14, padding:"14px 16px", display:"flex", justifyContent:"space-between", alignItems:"center",
-          position:"relative", overflow:"hidden",
-        }}>
-          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${getSubColor(sub)}50,transparent)` }} />
-          <div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, fontWeight:700, letterSpacing:2, color:"rgba(241,245,249,0.3)", marginBottom:4 }}>
-              {t("profile.current_sub")}
+        {(() => {
+          const sc = getSubColor(sub);
+          const isPaid = sub !== "starter";
+          return (
+            <div style={{ position:"relative", borderRadius:16, padding:1, overflow:"hidden" }}>
+              {/* Rotating border */}
+              <div style={{
+                position:"absolute", inset:0,
+                background:`conic-gradient(${sc}, #3b82f6, ${sc}80, #f1f5f9, ${sc})`,
+                animation:"sub-border-spin 4s linear infinite",
+                borderRadius:"inherit",
+              }} />
+              <div style={{
+                position:"relative", borderRadius:15, padding:"16px 16px",
+                background:`linear-gradient(135deg,${sc}10 0%,rgba(3,7,18,0.97) 100%)`,
+              }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, fontWeight:700, letterSpacing:2, color:"rgba(241,245,249,0.3)" }}>
+                        {t("profile.current_sub")}
+                      </div>
+                      <div style={{
+                        fontFamily:"'Barlow Condensed',sans-serif", fontSize:8, fontWeight:800, letterSpacing:2,
+                        color:"#030712", background: isPaid ? sc : "rgba(241,245,249,0.3)",
+                        padding:"2px 7px", borderRadius:4,
+                        animation: isPaid ? "sub-active-pulse 2.5s ease-in-out infinite" : "none",
+                      }}>
+                        ACTIF
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ fontSize:28, animation:"sub-icon-float 3s ease-in-out infinite", lineHeight:1 }}>
+                        {getSubEmoji(sub)}
+                      </div>
+                      <div>
+                        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:sc, letterSpacing:2, lineHeight:1 }}>
+                          {getSubLabel(sub)}
+                        </div>
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, color:"rgba(241,245,249,0.35)", marginTop:2, letterSpacing:0.5 }}>
+                          +{getMCBoost(sub)} MC offerts chaque lundi
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {sub === "starter" && (
+                    <motion.button
+                      whileHover={{ scale:1.06, boxShadow:`0 0 24px rgba(245,158,11,0.5)` }}
+                      whileTap={{ scale:0.96 }}
+                      onClick={() => onNavigate("subscription")}
+                      style={{
+                        padding:"10px 18px", borderRadius:10,
+                        border:"1px solid rgba(245,158,11,0.4)",
+                        background:"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.06))",
+                        color:"#f59e0b", fontFamily:"'Bebas Neue',sans-serif",
+                        fontSize:14, letterSpacing:2, cursor:"pointer", flexShrink:0,
+                      }}
+                    >
+                      UPGRADE ✦
+                    </motion.button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:getSubColor(sub), letterSpacing:1 }}>
-              {getSubEmoji(sub)} {getSubLabel(sub)}
-            </div>
-            <div style={{ fontSize:11, color:"rgba(241,245,249,0.3)", marginTop:2 }}>{getMCBoost(sub)} MC chaque lundi</div>
-          </div>
-          {sub === "starter" && (
-            <button onClick={() => onNavigate("subscription")} style={{
-              padding:"9px 16px", borderRadius:9, border:"1px solid rgba(245,158,11,0.3)",
-              background:"rgba(245,158,11,0.08)", color:"#f59e0b", fontFamily:"'Bebas Neue',sans-serif",
-              fontSize:13, letterSpacing:1, cursor:"pointer",
-            }}>
-              UPGRADE →
-            </button>
-          )}
-        </div>
+          );
+        })()}
       </Section>
 
       {/* ── DIVISIONS ────────────────────────────────────────────── */}
       <Section delay={5} style={{ marginBottom:22 }}>
         <SectionTitle accent="DIVISIONS" />
-        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-          {DIVISIONS.map((d) => {
-            const coins   = profile?.coins || 0;
-            const reached = coins >= d.min;
-            const isCur   = d.id === div.id;
-            const pct     = isCur ? getDivisionProgress(coins) : 0;
-            return (
-              <div key={d.id} style={{
-                background: isCur ? `${d.color}10` : "transparent",
-                border:`1px solid ${isCur ? d.color+"35" : "rgba(241,245,249,0.04)"}`,
-                borderRadius:11, padding:"9px 12px", opacity:reached?1:0.28,
-                position:"relative", overflow:"hidden",
-              }}>
-                {isCur && pct > 0 && d.max !== Infinity && (
-                  <div style={{ position:"absolute", top:0, left:0, bottom:0, width:`${pct}%`, background:`${d.color}06`, pointerEvents:"none" }} />
-                )}
-                <div style={{ display:"flex", alignItems:"center", gap:10, position:"relative" }}>
-                  <div style={{
-                    width:32, height:32, borderRadius:9, background:`${d.color}18`,
-                    border:`1px solid ${d.color}${isCur?"40":"15"}`,
-                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0,
-                    boxShadow:isCur?`0 0 12px ${d.color}40`:"none",
-                  }}>{d.icon}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color:isCur?d.color:"rgba(241,245,249,0.6)", letterSpacing:1 }}>{d.name}</span>
-                      {isCur && <span style={{ fontSize:8, fontWeight:800, color:d.color, background:`${d.color}20`, padding:"1px 5px", borderRadius:3, letterSpacing:1 }}>ICI</span>}
-                      {reached && !isCur && <span style={{ fontSize:11, color:d.color }}>✓</span>}
-                    </div>
-                    {isCur && d.max !== Infinity && (
-                      <div style={{ height:2, borderRadius:99, background:"rgba(255,255,255,0.05)", overflow:"hidden", marginTop:4 }}>
-                        <div style={{ width:`${pct}%`, height:"100%", background:d.color, borderRadius:99 }} />
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ fontSize:11, color:isCur?d.color:"rgba(241,245,249,0.3)", fontWeight:700, flexShrink:0 }}>
-                    🏅 {d.top1} SC
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
+        {(() => {
+          const coins  = profile?.coins || 0;
+          const curIdx = DIVISIONS.findIndex(d => d.id === div.id);
+          const pct    = getDivisionProgress(coins);
+          return (
+            <div style={{ position:"relative" }}>
+              {/* Vertical path line */}
+              <div style={{
+                position:"absolute", left:19, top:16, bottom:16, width:2, borderRadius:99,
+                background:`linear-gradient(180deg,
+                  #10b981 0%,
+                  #10b981 ${(curIdx / Math.max(DIVISIONS.length-1,1))*100}%,
+                  rgba(241,245,249,0.06) ${(curIdx / Math.max(DIVISIONS.length-1,1))*100}%,
+                  rgba(241,245,249,0.06) 100%
+                )`,
+              }} />
 
-      {/* ── BADGE CONSTELLATION ─────────────────────────────────── */}
-      <Section delay={6} style={{ marginBottom:22 }}>
-        <SectionTitle accent="BADGES" />
-        <BadgeConstellation level={level} currentBadge={currentBadge} />
+              {DIVISIONS.map((d, i) => {
+                const reached = coins >= d.min;
+                const isCur   = d.id === div.id;
+                const isFuture= !reached;
+                return (
+                  <motion.div key={d.id}
+                    initial={{ opacity:0, x:-12 }}
+                    animate={{ opacity:1, x:0 }}
+                    transition={{ delay: i * 0.07, duration:0.4, ease:"easeOut" }}
+                    style={{ display:"flex", alignItems:"flex-start", gap:0, marginBottom: i < DIVISIONS.length-1 ? 2 : 0, position:"relative" }}
+                  >
+                    {/* Node */}
+                    <div style={{ width:40, flexShrink:0, display:"flex", justifyContent:"center", paddingTop:6 }}>
+                      <div style={{
+                        width: isCur ? 38 : 30, height: isCur ? 38 : 30, borderRadius:"50%", flexShrink:0,
+                        background: isCur ? `${d.color}22` : reached ? `${d.color}12` : "rgba(241,245,249,0.03)",
+                        border:`${isCur?2:1}px solid ${reached ? d.color+(isCur?"":"55") : "rgba(241,245,249,0.08)"}`,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        fontSize: isCur ? 18 : 14,
+                        boxShadow: isCur ? `0 0 18px ${d.color}55, 0 0 36px ${d.color}20` : "none",
+                        animation: isCur ? "aura-pulse 2.5s ease-in-out infinite" : "none",
+                        transition:"all 0.3s",
+                        filter: isFuture ? "grayscale(1) blur(0.5px)" : "none",
+                        opacity: isFuture ? 0.3 : 1,
+                      }}>
+                        {d.icon}
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex:1, paddingLeft:10, paddingTop:isCur?4:7, paddingBottom:isCur?12:8, opacity:isFuture?0.3:1 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom: isCur ? 5 : 0 }}>
+                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:isCur?15:13, letterSpacing:1, color:isCur?d.color:reached?"rgba(241,245,249,0.75)":"rgba(241,245,249,0.3)" }}>
+                          {d.name}
+                        </span>
+                        {isCur && (
+                          <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:8, fontWeight:800, letterSpacing:1.5, color:"#030712", background:d.color, padding:"2px 6px", borderRadius:4 }}>
+                            VOUS ÊTES ICI
+                          </span>
+                        )}
+                        {reached && !isCur && <span style={{ fontSize:12, color:d.color, lineHeight:1 }}>✓</span>}
+                      </div>
+                      {isCur && d.max !== Infinity && (
+                        <motion.div
+                          style={{ height:3, borderRadius:99, background:"rgba(255,255,255,0.05)", overflow:"hidden", marginBottom:4 }}
+                        >
+                          <motion.div
+                            initial={{ width:0 }}
+                            animate={{ width:`${pct}%` }}
+                            transition={{ duration:1.4, ease:[0.4,0,0.2,1], delay:0.6 }}
+                            style={{ height:"100%", background:`linear-gradient(90deg,${d.color}70,${d.color})`, borderRadius:99 }}
+                          />
+                        </motion.div>
+                      )}
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, letterSpacing:0.5, color:"rgba(241,245,249,0.2)" }}>
+                        {d.min >= 1000 ? `${(d.min/1000).toFixed(0)}k` : d.min} MC · 🏅 {d.top1} SC
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </Section>
 
       {/* ── ACTIVITÉ RÉCENTE ─────────────────────────────────────── */}
@@ -1086,7 +1218,7 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
       <Section delay={7} style={{ marginBottom:22 }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
           {/* Friends */}
-          <div onClick={() => onNavigate("leaderboard")} style={{
+          <div onClick={() => onNavigate("community")} style={{
             background:"rgba(16,185,129,0.04)", border:"1px solid rgba(16,185,129,0.1)",
             borderRadius:14, padding:"14px", cursor:"pointer",
           }}>
@@ -1106,7 +1238,7 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
             borderRadius:14, padding:"14px",
           }}>
             <div style={{ fontSize:22, marginBottom:6 }}>🎁</div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:2 }}>FILLEULS</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:1, marginBottom:2 }}>PARRAINÉ</div>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#f59e0b" }}>
               {referralCount === null ? "…" : referralCount}
             </div>
