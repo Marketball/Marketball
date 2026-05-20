@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { DIVISIONS, BADGES } from "../lib/constants.js";
 import { getSubPlan, getSubColor, getSubEmoji, getSubLabel, getMCBoost, getDivision, getDivisionProgress, getDivisionNext, fmt } from "../lib/helpers.js";
 import Avatar from "../components/ui/Avatar.jsx";
@@ -67,6 +68,34 @@ function injectProfileStyles() {
       100% { transform:translateY(-80px) rotate(360deg) scale(0); opacity:0; }
     }
     @keyframes count-blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    @keyframes liquid-wave {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    @keyframes liquid-bubble {
+      0%,100% { transform: translateY(0) scale(1); opacity:0.5; }
+      50%      { transform: translateY(-8px) scale(0.6); opacity:0.9; }
+    }
+    @keyframes matrix-flicker {
+      0%,94%,100% { opacity:1; }
+      96%          { opacity:0.4; }
+    }
+    @keyframes holo-scan {
+      0%   { top:-20%; }
+      100% { top:120%; }
+    }
+    @keyframes activity-pulse {
+      0%,100% { box-shadow: none; }
+      50%      { box-shadow: 0 0 12px rgba(16,185,129,0.25); }
+    }
+
+    .wallet-holo-scan {
+      position:absolute; left:0; right:0; height:50px;
+      background:linear-gradient(180deg,transparent,rgba(16,185,129,0.07),transparent);
+      animation:holo-scan 3s ease-in-out infinite;
+      pointer-events:none; z-index:2;
+    }
+    .matrix-char { display:inline-block; animation:matrix-flicker 5s linear infinite; }
 
     .prof-card-wrap { transition: transform 0.08s linear; }
     .prof-card-wrap:active { transform: scale(0.98); }
@@ -477,6 +506,389 @@ function SectionTitle({ children, accent }) {
   );
 }
 
+/* ─── Matrix Counter ─────────────────────────────────────────────────────── */
+function MatrixCounter({ value, color }) {
+  const ref  = useRef(null);
+  const done = useRef(false);
+  const CHARS = "0123456789";
+  useEffect(() => {
+    const el = ref.current; if (!el || done.current) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      obs.disconnect(); done.current = true;
+      const target = Math.round(value);
+      const len    = target.toLocaleString().length;
+      let frame = 0, total = 38, scramble = 20;
+      const tick = () => {
+        frame++;
+        if (frame <= scramble) {
+          el.textContent = Array.from({ length: len }, () => CHARS[Math.floor(Math.random()*10)]).join("");
+        } else {
+          el.textContent = Math.round(((frame - scramble) / (total - scramble)) * target).toLocaleString();
+        }
+        if (frame < total) requestAnimationFrame(tick);
+        else el.textContent = target.toLocaleString();
+      };
+      requestAnimationFrame(tick);
+    }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [value]);
+  return (
+    <span ref={ref} className="matrix-char" style={{
+      fontFamily:"'Courier New',monospace", color,
+      textShadow:`0 0 8px ${color}80, 0 0 20px ${color}30`,
+    }}>
+      {Math.round(value).toLocaleString()}
+    </span>
+  );
+}
+
+/* ─── Wallet Holographic ─────────────────────────────────────────────────── */
+function WalletHolo({ mc, sc }) {
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+      {[
+        { label:"MARKETCOINS", val:mc, color:"#fbbf24", icon:"🪙", tag:"MC" },
+        { label:"STORECOINS",  val:sc, color:"#10b981", icon:"💎", tag:"SC" },
+      ].map((w, i) => (
+        <motion.div key={w.label}
+          initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
+          transition={{ delay: 0.15 + i * 0.12, duration:0.5, ease:[0.4,0,0.2,1] }}
+          style={{
+            position:"relative", borderRadius:16, overflow:"hidden", padding:"18px 14px",
+            background:`linear-gradient(145deg, rgba(255,255,255,0.025) 0%, rgba(3,7,18,0.95) 100%)`,
+            border:`1px solid ${w.color}25`,
+          }}
+        >
+          <div className="wallet-holo-scan" />
+          <div style={{
+            position:"absolute", inset:0, zIndex:0, pointerEvents:"none",
+            backgroundImage:`linear-gradient(${w.color}07 1px,transparent 1px),linear-gradient(90deg,${w.color}07 1px,transparent 1px)`,
+            backgroundSize:"18px 18px",
+          }} />
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${w.color}70,transparent)`, zIndex:3 }} />
+          <div style={{ position:"absolute", top:0, left:0, width:16, height:16, borderTop:`2px solid ${w.color}60`, borderLeft:`2px solid ${w.color}60`, borderRadius:"16px 0 0 0", zIndex:3 }} />
+          <div style={{ position:"absolute", bottom:0, right:0, width:16, height:16, borderBottom:`2px solid ${w.color}40`, borderRight:`2px solid ${w.color}40`, borderRadius:"0 0 16px 0", zIndex:3 }} />
+          <div style={{ position:"relative", zIndex:4 }}>
+            <div style={{ fontSize:18, marginBottom:8 }}>{w.icon}</div>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, lineHeight:1 }}>
+              <MatrixCounter value={w.val} color={w.color} />
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, fontWeight:700, color:`${w.color}70`, marginLeft:4 }}>{w.tag}</span>
+            </div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:8, fontWeight:700, letterSpacing:3, color:`${w.color}60`, marginTop:6 }}>
+              {w.label}
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── 3D Stat Orb (R3F) ──────────────────────────────────────────────────── */
+function StatOrb({ color, position, speed }) {
+  const mesh = useRef();
+  useFrame((state) => {
+    if (!mesh.current) return;
+    mesh.current.rotation.x += 0.008 * speed;
+    mesh.current.rotation.y += 0.015 * speed;
+    mesh.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * speed * 0.8) * 0.07;
+  });
+  return (
+    <mesh ref={mesh} position={position}>
+      <sphereGeometry args={[0.52, 32, 32]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.38} roughness={0.14} metalness={0.85} />
+    </mesh>
+  );
+}
+
+function OrbitDot({ color, center, radius, speed, offset }) {
+  const mesh = useRef();
+  useFrame((state) => {
+    if (!mesh.current) return;
+    const t = state.clock.elapsedTime * speed + offset;
+    mesh.current.position.x = center[0] + Math.cos(t) * radius;
+    mesh.current.position.y = center[1] + Math.sin(t * 0.7) * radius * 0.5;
+    mesh.current.position.z = Math.sin(t) * radius * 0.4;
+  });
+  return (
+    <mesh ref={mesh}>
+      <sphereGeometry args={[0.045, 8, 8]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.9} />
+    </mesh>
+  );
+}
+
+/* ─── Stats 3D section ───────────────────────────────────────────────────── */
+function Stats3D({ profile, wr }) {
+  const stats = [
+    { label:"PARIS",    val:profile?.total_bets||0,  color:"#3b82f6", isPercent:false },
+    { label:"VICTOIRES",val:profile?.total_wins||0,  color:"#10b981", isPercent:false },
+    { label:"PRÉCISION",val:wr,                       color:"#a78bfa", isPercent:true  },
+  ];
+  const SPHERES = [
+    { color:"#3b82f6", pos:[-1.6,0,0], speed:0.7, dots:["#60a5fa","#93c5fd"] },
+    { color:"#10b981", pos:[0,0,0],    speed:1.0, dots:["#34d399","#6ee7b7"] },
+    { color:"#a78bfa", pos:[1.6,0,0],  speed:0.55,dots:["#c4b5fd","#ddd6fe"] },
+  ];
+  return (
+    <div>
+      <div style={{ height:145, borderRadius:16, overflow:"hidden", border:"1px solid rgba(241,245,249,0.04)",
+        background:"linear-gradient(180deg,rgba(3,7,18,0.92) 0%,rgba(3,7,18,0.5) 100%)" }}>
+        <Canvas camera={{ position:[0,0,4.2], fov:50 }} gl={{ alpha:true, antialias:true }}>
+          <ambientLight intensity={0.2} />
+          <pointLight position={[3,3,3]}  intensity={2}   color="#3b82f6" />
+          <pointLight position={[-3,2,2]} intensity={1.5} color="#10b981" />
+          <pointLight position={[0,-2,3]} intensity={1}   color="#a78bfa" />
+          {SPHERES.map((s, si) => (
+            <group key={si}>
+              <StatOrb color={s.color} position={s.pos} speed={s.speed} />
+              {s.dots.map((dc, di) => (
+                <OrbitDot key={di} color={dc} center={s.pos} radius={0.72} speed={1.8 + di*0.4} offset={di * Math.PI} />
+              ))}
+            </group>
+          ))}
+        </Canvas>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:10 }}>
+        {stats.map((s, i) => (
+          <AnimStatCard key={s.label} label={s.label} value={s.val} color={s.color} delay={i+1} isPercent={s.isPercent} />
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:8 }}>
+        <AnimStatCard label="PROFIT TOTAL"  value={profile?.total_profit||0}  color="#34d399" delay={4} suffix=" MC" />
+        <AnimStatCard label="PROFIT HEBDO"  value={profile?.weekly_profit||0} color="#10b981" delay={5} suffix=" MC" />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Liquid XP Bar ──────────────────────────────────────────────────────── */
+function LiquidXPBar({ coins, div }) {
+  const pct     = getDivisionProgress(coins);
+  const nextDiv = getDivisionNext(coins);
+  return (
+    <div style={{ background:"rgba(241,245,249,0.015)", border:`1px solid ${div.color}20`, borderRadius:16, padding:"18px 16px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:8, fontWeight:700, letterSpacing:3, color:`${div.color}70`, marginBottom:2 }}>PROGRESSION DIVISION</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, color:div.color, letterSpacing:1 }}>{div.icon} {div.name}</div>
+        </div>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:30, color:div.color, lineHeight:1 }}>
+          {pct}<span style={{ fontSize:14, opacity:0.5 }}>%</span>
+        </div>
+      </div>
+      <div style={{ position:"relative", height:20, borderRadius:99, background:"rgba(255,255,255,0.03)", overflow:"hidden", border:`1px solid ${div.color}15` }}>
+        <motion.div
+          initial={{ width:0 }}
+          animate={{ width:`${pct}%` }}
+          transition={{ duration:1.5, ease:[0.4,0,0.2,1], delay:0.4 }}
+          style={{ position:"absolute", left:0, top:0, bottom:0, borderRadius:99, overflow:"hidden",
+            background:`linear-gradient(90deg, ${div.color}70, ${div.color}dd, ${div.color})` }}
+        >
+          <div style={{
+            position:"absolute", inset:0,
+            background:`linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.22) 50%,transparent 100%)`,
+            backgroundSize:"50px 100%", animation:"liquid-wave 1.5s linear infinite",
+          }} />
+          {[15,42,70].map((left, j) => (
+            <div key={j} style={{
+              position:"absolute", left:`${left}%`, bottom:3, width:3, height:3, borderRadius:"50%",
+              background:"rgba(255,255,255,0.55)",
+              animation:`liquid-bubble ${1.2+j*0.45}s ease-in-out infinite ${j*0.35}s`,
+            }} />
+          ))}
+        </motion.div>
+        {pct > 3 && (
+          <div style={{
+            position:"absolute", left:`calc(${pct}% - 5px)`, top:"50%", transform:"translateY(-50%)",
+            width:10, height:10, borderRadius:"50%", background:"rgba(255,255,255,0.95)",
+            boxShadow:`0 0 8px ${div.color}, 0 0 20px ${div.color}80`,
+            transition:"left 1.5s cubic-bezier(0.4,0,0.2,1) 0.4s",
+          }} />
+        )}
+      </div>
+      {nextDiv && div.max !== Infinity && (
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"rgba(241,245,249,0.2)", letterSpacing:1 }}>
+          <span>{div.name} {div.icon}</span>
+          <span>→ {nextDiv.name} {nextDiv.icon}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Badge Constellation ────────────────────────────────────────────────── */
+function BadgeConstellation({ level, currentBadge }) {
+  const handleHover = useCallback((badge, unlocked) => {
+    if (!unlocked || badge.id !== currentBadge.id) return;
+    import("canvas-confetti").then(({ default: confetti }) => {
+      confetti({ particleCount:14, spread:55, colors:[badge.color,"#f1f5f9","#10b981"],
+        origin:{ x:0.5, y:0.7 }, startVelocity:11, gravity:1.6, ticks:48, scalar:0.55 });
+    }).catch(()=>{});
+  }, [currentBadge]);
+
+  return (
+    <div style={{ background:"rgba(241,245,249,0.01)", border:"1px solid rgba(241,245,249,0.04)", borderRadius:16, padding:"16px", position:"relative", overflow:"hidden" }}>
+      {[...Array(6)].map((_,i) => (
+        <div key={i} style={{
+          position:"absolute", top:`${12+i*15}%`, left:`${82+Math.cos(i)*8}%`,
+          width:i%2===0?2:1, height:i%2===0?2:1, borderRadius:"50%",
+          background:"rgba(241,245,249,0.25)",
+          animation:`aura-pulse ${2.2+i*0.35}s ease-in-out infinite ${i*0.5}s`,
+        }} />
+      ))}
+      {BADGES.map((badge, i) => (
+        <div key={badge.id} onMouseEnter={() => handleHover(badge, level >= badge.minLevel)}>
+          <BadgeTimelineItem badge={badge} unlocked={level >= badge.minLevel} isCurrent={badge.id === currentBadge.id} index={i} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Activity Timeline ──────────────────────────────────────────────────── */
+function ActivityTimeline({ userId }) {
+  const [items, setItems] = useState(null);
+  useEffect(() => {
+    if (!userId) return;
+    Promise.all([
+      req(`match_bets?user_id=eq.${userId}&order=created_at.desc&limit=4`).catch(() => []),
+      req(`user_bets?user_id=eq.${userId}&order=created_at.desc&limit=4`).catch(()  => []),
+    ]).then(([mb, ub]) => {
+      const all = [
+        ...(mb||[]).map(b => ({ ...b, _type:"match" })),
+        ...(ub||[]).map(b => ({ ...b, _type:"market" })),
+      ].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,6);
+      setItems(all);
+    });
+  }, [userId]);
+
+  const STATUS_COLOR = { won:"#10b981", lost:"#ef4444", pending:"#fbbf24", cashed_out:"#a78bfa" };
+  const STATUS_LABEL = { won:"GAGNÉ", lost:"PERDU", pending:"EN COURS", cashed_out:"CASHOUT" };
+
+  if (!items) return (
+    <div style={{ padding:"14px", textAlign:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:2, color:"rgba(241,245,249,0.2)" }}>
+      CHARGEMENT...
+    </div>
+  );
+  if (items.length === 0) return (
+    <div style={{ padding:"14px", textAlign:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:2, color:"rgba(241,245,249,0.15)" }}>
+      AUCUNE ACTIVITÉ RÉCENTE
+    </div>
+  );
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      {items.map((a, i) => {
+        const color = STATUS_COLOR[a.status] || "#94a3b8";
+        const label = STATUS_LABEL[a.status] || (a.status||"—").toUpperCase();
+        const title = a.match_title || a.market_title || "Paris";
+        const gain  = a.status==="won" ? `+${fmt(a.potential_gain||0)} MC` : a.status==="lost" ? `-${fmt(a.cost||0)} MC` : `${fmt(a.cost||0)} MC`;
+        const date  = new Date(a.created_at).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"});
+        return (
+          <motion.div key={a.id||i}
+            initial={{ opacity:0, x:28 }} animate={{ opacity:1, x:0 }}
+            transition={{ delay:i*0.07, duration:0.4, ease:"easeOut" }}
+            style={{
+              display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
+              background:`${color}06`, border:`1px solid ${color}18`, borderRadius:11,
+              position:"relative", overflow:"hidden",
+              animation:a.status==="pending"?"activity-pulse 3s ease-in-out infinite":"none",
+            }}
+          >
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, background:color, borderRadius:"0 99px 99px 0" }} />
+            <div style={{ fontSize:14, flexShrink:0 }}>{a._type==="match"?"⚽":"📈"}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, fontWeight:700, color:"rgba(241,245,249,0.7)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{title}</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, letterSpacing:1, color:"rgba(241,245,249,0.22)", marginTop:1 }}>{date}</div>
+            </div>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, color, letterSpacing:0.5 }}>{gain}</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:8, fontWeight:700, letterSpacing:1, color:`${color}80` }}>{label}</div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Scatter Logout ─────────────────────────────────────────────────────── */
+function ScatterLogout({ onLogout }) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy,    setBusy]    = useState(false);
+  const charsRef = useRef([]);
+  const LABEL    = "DÉCONNEXION";
+
+  const handleEnter = useCallback(() => {
+    if (busy) return;
+    setBusy(true);
+    charsRef.current.forEach((el, i) => {
+      if (!el) return;
+      gsap.to(el, {
+        x:(Math.random()-0.5)*100, y:(Math.random()-0.5)*50,
+        rotation:(Math.random()-0.5)*200, opacity:0,
+        duration:0.32, delay:i*0.022, ease:"power2.in",
+      });
+    });
+    setTimeout(() => {
+      charsRef.current.forEach(el => { if (el) gsap.set(el,{x:0,y:0,rotation:0,opacity:1}); });
+      setBusy(false);
+    }, 580);
+  }, [busy]);
+
+  return (
+    <>
+      <button onMouseEnter={handleEnter} onClick={() => setConfirm(true)} style={{
+        width:"100%", padding:"16px 0", borderRadius:12,
+        border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.04)",
+        color:"#f87171", fontFamily:"'Bebas Neue',sans-serif", fontSize:18,
+        letterSpacing:3, cursor:"pointer", overflow:"hidden",
+        display:"flex", alignItems:"center", justifyContent:"center",
+      }}>
+        {LABEL.split("").map((ch, i) => (
+          <span key={i} ref={el => { charsRef.current[i] = el; }} style={{ display:"inline-block" }}>
+            {ch === " " ? " " : ch}
+          </span>
+        ))}
+      </button>
+
+      <AnimatePresence>
+        {confirm && (
+          <motion.div
+            initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            style={{ position:"fixed", inset:0, background:"rgba(3,7,18,0.88)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, backdropFilter:"blur(8px)" }}
+          >
+            <motion.div
+              initial={{ scale:0.82, y:24 }} animate={{ scale:1, y:0 }} exit={{ scale:0.82, y:24 }}
+              style={{ background:"linear-gradient(135deg,#0d1f35,#030712)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:20, padding:"32px 28px", maxWidth:300, width:"90%", textAlign:"center" }}
+            >
+              <div style={{ fontSize:36, marginBottom:12 }}>👋</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, marginBottom:8 }}>À BIENTÔT ?</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(241,245,249,0.4)", marginBottom:24, lineHeight:1.5 }}>
+                Tu seras déconnecté de ton compte MarketBall.
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <button onClick={() => setConfirm(false)} style={{
+                  padding:"12px", borderRadius:10, border:"1px solid rgba(241,245,249,0.1)",
+                  background:"transparent", color:"rgba(241,245,249,0.55)",
+                  fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:1, cursor:"pointer",
+                }}>ANNULER</button>
+                <button onClick={onLogout} style={{
+                  padding:"12px", borderRadius:10, border:"1px solid rgba(239,68,68,0.35)",
+                  background:"rgba(239,68,68,0.12)", color:"#f87171",
+                  fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:1, cursor:"pointer",
+                }}>CONFIRMER</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 /* ─── Main page ──────────────────────────────────────────────────────────── */
 export default function ProfilePage({ profile, username, onLogout, onNavigate, session }) {
   const [friendCount,   setFriendCount]   = useState(null);
@@ -564,46 +976,21 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
       </Section>
 
-      {/* ── WALLET ──────────────────────────────────────────────── */}
+      {/* ── WALLET HOLOGRAPHIQUE ────────────────────────────────── */}
       <Section delay={2} style={{ marginBottom:22 }}>
         <SectionTitle accent="WALLET" />
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-          {[
-            { label:"MARKETCOINS", val:profile?.coins||0, color:"#fbbf24", prefix:"", suffix:" MC", icon:"🪙" },
-            { label:"STORECOINS",  val:profile?.store_coins||0, color:"#10b981", prefix:"", suffix:" SC", icon:"💎" },
-          ].map((w, i) => (
-            <motion.div key={w.label}
-              initial={{ opacity:0, scale:0.92 }} animate={{ opacity:1, scale:1 }}
-              transition={{ delay: 0.25 + i * 0.08, duration:0.4 }}
-              style={{
-                background:`${w.color}08`, border:`1px solid ${w.color}25`,
-                borderRadius:14, padding:"16px 14px", position:"relative", overflow:"hidden",
-              }}
-            >
-              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${w.color}60,transparent)` }} />
-              <div style={{ position:"absolute", bottom:-10, right:-4, fontFamily:"'Bebas Neue',sans-serif", fontSize:52, color:`${w.color}08`, lineHeight:1, userSelect:"none" }}>
-                {w.val}
-              </div>
-              <div style={{ fontSize:16, marginBottom:4 }}>{w.icon}</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:w.color, letterSpacing:0, lineHeight:1 }}>{fmt(w.val)}</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, fontWeight:700, letterSpacing:2, color:"rgba(241,245,249,0.3)", marginTop:4 }}>{w.label}</div>
-            </motion.div>
-          ))}
-        </div>
+        <WalletHolo mc={profile?.coins||0} sc={profile?.store_coins||0} />
       </Section>
 
-      {/* ── STATS ───────────────────────────────────────────────── */}
+      {/* ── STATS 3D ────────────────────────────────────────────── */}
       <Section delay={3} style={{ marginBottom:22 }}>
         <SectionTitle accent="STATS" />
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-          <AnimStatCard label="PARIS"     value={profile?.total_bets||0}  color="#3b82f6" delay={1} />
-          <AnimStatCard label="VICTOIRES" value={profile?.total_wins||0}  color="#10b981" delay={2} />
-          <AnimStatCard label="PRÉCISION" value={wr}                       color="#a78bfa" delay={3} isPercent />
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:8 }}>
-          <AnimStatCard label="PROFIT TOTAL"  value={profile?.total_profit||0}  color="#34d399" delay={4} suffix=" MC" />
-          <AnimStatCard label="PROFIT HEBDO"  value={profile?.weekly_profit||0} color="#10b981" delay={5} suffix=" MC" />
-        </div>
+        <Stats3D profile={profile} wr={wr} />
+      </Section>
+
+      {/* ── XP LIQUIDE ──────────────────────────────────────────── */}
+      <Section delay={3.5} style={{ marginBottom:22 }}>
+        <LiquidXPBar coins={profile?.coins||0} div={div} />
       </Section>
 
       {/* ── SUBSCRIPTION ────────────────────────────────────────── */}
@@ -683,20 +1070,16 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
       </Section>
 
-      {/* ── BADGE TIMELINE ──────────────────────────────────────── */}
+      {/* ── BADGE CONSTELLATION ─────────────────────────────────── */}
       <Section delay={6} style={{ marginBottom:22 }}>
         <SectionTitle accent="BADGES" />
-        <div style={{ background:"rgba(241,245,249,0.01)", border:"1px solid rgba(241,245,249,0.04)", borderRadius:14, padding:"14px 16px" }}>
-          {BADGES.map((badge, i) => (
-            <BadgeTimelineItem
-              key={badge.id}
-              badge={badge}
-              unlocked={level >= badge.minLevel}
-              isCurrent={badge.id === currentBadge.id}
-              index={i}
-            />
-          ))}
-        </div>
+        <BadgeConstellation level={level} currentBadge={currentBadge} />
+      </Section>
+
+      {/* ── ACTIVITÉ RÉCENTE ─────────────────────────────────────── */}
+      <Section delay={6.5} style={{ marginBottom:22 }}>
+        <SectionTitle accent="ACTIVITÉ" />
+        <ActivityTimeline userId={profile?.id} />
       </Section>
 
       {/* ── FRIENDS & REFERRAL ──────────────────────────────────── */}
@@ -769,15 +1152,9 @@ export default function ProfilePage({ profile, username, onLogout, onNavigate, s
         </div>
       </Section>
 
-      {/* ── LOGOUT ──────────────────────────────────────────────── */}
+      {/* ── SCATTER LOGOUT ──────────────────────────────────────── */}
       <Section delay={9}>
-        <button onClick={onLogout} style={{
-          width:"100%", padding:"14px 0", borderRadius:12,
-          border:"1px solid rgba(239,68,68,0.15)", background:"rgba(239,68,68,0.04)",
-          color:"#f87171", fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, cursor:"pointer",
-        }}>
-          {t("profile.logout_btn")}
-        </button>
+        <ScatterLogout onLogout={onLogout} />
       </Section>
     </div>
   );
